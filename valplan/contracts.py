@@ -18,9 +18,16 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from valgebra import Validator
-
-from valplan.schema import JSON, Compiler, Unsupported, compile_schema
+from valplan._valgebra import Validator
+from valplan.schema import (
+    ANNOTATIONS,
+    DRAFT7,
+    JSON,
+    Compiler,
+    Unsupported,
+    compile_schema,
+    upgrade,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +52,12 @@ class Tool:
     input: Validator[Any]
     description: str = ""
     opaque: frozenset[str] = frozenset()
+    #: Keywords outside the vocabulary, read as annotations (`Compiler.ignored`).
+    ignored: frozenset[str] = frozenset()
+    #: The input schema constrains each property on its own and nothing across them, so
+    #: an argument record is inside it exactly when each bound argument is inside its own
+    #: slot and every required argument is bound.
+    plain: bool = False
 
     def arg(self, name: str) -> Slot:
         """Return the argument slot called ``name``."""
@@ -73,9 +86,25 @@ def slots(schema: Mapping[str, Any], *, required_only: bool) -> tuple[Slot, ...]
     )
 
 
+def _current(schema: Any) -> Any:
+    """Return ``schema`` in draft 2020-12, upgrading it when it declares draft-07."""
+    if isinstance(schema, dict) and schema.get("$schema") in DRAFT7:
+        return upgrade(schema)
+    return schema
+
+
 def tool(spec: Mapping[str, Any]) -> Tool:
-    """Read one entry of an MCP ``tools/list`` result."""
+    """Read one entry of an MCP ``tools/list`` result.
+
+    A schema that declares draft-07, as schemas generated from TypeScript types often do,
+    is upgraded first.
+    """
     name = spec["name"]
+    spec = {
+        **spec,
+        "inputSchema": _current(spec["inputSchema"]),
+        **({"outputSchema": _current(spec["outputSchema"])} if "outputSchema" in spec else {}),
+    }
     try:
         compiler = Compiler(spec["inputSchema"])
         whole = compiler.compile(spec["inputSchema"])
@@ -92,6 +121,25 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         whole,
         spec.get("description", ""),
         frozenset(compiler.opaque),
+        frozenset(compiler.ignored),
+        plain=plain(spec["inputSchema"]),
+    )
+
+
+_PLAIN_KEYS = frozenset({"type", "properties", "required", "additionalProperties"})
+
+
+def plain(schema: Mapping[str, Any]) -> bool:
+    """Return whether an object schema has no constraint across its properties.
+
+    ``additionalProperties`` may be absent, ``true`` or ``false``: a program binds only
+    declared arguments, so the clause for undeclared keys never meets a bound one.
+    """
+    extra = schema.get("additionalProperties", True)
+    return (
+        schema.get("type") == "object"
+        and set(schema) - _PLAIN_KEYS - ANNOTATIONS == set()
+        and extra in (True, False)
     )
 
 
@@ -112,10 +160,10 @@ class Task:
 
 def task(spec: Mapping[str, Any]) -> Task:
     """Read a task: ``{"name", "inputs": <object schema>, "goal": <schema>}``."""
-    goal = spec.get("goal", True)
+    goal = _current(spec.get("goal", True))
     return Task(
         spec["name"],
-        slots(spec["inputs"], required_only=True),
+        slots(_current(spec["inputs"]), required_only=True),
         compile_schema(goal) if goal is not True else JSON,
         goal,
     )

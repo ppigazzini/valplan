@@ -33,9 +33,10 @@ def measure(library: Path) -> tuple[CaseStudy, list[str]]:
     shown: list[str] = []
     for spec in specs:
         task = read_task(spec)
-        planner = Planner(lib, task, witnesses(lib, task))
+        drawn = witnesses(lib, task)
+        planner = Planner(lib, task, drawn)
         program = planner.plan(max_depth=6, weak=True) or ()
-        checks = verify(lib, task, program) if program else []
+        checks = verify(lib, task, program, drawn) if program else []
         counts = planner.abstraction.counts()
         rows.append(
             TaskRow(

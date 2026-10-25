@@ -4,7 +4,8 @@ Plans for tool-using agents in which every call is proven well-typed. MCP tool c
 (JSON Schema) are compiled into sets that [valgebra](https://github.com/ppigazzini/valgebra)
 decides inclusion and emptiness over; the Boolean algebra those sets generate is cut into
 finitely many cells; and a planner searches the cells for a program of tool calls and
-runtime type tests that reaches the goal whatever the tools return.
+runtime type tests that reaches the goal whatever values inside their output schemas the
+tools return.
 
 Every link of a program is an inclusion between two sets, proven by a decision procedure
 or refuted. A program proposed elsewhere -- by hand or by a language model -- is checked
@@ -15,10 +16,10 @@ the values left uncovered.
 
 | step | how | where |
 |---|---|---|
-| Compile | JSON Schema draft 2020-12 to valgebra sets over the JSON values `json.loads` returns, keyword by keyword | `valplan/schema.py` |
-| Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty, inhabited cells proven by a witness value | `valplan/abstraction.py` |
+| Compile | JSON Schema draft 2020-12, and draft-07 through an upgrade, to valgebra sets over the JSON values `json.loads` returns, keyword by keyword; every valgebra name and recipe in one boundary module | `valplan/schema.py`, `valplan/_valgebra.py` |
+| Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty by valgebra, by enumeration of listed values or by interval arithmetic, inhabited cells proven by a member value | `valplan/abstraction.py`, `valplan/ranges.py` |
 | Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a runtime type test; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
-| Verify | every inclusion a program depends on, asked of valgebra directly, without the cells | `valplan/verify.py` |
+| Verify | every inclusion a program depends on, asked of valgebra alone, without the cells or the search; a refuted link comes with a value outside it | `valplan/verify.py` |
 | Run | the program on concrete values, each argument and result checked against its contract | `valplan/run.py` |
 
 ## Results
@@ -29,23 +30,24 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run python tools/bench.py --check docs/studies/bench.json
 ```
 
-- **Compiler against the official JSON-Schema-Test-Suite** (draft 2020-12, commit
-  `89e83a740146`, with the two optional files on regular expressions): 1061 of the 1061
-  cases it runs get the specified verdict; 327 are skipped (`unevaluated*`, dynamic,
-  anchor and remote references). Patterns follow ECMA-262, as the specification requires:
+- **Compiler against the official JSON-Schema-Test-Suite** (commit `89e83a740146`):
+  draft 2020-12 with the four optional files on regular expressions and large numbers,
+  1071 of the 1071 cases it runs; draft-07, 870 of 870. Skipped: `unevaluated*`, dynamic,
+  anchor and remote references. Patterns follow ECMA-262, as the specification requires:
   on `optional/ecmascript-regex` the compiler passes 74 of 74, the `jsonschema` package
-  4.26.0 42 of 74 (`tools/suite.py --reference`).
-- **Helpdesk case study** (10 MCP tools, 4 tasks): 36 to 38 cells per task, 2 or 3 of
-  them undecided, where 27 to 28 predicates allow up to 2^28 minterms. Two tasks get
-  strong programs, one branching three ways on an invoice's status; the independent
-  verifier proves every check of both (6 of 6, 14 of 14). The other two get weak programs
-  whose stop names what is uncovered: `c1.tier in {'pro', 'free'}` for escalation, and
-  example countries for VAT.
+  4.26.0 42 of 74 (`tools/suite.py --reference`). Against that package on 400 random
+  schemas and 25 random values each, over the keywords the two read alike: no
+  disagreement ([`docs/03-conformance.md`](docs/03-conformance.md)).
+- **Helpdesk case study** (10 MCP tools, 4 tasks): 36 to 38 cells per task, 1 of them
+  undecided. Two tasks get strong programs, one branching three ways on an invoice's
+  status; the verifier proves every check of both (6 of 6, 14 of 14). The other two get
+  weak programs that test before they call and whose stop names what is uncovered:
+  `c1.tier in {'pro', 'free'}` for escalation, example countries for VAT.
 - **Synthetic libraries of 8 to 256 tools** (3 seeds each, a planted chain ending in a
   branch): a program is found in all 18, and the verifier proves every check of every one.
   At 256 tools, 95 predicates make 97 cells, none undecided.
 - **A hand-written chain with the typical mistake** (escalating every customer) is refuted
-  at the one binding that is wrong: `c1.tier <= escalate.tier`, `not_subset`.
+  at the one binding that is wrong, `c1.tier <= escalate.tier`, with the value `'free'`.
 
 ```
 c1 = find_customer(email=email)

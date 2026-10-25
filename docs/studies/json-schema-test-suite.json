@@ -1,5 +1,6 @@
 {
  "format": 1,
+ "draft": "2020-12",
  "suite_commit": "89e83a74014617ffbe79a56d83d14d054cd11417",
  "files": [
   {
@@ -325,11 +326,25 @@
    "opaque": 0
   },
   {
+   "file": "optional/bignum",
+   "passed": 9,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
    "file": "optional/ecmascript-regex",
    "passed": 74,
    "failed": 0,
    "skipped": 0,
    "opaque": 17
+  },
+  {
+   "file": "optional/float-overflow",
+   "passed": 1,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 1
   },
   {
    "file": "optional/non-bmp-regex",

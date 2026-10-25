@@ -11,7 +11,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from valplan.schema import Compiler, Unsupported
+from valplan.schema import Compiler, Unsupported, upgrade
 
 
 @dataclass(slots=True)
@@ -26,13 +26,14 @@ class Outcome:
     reasons: Counter[str] = field(default_factory=Counter)
 
 
-def run_file(path: Path) -> Outcome:
-    """Run every case of one suite file."""
+def run_file(path: Path, *, draft7: bool = False) -> Outcome:
+    """Run every case of one suite file; a draft-07 file's schemas are upgraded first."""
     out = Outcome()
     for group in json.loads(path.read_text(encoding="utf-8")):
-        compiler = Compiler(group["schema"])
+        schema = upgrade(group["schema"]) if draft7 else group["schema"]
+        compiler = Compiler(schema)
         try:
-            compiled = compiler.compile(group["schema"])
+            compiled = compiler.compile(schema)
         except Unsupported as exc:
             out.skipped += len(group["tests"])
             out.reasons[str(exc).split(":")[0]] += len(group["tests"])
@@ -46,6 +47,11 @@ def run_file(path: Path) -> Outcome:
                 out.failed += 1
                 out.failures.append(f"{path.stem}: {group['description']} / {test['description']}")
     return out
+
+
+def run_draft7(directory: Path) -> dict[str, Outcome]:
+    """Run every draft-07 suite file in ``directory`` through `upgrade`, by stem."""
+    return {p.stem: run_file(p, draft7=True) for p in sorted(directory.glob("*.json"))}
 
 
 def run(directory: Path) -> dict[str, Outcome]:

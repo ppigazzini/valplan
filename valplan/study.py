@@ -12,9 +12,9 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from typing_extensions import TypedDict
-from valgebra import ValidationError, Validator, complement
 
-NOT_BOOL = complement(bool)
+from valplan._valgebra import NOT_BOOL, ValidationError, Validator
+
 type Count = Annotated[int, NOT_BOOL, Ge(0)]
 
 
@@ -29,9 +29,10 @@ class SuiteFile(TypedDict, closed=True):
 
 
 class SuiteStudy(TypedDict, closed=True):
-    """The compiler against the official suite, per file."""
+    """The compiler against the official suite for one draft, per file."""
 
     format: Literal[1]
+    draft: Literal["2020-12", "7"]
     suite_commit: str
     files: list[SuiteFile]
 
@@ -65,6 +66,7 @@ class CaseStudy(TypedDict, closed=True):
 class BenchRow(TypedDict, closed=True):
     """One synthetic library: its size, its abstraction, and what the planner found."""
 
+    family: Literal["strings", "numbers"]
     tools: Count
     seed: Count
     predicates: Count
@@ -129,7 +131,7 @@ def load_bench(text: str) -> BenchStudy:
     study = _load(BENCH, text)
     for row in study["rows"]:
         if row["inhabited"] + row["undecided"] != row["cells"] or row["proven"] > row["checks"]:
-            msg = f"bench row {row['tools']}/{row['seed']} contradicts itself"
+            msg = f"bench row {row['family']}/{row['tools']}/{row['seed']} contradicts itself"
             raise StudyError(msg)
     return study
 

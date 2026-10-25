@@ -62,8 +62,8 @@ Link with relative paths; `tools/check_markdown.py` fails the build on a dead on
 The renderer is strict and the failures are silent. The checker catches these; the rules
 are here so they are not rediscovered.
 
-- Never split a token across the math boundary. `${}^{238}\mathrm{U}$` or plain `U-238`,
-  never `$^{238}$U`.
+- Never split a token across the math boundary: write the whole symbol in one span, or
+  plain text.
 - No bare sub- or superscript spans.
 - No spacing macros in inline `$...$`. They render literally.
 - Keep a numeric range in one span. `$\sim10^4\text{ to }10^5$`, or plain text.
@@ -130,7 +130,7 @@ A defect is described in the present tense as a property:
 ```
 `_atom` checks that every element is a symbol before it checks for a connective, so
 `(when (p ?x) (q ?x))` is refused as "expected an atom" instead of being named as a
-conditional effect. The connective check runs first; `tests/test_pddl.py` pins the message.
+conditional effect. The connective check runs first; `tests/test_schema.py` pins the message.
 ```
 
 Not: "this was introduced by the previous fix", "found while investigating X", "had been

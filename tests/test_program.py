@@ -1,4 +1,15 @@
-from valplan.program import Call, Return, Stop, Test, from_json, prune, render, stops, to_json
+from valplan.program import (
+    Call,
+    Return,
+    Stop,
+    Test,
+    from_json,
+    prune,
+    render,
+    sink,
+    stops,
+    to_json,
+)
 
 
 def test_a_program_round_trips_through_json():
@@ -35,3 +46,25 @@ def test_prune_inside_a_branch_keeps_every_read_on_the_variable_it_named():
         ),
     )
     assert prune(program) == program
+
+
+def test_sink_moves_a_call_into_the_only_branch_that_reads_it():
+    program = (
+        Call("c1", "find", (("e", "e"),)),
+        Call("c2", "ticket", (("c", "c1.id"),)),
+        Test(
+            "c1.tier",
+            "esc.tier",
+            (Call("c3", "esc", (("t", "c2.id"), ("tier", "c1.tier"))), Return("c3.out")),
+            (Stop("c1.tier"),),
+        ),
+    )
+    assert render(sink(program)) == (
+        "c1 = find(e=e)\n"
+        "if c1.tier in esc.tier:\n"
+        "    c2 = ticket(c=c1.id)\n"
+        "    c3 = esc(t=c2.id, tier=c1.tier)\n"
+        "    return c3.out\n"
+        "else:\n"
+        "    stop  # c1.tier is not covered by this program"
+    )

@@ -37,15 +37,30 @@ every inclusion decided from it would be wrong.
 
 import math
 from collections.abc import Callable, Mapping
-from decimal import Decimal
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import Annotated, Any
 from urllib.parse import unquote
 
-from annotated_types import Ge, Gt, Le, Len, Lt, MaxLen, MinLen, MultipleOf, Predicate
-from valgebra import Regex, Validator, anything, complement, intersection, nothing, recursive, union
+from annotated_types import Ge, Gt, Le, Lt, MaxLen, MinLen, MultipleOf
 
-NOT_BOOL = complement(bool)
+from valplan._valgebra import (
+    NOT_BOOL,
+    Regex,
+    Validator,
+    complement,
+    each,
+    exactly_one,
+    fixed,
+    guard,
+    has,
+    implies,
+    intersection,
+    nothing,
+    opaque,
+    recursive,
+    union,
+)
 
 #: Every value ``json.loads`` can return.
 JSON = recursive(lambda j: union(None, bool, int, float, str, [j], {str: j}))
@@ -74,6 +89,7 @@ KINDS: Mapping[str, Validator[Any]] = {
 ANNOTATIONS = frozenset(
     {
         "$schema",
+        "$vocabulary",
         "$comment",
         "title",
         "description",
@@ -92,6 +108,74 @@ ANNOTATIONS = frozenset(
 )
 
 DRAFT = "https://json-schema.org/draft/2020-12/schema"
+DRAFT7 = frozenset(
+    {
+        "http://json-schema.org/draft-07/schema#",
+        "http://json-schema.org/draft-07/schema",
+        "https://json-schema.org/draft-07/schema#",
+        "https://json-schema.org/draft-07/schema",
+    }
+)
+
+#: Draft 2020-12 keywords translated to sets: exactly, or as an opaque predicate
+#: (`Compiler.opaque` records which), or read as part of a sibling's group.
+SUPPORTED = frozenset(
+    {
+        "$id",
+        "$ref",
+        "prefixItems",
+        "items",
+        "contains",
+        "additionalProperties",
+        "properties",
+        "patternProperties",
+        "dependentSchemas",
+        "propertyNames",
+        "if",
+        "then",
+        "else",
+        "allOf",
+        "anyOf",
+        "oneOf",
+        "not",
+        "type",
+        "const",
+        "enum",
+        "multipleOf",
+        "maximum",
+        "exclusiveMaximum",
+        "minimum",
+        "exclusiveMinimum",
+        "maxLength",
+        "minLength",
+        "pattern",
+        "maxItems",
+        "minItems",
+        "uniqueItems",
+        "maxContains",
+        "minContains",
+        "maxProperties",
+        "minProperties",
+        "required",
+        "dependentRequired",
+    }
+)
+
+#: Draft 2020-12 keywords that assert something this compiler does not translate. Every
+#: other keyword it has no handler for is outside the vocabularies, so an annotation.
+REFUSED = frozenset(
+    {
+        "unevaluatedProperties",
+        "unevaluatedItems",
+        "$dynamicRef",
+        "$dynamicAnchor",
+        "$anchor",
+        "$recursiveRef",
+        "$recursiveAnchor",
+        "additionalItems",
+        "dependencies",
+    }
+)
 
 
 class Unsupported(ValueError):  # noqa: N818 - the name is the sentence a caller reads
@@ -123,26 +207,35 @@ def _constant(value: object) -> Validator[Any]:
     if isinstance(value, (int, float)):
         if isinstance(value, float) and not math.isfinite(value):
             return nothing
-        spellings: list[object] = [_literal(value)]
-        if float(value).is_integer():
-            spellings += [_literal(int(value)), _literal(float(value))]
-        return union(*spellings)
+        return union(*(_literal(v) for v in spellings(value)))
     if isinstance(value, list):
-        return _fixed([_constant(v) for v in value])
+        return fixed([_constant(v) for v in value])
     if isinstance(value, dict):
         return Validator({_field(k): _constant(v) for k, v in value.items()})
     msg = f"constant {value!r} is not a JSON value"
     raise Unsupported(msg)
 
 
+def spellings(value: float) -> list[float]:
+    """Return the Python values that spell one JSON number: ``1`` and ``1.0``.
+
+    An integer has a float spelling only when the float is the same number. Above 2**53 a
+    float rounds, so ``9007199254740993`` and ``9007199254740992.0`` are two numbers, and
+    past the float range there is no float spelling at all.
+    """
+    if isinstance(value, float):
+        return [value, int(value)] if value.is_integer() else [value]
+    try:
+        twin = float(value)
+    except OverflowError:
+        return [value]
+    return [value, twin] if twin == value else [value]
+
+
 def _literal(value: object) -> object:
     from typing import Literal  # noqa: PLC0415 - a subscript built from a runtime value
 
     return Literal[value]  # ty: ignore[invalid-type-form]
-
-
-def _each(schema: object) -> Validator[Any]:
-    return Validator(list[schema])  # ty: ignore[invalid-type-form]
 
 
 def _field(key: str) -> str:
@@ -165,6 +258,9 @@ class Compiler:
     def __init__(self, root: object) -> None:
         self.root = root
         self.opaque: set[str] = set()
+        #: Keywords outside draft 2020-12's vocabularies, which it says to treat as
+        #: annotations: they assert nothing, and each one met is recorded here.
+        self.ignored: set[str] = set()
         self._done: dict[str, Validator[Any]] = {}
         self._open: dict[str, Validator[Any]] = {}
         self._typed: list[frozenset[str] | None] = []
@@ -180,7 +276,7 @@ class Compiler:
         typed = self._typed[-1] if self._typed else None
         if typed is not None and typed <= names:
             return Validator(refined)
-        return union(complement(kind), refined)
+        return guard(kind, refined)
 
     def compile(self, schema: object) -> Validator[Any]:
         """Return the set of JSON values ``schema`` admits."""
@@ -191,8 +287,8 @@ class Compiler:
         if not isinstance(schema, dict):
             msg = f"a schema is an object or a boolean, got {type(schema).__name__}"
             raise Unsupported(msg)
-        if schema is self.root and schema.get("$schema", DRAFT) != DRAFT:
-            msg = f"$schema {schema['$schema']!r}: only draft 2020-12 is supported"
+        if schema is self.root and schema.get("$schema", DRAFT) not in {DRAFT, *DRAFT7}:
+            msg = f"$schema {schema['$schema']!r}: drafts 2020-12 and 07 are supported"
             raise Unsupported(msg)
         named = schema.get("type")
         typed = frozenset(named if isinstance(named, list) else [named]) if named else None
@@ -217,8 +313,11 @@ class Compiler:
             seen.add(group)
             handler = _HANDLERS.get(group)
             if handler is None:
-                msg = f"keyword {keyword!r} is not supported"
-                raise Unsupported(msg)
+                if keyword in REFUSED:
+                    msg = f"keyword {keyword!r} is not supported"
+                    raise Unsupported(msg)
+                self.ignored.add(keyword)
+                continue
             parts.append(handler(self, schema))
 
     def ref(self, pointer: str) -> Validator[Any]:
@@ -258,6 +357,9 @@ class Compiler:
             part = raw.replace("~1", "/").replace("~0", "~")
             if isinstance(node, dict) and part in node:
                 node = node[part]
+            elif isinstance(node, dict) and part == "items" and "prefixItems" in node:
+                # A draft-07 pointer into an `items` array that `upgrade` renamed.
+                node = node["prefixItems"]
             elif isinstance(node, list) and part.isdigit() and int(part) < len(node):
                 node = node[int(part)]
             else:
@@ -294,18 +396,21 @@ def _multiple_of(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     """Return multiples of the step: decided for an integral step, opaque for a fraction.
 
     ``0.0075 % 0.0001`` is not zero in binary floating point, and JSON Schema means the
-    decimal numbers written, so a fractional step is checked in `decimal` arithmetic.
+    decimal numbers written, so a fractional step is checked on the exact rationals those
+    numbers denote. `decimal` would round past its context's 28 digits, so ``1e26`` would
+    be refused as a multiple of ``0.01``.
     """
     step = s["multipleOf"]
-    if float(step).is_integer():
+    if isinstance(step, int) or step.is_integer():
         return c.guard("number", _number(MultipleOf(int(step))))
     c.opaque.add("multipleOf")
-    exact = Decimal(repr(step))
+    exact = Fraction(str(step))
 
     def multiple(value: float) -> bool:
-        return math.isfinite(value) and Decimal(repr(value)) % exact == 0
+        finite_value = isinstance(value, int) or math.isfinite(value)
+        return finite_value and Fraction(str(value)) % exact == 0
 
-    return c.guard("number", _number(Predicate(multiple)))
+    return c.guard("number", intersection(opaque(int | float, multiple), NOT_BOOL))
 
 
 def _min_length(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -338,17 +443,9 @@ def _items(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     prefix = [c.compile(p) for p in s.get("prefixItems", [])]
     rest = c.compile(s["items"]) if "items" in s else JSON
     shapes: list[object] = [Validator([])]
-    shapes += [_fixed(prefix[:n]) for n in range(1, len(prefix))]
+    shapes += [fixed(prefix[:n]) for n in range(1, len(prefix))]
     shapes.append(Validator([*prefix, rest, ...]))
     return c.guard("array", union(*shapes))
-
-
-def _fixed(parts: list[Validator[Any]]) -> Validator[Any]:
-    if not parts:
-        return Validator([])
-    if len(parts) == 1:
-        return intersection(Annotated[list[Any], Len(1, 1)], _each(parts[0]))
-    return Validator(parts)
 
 
 def _contains(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -360,14 +457,14 @@ def _contains(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
         return JSON
     inner = c.compile(s["contains"])
     if "minContains" not in s and "maxContains" not in s:
-        return c.guard("array", intersection(ARRAY, complement(_each(complement(inner)))))
+        return c.guard("array", intersection(ARRAY, complement(each(complement(inner)))))
     c.opaque.add("minContains/maxContains")
     low, high = s.get("minContains", 1), s.get("maxContains", math.inf)
 
     def counted(items: list[Any]) -> bool:
         return low <= sum(inner.is_valid(x) for x in items) <= high
 
-    return c.guard("array", Annotated[list[Any], Predicate(counted)])
+    return c.guard("array", opaque(list[Any], counted))
 
 
 def _object(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -489,7 +586,7 @@ def _object_by_pattern(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
                 return False
         return True
 
-    return c.guard("object", Annotated[dict[str, Any], Predicate(admits)])
+    return c.guard("object", opaque(dict[str, Any], admits))
 
 
 def _property_names(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -499,7 +596,7 @@ def _property_names(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     def admits(obj: dict[str, Any]) -> bool:
         return all(names.is_valid(k) for k in obj)
 
-    return c.guard("object", Annotated[dict[str, Any], Predicate(admits)])
+    return c.guard("object", opaque(dict[str, Any], admits))
 
 
 def json_key(value: Any) -> object:
@@ -511,7 +608,8 @@ def json_key(value: Any) -> object:
     if isinstance(value, bool) or value is None or isinstance(value, str):
         return (type(value).__name__, value)
     if isinstance(value, (int, float)):
-        return ("number", Fraction(value) if math.isfinite(value) else value)
+        exact = isinstance(value, int) or math.isfinite(value)
+        return ("number", Fraction(value) if exact else value)
     if isinstance(value, list):
         return ("array", tuple(json_key(v) for v in value))
     if isinstance(value, dict):
@@ -528,7 +626,7 @@ def _unique_items(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
         keys = [json_key(v) for v in items]
         return len(set(keys)) == len(keys)
 
-    return c.guard("array", Annotated[list[Any], Predicate(unique)])
+    return c.guard("array", opaque(list[Any], unique))
 
 
 def _min_properties(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -539,13 +637,9 @@ def _max_properties(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     return c.guard("object", Annotated[dict[str, Any], MaxLen(s["maxProperties"])])
 
 
-def _has(key: str) -> Validator[Any]:
-    return Validator({_field(key): anything}).open()
-
-
 def _dependent_required(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     rules = [
-        union(complement(_has(key)), intersection(*(_has(d) for d in deps)))
+        implies(has(_field(key)), intersection(*(has(_field(d)) for d in deps)))
         for key, deps in s["dependentRequired"].items()
         if deps
     ]
@@ -553,7 +647,7 @@ def _dependent_required(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
 
 
 def _dependent_schemas(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    rules = [union(complement(_has(k)), c.compile(sub)) for k, sub in s["dependentSchemas"].items()]
+    rules = [implies(has(_field(k)), c.compile(sub)) for k, sub in s["dependentSchemas"].items()]
     return c.guard("object", intersection(OBJECT, *rules))
 
 
@@ -566,14 +660,8 @@ def _any_of(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
 
 
 def _one_of(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    """Return the values in exactly one branch: each branch minus all the others."""
-    subs = [c.compile(sub) for sub in s["oneOf"]]
-    return union(
-        *(
-            intersection(sub, *(complement(other) for j, other in enumerate(subs) if j != i))
-            for i, sub in enumerate(subs)
-        )
-    )
+    """Return the values in exactly one branch."""
+    return exactly_one(*(c.compile(sub) for sub in s["oneOf"]))
 
 
 def _not(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -584,10 +672,9 @@ def _if(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     """Return ``(if & then) | (~if & else)``; ``then`` and ``else`` alone assert nothing."""
     if "if" not in s:
         return JSON
-    cond = c.compile(s["if"])
-    then = c.compile(s.get("then", True))
-    other = c.compile(s.get("else", True))
-    return union(intersection(cond, then), intersection(complement(cond), other))
+    return implies(
+        c.compile(s["if"]), c.compile(s.get("then", True)), c.compile(s.get("else", True))
+    )
 
 
 def _ref(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -653,6 +740,10 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
     schema. Each integral number is listed in both spellings, ``1`` and ``1.0``, which are
     one JSON number and two Python values. The list is what lets a cell inside such a
     schema be decided by checking each value rather than by asking about the cell's set.
+
+    A listed array or object is not enumerated: each number inside it has its spellings
+    too, and a list missing one of the combinations would let a cell holding it be called
+    empty. Such a schema returns None and its cells are left to valgebra.
     """
     if not isinstance(schema, dict):
         return [] if schema is False else None
@@ -670,12 +761,14 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
         if not known:
             return None
         listed = known[0]
+    if any(isinstance(value, (list, dict)) for value in listed):
+        return None
     spelled: list[Any] = []
     for value in listed:
-        spelled.append(value)
+        if isinstance(value, float) and not math.isfinite(value):
+            continue
         number = isinstance(value, (int, float)) and not isinstance(value, bool)
-        if number and math.isfinite(value) and float(value).is_integer():
-            spelled += [int(value), float(value)]
+        spelled += spellings(value) if number else [value]
     compiled = Compiler(root if root is not None else schema).compile(schema)
     out: list[Any] = []
     for value in spelled:
@@ -684,10 +777,119 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
     return out
 
 
+@dataclass(frozen=True, slots=True)
+class Interval:
+    """A numeric schema that is a range and nothing more: its kind and its two bounds.
+
+    A missing bound is None. Bounds are exact rationals of the numbers written, so
+    ``0.1`` is one tenth, not the float nearest to it.
+    """
+
+    integer: bool
+    low: Fraction | None = None
+    low_open: bool = False
+    high: Fraction | None = None
+    high_open: bool = False
+
+
+_RANGE_KEYS = frozenset({"type", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"})
+
+
+def interval(schema: object) -> Interval | None:
+    """Return the range a schema denotes when it is ``type`` plus bounds alone, else None."""
+    if not isinstance(schema, dict) or schema.get("type") not in {"integer", "number"}:
+        return None
+    if set(schema) - _RANGE_KEYS - ANNOTATIONS:
+        return None
+    bounds = [schema.get(k) for k in _RANGE_KEYS - {"type"}]
+    if any(
+        b is not None and (isinstance(b, bool) or not isinstance(b, (int, float))) for b in bounds
+    ):
+        return None
+    low = high = None
+    low_open = high_open = False
+    for key, is_open in (("minimum", False), ("exclusiveMinimum", True)):
+        if key in schema:
+            value = Fraction(str(schema[key]))
+            if low is None or value > low or (value == low and is_open):
+                low, low_open = value, is_open
+    for key, is_open in (("maximum", False), ("exclusiveMaximum", True)):
+        if key in schema:
+            value = Fraction(str(schema[key]))
+            if high is None or value < high or (value == high and is_open):
+                high, high_open = value, is_open
+    return Interval(schema["type"] == "integer", low, low_open, high, high_open)
+
+
 def _same(a: object, b: object) -> bool:
     return type(a) is type(b) and json_key(a) == json_key(b)
 
 
+_ONE = frozenset({"not", "if", "then", "else", "additionalProperties", "contains", "propertyNames"})
+_MANY = frozenset({"allOf", "anyOf", "oneOf"})
+_MAP = frozenset({"properties", "patternProperties", "definitions", "$defs"})
+
+
+def upgrade(schema: object) -> object:
+    """Rewrite a draft-07 schema into the draft 2020-12 one with the same meaning.
+
+    The keywords whose meaning changed: an ``items`` array is ``prefixItems``, with
+    ``additionalItems`` as ``items``; ``dependencies`` splits into ``dependentRequired``
+    and ``dependentSchemas``; and a ``$ref`` overrides its siblings, so they are dropped.
+    ``definitions`` keeps its name, so every JSON pointer into the document still resolves.
+    Only the keywords that hold subschemas are descended into: a property named ``items``
+    is a name, not a keyword.
+    """
+    if not isinstance(schema, dict):
+        return schema
+    if "$ref" in schema:
+        out: dict[str, Any] = {"$ref": schema["$ref"]}
+        if "definitions" in schema:
+            out["definitions"] = {k: upgrade(v) for k, v in schema["definitions"].items()}
+        return out
+    out = {}
+    for key, value in schema.items():
+        if key == "$schema":
+            out[key] = DRAFT
+        elif key in {"items", "additionalItems"}:
+            out |= _upgrade_items(schema) if key == "items" or "items" not in schema else {}
+        elif key == "dependencies":
+            out |= _upgrade_dependencies(value)
+        elif key in _ONE:
+            out[key] = upgrade(value)
+        elif key in _MANY:
+            out[key] = [upgrade(v) for v in value]
+        elif key in _MAP:
+            out[key] = {k: upgrade(v) for k, v in value.items()}
+        else:
+            out[key] = value
+    return out
+
+
+def _upgrade_items(schema: dict[str, Any]) -> dict[str, Any]:
+    """Map draft-07 ``items``/``additionalItems`` to 2020-12 ``prefixItems``/``items``."""
+    items = schema.get("items", True)
+    if not isinstance(items, list):
+        return {"items": upgrade(items)} if "items" in schema else {}
+    out: dict[str, Any] = {"prefixItems": [upgrade(v) for v in items]}
+    if "additionalItems" in schema:
+        out["items"] = upgrade(schema["additionalItems"])
+    return out
+
+
+def _upgrade_dependencies(value: dict[str, Any]) -> dict[str, Any]:
+    """Split draft-07 ``dependencies`` into ``dependentRequired`` and ``dependentSchemas``."""
+    out: dict[str, dict[str, Any]] = {}
+    for name, dep in value.items():
+        if isinstance(dep, list):
+            out.setdefault("dependentRequired", {})[name] = dep
+        else:
+            out.setdefault("dependentSchemas", {})[name] = upgrade(dep)
+    return out
+
+
 def compile_schema(schema: object) -> Validator[Any]:
-    """Compile a root schema document."""
+    """Compile a root schema document, upgrading a draft-07 one first."""
+    if isinstance(schema, dict) and schema.get("$schema") in DRAFT7:
+        schema = upgrade(schema)
     return Compiler(schema).compile(schema)

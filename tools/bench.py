@@ -23,6 +23,7 @@ from valplan.verify import verify
 
 SIZES = (8, 16, 32, 64, 128, 256)
 SEEDS = (0, 1, 2)
+FAMILIES = ("strings", "numbers")
 DEPTH = 6
 
 
@@ -31,49 +32,48 @@ def _tests(program: tuple) -> int:
 
 
 def measure(sizes: tuple[int, ...], seeds: tuple[int, ...]) -> tuple[BenchStudy, list[str]]:
-    """Run every size and seed; return the study and one timing line per row."""
+    """Run every family, size and seed; return the study and one timing line per row."""
     rows: list[BenchRow] = []
     times: list[str] = []
-    for n in sizes:
-        for seed in seeds:
-            lib_json, spec = library(n, seed)
-            lib, task = read_tools(lib_json), read_task(spec)
-            t0 = time.perf_counter()
-            planner = Planner(lib, task, witnesses(lib, task))
-            t1 = time.perf_counter()
-            program = planner.plan(max_depth=DEPTH)
-            t2 = time.perf_counter()
-            checks = verify(lib, task, program) if program else []
-            counts = planner.abstraction.counts()
-            rows.append(
-                BenchRow(
-                    tools=n,
-                    seed=seed,
-                    predicates=counts["predicates"],
-                    cells=counts["cells"],
-                    inhabited=counts["inhabited"],
-                    undecided=counts["undecided"],
-                    found=program is not None,
-                    calls=calls(program) if program else 0,
-                    tests=_tests(program) if program else 0,
-                    checks=len(checks),
-                    proven=sum(c.holds for c in checks),
-                    expanded=planner.expanded,
-                )
+    for family, n, seed in ((f, n, s) for f in FAMILIES for n in sizes for s in seeds):
+        lib_json, spec = library(n, seed, family)
+        lib, task = read_tools(lib_json), read_task(spec)
+        t0 = time.perf_counter()
+        planner = Planner(lib, task, witnesses(lib, task))
+        t1 = time.perf_counter()
+        program = planner.plan(max_depth=DEPTH)
+        t2 = time.perf_counter()
+        checks = verify(lib, task, program) if program else []
+        counts = planner.abstraction.counts()
+        rows.append(
+            BenchRow(
+                family="strings" if family == "strings" else "numbers",
+                tools=n,
+                seed=seed,
+                predicates=counts["predicates"],
+                cells=counts["cells"],
+                inhabited=counts["inhabited"],
+                undecided=counts["undecided"],
+                found=program is not None,
+                calls=calls(program) if program else 0,
+                tests=_tests(program) if program else 0,
+                checks=len(checks),
+                proven=sum(c.holds for c in checks),
+                expanded=planner.expanded,
             )
-            times.append(
-                f"{n} tools, seed {seed}: abstraction {t1 - t0:.2f} s, search {t2 - t1:.2f} s"
-            )
+        )
+        times.append(f"{n} tools, seed {seed}: abstraction {t1 - t0:.2f} s, search {t2 - t1:.2f} s")
     return BenchStudy(format=1, max_depth=DEPTH, rows=rows), times
 
 
 def table(study: BenchStudy) -> str:
     """Render one row per library."""
-    head = "| tools | seed | predicates | cells (undecided) | found | calls | tests | proven |"
-    lines = [f"{head} expanded |", "|---:|---:|---:|---|---|---:|---:|---|---:|"]
+    head = "| family | tools | seed | predicates | cells (undecided) | found | calls | tests |"
+    lines = [f"{head} proven | expanded |", "|---|---:|---:|---:|---|---|---:|---:|---|---:|"]
     lines += [
-        f"| {r['tools']} | {r['seed']} | {r['predicates']} | {r['cells']} ({r['undecided']}) "
-        f"| {'yes' if r['found'] else 'no'} | {r['calls']} | {r['tests']} "
+        f"| {r['family']} | {r['tools']} | {r['seed']} | {r['predicates']} "
+        f"| {r['cells']} ({r['undecided']}) | {'yes' if r['found'] else 'no'} "
+        f"| {r['calls']} | {r['tests']} "
         f"| {r['proven']} of {r['checks']} | {r['expanded']} |"
         for r in study["rows"]
     ]

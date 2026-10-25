@@ -20,5 +20,6 @@ jobs:
       - run: uv run pytest
       # Every published count is one this code still produces.
       - run: uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
+      - run: uv run python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
       - run: uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
       - run: uv run python tools/bench.py --check docs/studies/bench.json

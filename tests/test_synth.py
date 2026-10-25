@@ -45,7 +45,7 @@ class TestHelpdesk:
         planner, program = _plan(library, tasks[name], weak=True)
         assert planner.weak
         assert stops(program) == 1
-        assert f"stop  # no contract covers {uncovered} here" in render(program)
+        assert f"stop  # {uncovered} is not covered by this program" in render(program)
 
     @pytest.mark.parametrize(
         "name", ["ticket", "settle-latest-invoice", "escalate", "vat-for-customer"]
@@ -133,3 +133,44 @@ def test_a_gap_lists_every_uncovered_value_when_the_cells_are_enumerated(library
     assert gap.var == "c1.tier"
     assert gap.complete
     assert sorted(gap.values) == ["free", "pro"]
+
+
+def test_a_stop_is_extended_by_a_deeper_continuation_on_the_same_variable():
+    def tool(name, args, out):
+        return {
+            "name": name,
+            "inputSchema": {"type": "object", "properties": args, "required": list(args)},
+            "outputSchema": {"type": "object", "properties": out, "required": list(out)},
+        }
+
+    goal = {"type": "string", "pattern": "^G[0-9]{3}$"}
+    k = [{"type": "string", "pattern": f"^K{i}$"} for i in range(4)]
+    lib = read_tools(
+        {
+            "tools": [
+                tool("fa", {"x": {"enum": ["a"]}}, {"g": goal}),
+                tool("fb", {"x": {"enum": ["b"]}, "k": k[3]}, {"g": goal}),
+                tool("k1", {"x": {"enum": ["b"]}}, {"k": k[1]}),
+                tool("k2", {"k": k[1]}, {"k": k[2]}),
+                tool("k3", {"k": k[2]}, {"k": k[3]}),
+            ]
+        }
+    )
+    task = read_task(
+        {
+            "name": "t",
+            "inputs": {
+                "type": "object",
+                "properties": {"x": {"enum": ["a", "b", "c"]}},
+                "required": ["x"],
+            },
+            "goal": goal,
+        }
+    )
+    planner = Planner(lib, task, witnesses(lib, task))
+    program = planner.plan(max_depth=7, weak=True)
+    assert program is not None
+    assert stops(program) == 1
+    assert "c4 = fb(x=x, k=c3.k)" in render(program)
+    (gap,) = gaps(planner, program)
+    assert gap.values == ("c",)

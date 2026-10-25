@@ -21,7 +21,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    # The reference validator the compiler is tested against, value by value.
+    # The second implementation: `tests/test_properties.py` compares membership on random
+    # schemas, and `tools/suite.py --reference` runs it on the optional suite files.
     "jsonschema>=4.26.0",
     "pre-commit>=4.7.0",
     "pytest>=9.1.1",

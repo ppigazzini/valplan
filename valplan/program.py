@@ -159,7 +159,7 @@ def _lines(program: Program, indent: int) -> Iterator[str]:
             case Return(var):
                 yield f"{pad}return {var}"
             case Stop(var):
-                yield f"{pad}stop  # no contract covers {var} here"
+                yield f"{pad}stop  # {var} is not covered by this program"
 
 
 def calls(program: Program) -> int:
@@ -260,3 +260,41 @@ def relabel(program: Program, start: int = 0, names: dict[str, str] | None = Non
             case Stop(var):
                 out.append(Stop(ref(var)))
     return tuple(out)
+
+
+def sink(program: Program) -> Program:
+    """Move each call into the one branch of a later test that reads its results.
+
+    A tool call can act on the world, so a path should not make a call it does not need: a
+    weak program that opens a ticket and then stops has done half a job. A call whose
+    results only one branch of the block's test reads moves to the start of that branch;
+    a call both branches read, or the test itself reads, stays. Calls are tried from the
+    last to the first, so a call that a moved call reads can follow it into the branch.
+    """
+    return relabel(_sink(program))
+
+
+def _sink(program: Program) -> Program:
+    if not program or not isinstance(program[-1], Test):
+        return program
+    test = program[-1]
+    then, other = _sink(test.then), _sink(test.other)
+    kept = list(program[:-1])
+    for i in range(len(kept) - 1, -1, -1):
+        step = kept[i]
+        if not isinstance(step, Call):
+            continue
+        mine = f"{step.label}."
+        later = uses(tuple(kept[i + 1 :]))
+        if test.var.startswith(mine) or any(v.startswith(mine) for v in later):
+            continue
+        in_then = any(v.startswith(mine) for v in uses(then))
+        in_other = any(v.startswith(mine) for v in uses(other))
+        if in_then == in_other:
+            continue
+        del kept[i]
+        if in_then:
+            then = (step, *then)
+        else:
+            other = (step, *other)
+    return (*kept, Test(test.var, test.against, then, other))

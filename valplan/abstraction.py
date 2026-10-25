@@ -21,9 +21,20 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from valgebra import Validator, complement, intersection
-
-from valplan.schema import ARRAY, BOOLEAN, INTEGER, JSON, NULL, NUMBER, OBJECT, STRING, json_key
+from valplan._valgebra import Validator, complement, intersection
+from valplan.ranges import fractions_empty, integers_empty, member
+from valplan.schema import (
+    ARRAY,
+    BOOLEAN,
+    INTEGER,
+    JSON,
+    NULL,
+    NUMBER,
+    OBJECT,
+    STRING,
+    Interval,
+    json_key,
+)
 
 type Status = Literal["inhabited", "undecided"]
 type Cells = frozenset[int]
@@ -100,6 +111,7 @@ class Abstraction:
         predicates: Sequence[Validator[Any]],
         witnesses: Iterable[Any] = (),
         finite: Mapping[Validator[Any], Sequence[Any]] | None = None,
+        ranges: Mapping[Validator[Any], Interval] | None = None,
     ) -> None:
         self.predicates: list[Validator[Any]] = []
         self._ids: dict[Validator[Any], int] = {}
@@ -108,9 +120,13 @@ class Abstraction:
         self._finite = {
             self._ids[p]: list(values) for p, values in (finite or {}).items() if p in self._ids
         }
+        self._ranges = {self._ids[p]: r for p, r in (ranges or {}).items() if p in self._ids}
+        self._meets: dict[int, set[str]] = {}
+        #: Members the range arithmetic constructed while deciding cells non-empty.
+        self._found: list[Any] = []
         self.cells: list[Cell] = self._split()
         listed = [v for values in self._finite.values() for v in values]
-        self._classify([*listed, *GENERIC, *witnesses])
+        self._classify([*listed, *GENERIC, *self._found, *witnesses])
         self._members = [
             frozenset(i for i, c in enumerate(self.cells) if p in c.inside)
             for p in range(len(self.predicates))
@@ -168,6 +184,20 @@ class Abstraction:
                     and not any(self.predicates[q].is_valid(v) for q in neg)
                     for v in self._finite[p]
                 )
+        name = next(n for n, k in KINDS if k is kind)
+        if name in {"integer", "fraction"}:
+            bearing = [q for q in pos | neg if name in self._meets.get(q, {name})]
+            if all(q in self._ranges for q in bearing):
+                ins = [self._ranges[q] for q in pos]
+                outs = [self._ranges[q] for q in neg if q in bearing]
+                empty = (
+                    integers_empty(ins, outs) if name == "integer" else fractions_empty(ins, outs)
+                )
+                if not empty:
+                    found = member(ins, outs, integer=name == "integer")
+                    if found is not None:
+                        self._found.append(found)
+                return empty
         return self._set(kind, pos, neg).is_empty()
 
     def _split(self) -> list[Cell]:
@@ -186,6 +216,7 @@ class Abstraction:
         cells = [(frozenset[int](), frozenset[int](), name) for name in kinds]
         for i, p in enumerate(self.predicates):
             meets = {name for name, kind in kinds.items() if not intersection(kind, p).is_empty()}
+            self._meets[i] = meets
             out: list[tuple[frozenset[int], frozenset[int], str]] = []
             for pos, neg, name in cells:
                 if name not in meets or any(self._disjoint(i, j) for j in pos):

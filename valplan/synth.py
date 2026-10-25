@@ -24,13 +24,12 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from valgebra import Validator, complement, intersection
-
+from valplan._valgebra import Validator, complement, intersection
 from valplan.abstraction import Abstraction, Cells, SoundnessError
 from valplan.contracts import Slot, Task, Tool
-from valplan.program import Call, Program, Return, Stop, Test, prune
+from valplan.program import Call, Program, Return, Step, Stop, Test, prune, sink, stops
 from valplan.sample import Sampler
-from valplan.schema import finite
+from valplan.schema import finite, interval
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,7 +58,11 @@ class Planner:
         goal_values = finite(task.goal_source)
         if goal_values is not None:
             listed[task.goal] = goal_values
-        self.abstraction = Abstraction(predicates, witnesses, listed)
+        ranges = {s.schema: r for s in named if (r := interval(s.source)) is not None}
+        goal_range = interval(task.goal_source)
+        if goal_range is not None:
+            ranges[task.goal] = goal_range
+        self.abstraction = Abstraction(predicates, witnesses, listed, ranges)
         self.goal = self.abstraction.cells_of(task.goal)
         self._whole: dict[tuple[str, tuple[Validator[Any], ...]], bool] = {}
         self._failed: set[tuple[frozenset[Cells], int, bool]] = set()
@@ -83,10 +86,73 @@ class Planner:
             for depth in range(max_depth + 1):
                 found = self._solve(start, depth, 0, allow)
                 if found is not None:
-                    self.weak = allow
-                    program = prune(found)
+                    if allow:
+                        found = self._extend(found, start, max_depth, 0, 0)
+                    program = sink(prune(found))
+                    self.weak = stops(program) > 0
                     self._recheck(program, {v.name: v.cells for v in start})
                     return program
+        return None
+
+    def _extend(
+        self, program: Program, held: tuple[Var, ...], budget: int, used: int, made: int
+    ) -> Program:
+        """Replace each stop of a weak program by a continuation, where one fits the budget.
+
+        The shallowest weak program stops wherever its own depth ran out, and a deeper
+        continuation may cover what reaches that stop. Each stop gets its own search, from
+        the variables held there, within the depth the path has left.
+        """
+        out: list[Step] = []
+        by_name = {t.name: t for t in self.tools}
+        for step in program:
+            match step:
+                case Call(label, name, _):
+                    tool = by_name[name]
+                    held = held + tuple(
+                        Var(f"{label}.{r.name}", self.abstraction.cells_of(r.schema), r.schema)
+                        for r in tool.results
+                    )
+                    used += 1
+                    made = max(made, int(label[1:]))
+                    out.append(step)
+                case Test(var, against, then, other):
+                    slot = slot_named(self.tools, against)
+                    inside = self.abstraction.cells_of(slot.schema)
+                    v = next(h for h in held if h.name == var)
+                    yes = Var(var, v.cells & inside, intersection(v.schema, slot.schema))
+                    no = Var(var, v.cells - inside, intersection(v.schema, complement(slot.schema)))
+                    then = self._extend(then, self._replace(held, yes), budget, used + 1, made)
+                    other = self._extend(other, self._replace(held, no), budget, used + 1, made)
+                    out.append(Test(var, against, then, other))
+                    return tuple(out)
+                case Stop(var):
+                    rest = self._continuation(held, var, budget - used, made)
+                    return (*out, *(rest or (step,)))
+                case Return():
+                    out.append(step)
+                    return tuple(out)
+        return tuple(out)
+
+    def _continuation(
+        self, held: tuple[Var, ...], var: str, budget: int, made: int
+    ) -> Program | None:
+        """Return a shallowest continuation from a stop, strong if one fits, else narrowing.
+
+        A weak continuation is accepted only if its first test is on the stopped variable:
+        one that tests something else covers values of the stopped case only where an
+        unrelated input happens to look like an argument -- a subject line that reads
+        "enterprise" -- and is no progress.
+        """
+        for depth in range(1, budget + 1):
+            rest = self._solve(held, depth, made, weak=False)
+            if rest is not None:
+                return rest
+        for depth in range(1, budget + 1):
+            rest = self._solve(held, depth, made, weak=True)
+            first = next((s for s in rest or () if isinstance(s, Test)), None)
+            if first is not None and first.var == var:
+                return rest
         return None
 
     def _recheck(self, program: Program, held: dict[str, Cells]) -> None:
@@ -208,6 +274,14 @@ class Planner:
                 yield binding
 
     def _whole_input(self, tool: Tool, binding: tuple[tuple[str, Var], ...]) -> bool:
+        """Return whether the argument record is proven inside the whole input schema.
+
+        For a plain input schema it is, by the per-argument checks already made: each bound
+        variable's cells lie in its slot's, and `_bindings` binds every required argument.
+        Otherwise valgebra decides.
+        """
+        if tool.plain:
+            return True
         key = (tool.name, tuple(v.schema for _, v in binding))
         if key not in self._whole:
             record = Validator({a: v.schema for a, v in binding})
@@ -247,9 +321,10 @@ class Gap:
     complete: bool
     undecided: int
 
-    def describe(self) -> str:
-        """Render the gap: every uncovered value when they are known, else examples."""
-        shown = ", ".join(repr(v) for v in self.values)
+    def describe(self, examples: int = 3) -> str:
+        """Render the gap: every uncovered value when they are known, else a few examples."""
+        values = self.values if self.complete else self.values[:examples]
+        shown = ", ".join(repr(v) for v in values)
         if self.complete:
             return f"{self.var} in {{{shown}}}"
         extra = f" (+{self.undecided} undecided cells)" if self.undecided else ""

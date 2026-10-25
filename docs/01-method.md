@@ -32,8 +32,13 @@ and small:
   positive member is left out of the cell's set. Only a split no pair settles asks
   valgebra about the cell's whole set.
 - **Listed values decide finite cells.** Inside an `enum`, `const`, boolean or null
-  predicate a cell holds exactly the listed values that meet the rest of its predicates,
-  so checking each value decides the cell in both directions.
+  predicate of scalars a cell holds exactly the listed values that meet the rest of its
+  predicates, so checking each value decides the cell in both directions. An enum of
+  arrays or objects is left to valgebra: each number inside one has two spellings.
+- **Interval arithmetic decides range cells.** Where every predicate bearing on a cell of
+  the integer or fraction kind is a range — `type` plus bounds and nothing else — the cell
+  is a question about intervals, decided exactly over the integers or over the reals minus
+  the integers (`valplan/ranges.py`), and a member is constructed where it is non-empty.
 
 A cell valgebra proves empty is dropped. A cell a concrete value falls in is *inhabited*;
 the values come from the listed constants, from a fixed set of generic values at the
@@ -47,8 +52,10 @@ Keeping it can make the planner miss a program; it cannot make it accept a wrong
 The state is the variables the agent holds, each typed by its cells (`valplan/synth.py`).
 
 - A **call** is enabled when every required argument can be bound to a variable whose
-  cells all lie inside the argument's cells, and the assembled argument record is proven
-  inside the whole input schema. It adds the guaranteed result fields as variables.
+  cells all lie inside the argument's cells, and the assembled argument record lies inside
+  the whole input schema. For a plain input schema — each property constrained on its own,
+  nothing across them — the per-argument checks imply it; otherwise valgebra must prove
+  it. A call adds the guaranteed result fields as variables.
 - A **guarded call** handles a variable an argument only overlaps: `if v in tool.arg`, the
   *then* branch calls the tool with `v` narrowed to the overlap, and the *else* branch
   continues with `v` narrowed to the rest.
@@ -57,27 +64,46 @@ The state is the variables the agent holds, each typed by its cells (`valplan/sy
   outcomes partitioned by the cells rather than enumerated.
 
 The search deepens iteratively on the calls and tests along a path, so the first program
-found is a shallowest one; calls no later step reads are then removed, and the program is
-checked once more over the cells before it is returned. Where no strong program exists
-within the depth, the same search lets an *else* branch stop when its *then* branch
-succeeds. Each stop is reported with the cells its variable is narrowed to there: every
-uncovered value when those cells lie inside a predicate that lists its values, examples
-and a count of undecided cells otherwise (`valplan.synth.gaps`).
+found is a shallowest one. Calls no later step reads are then removed, each remaining call
+moves into the one branch of a later test that reads it — a path should not make a call
+it does not need, since a call can act on the world — and the program is checked once more
+over the cells before it is returned.
+
+Where no strong program exists within the depth, the same search lets an *else* branch
+stop when its *then* branch succeeds, and each stop then gets its own search for a
+continuation within the depth its path has left: a strong one, or one whose first test
+narrows the stopped variable further. A stop therefore means "this program does not cover
+these values", not "no program can": a deeper search or a decided cell may cover them.
+Each stop is reported with the cells its variable is narrowed to there: every uncovered
+value when those cells lie inside a predicate that lists its values, examples and a count
+of undecided cells otherwise (`valplan.synth.gaps`).
 
 ## Why a program is sound
 
-Each binding is accepted only on a proof: cell inclusion, which holds exactly when the
-predicates are included, plus a valgebra proof for the whole input record. A runtime test
-narrows by set difference over a partition, so the two branches together cover every
-value and overlap in none. An undecided cell is kept and covered. The verifier
-(`valplan/verify.py`) checks every program again with valgebra directly, sharing no code
-with the cells, and the tests require it to prove every check the planner relied on.
+Each binding is accepted only on a proof: cell inclusion, which implies inclusion of the
+predicates, plus the whole input record. The proofs come from valgebra and from three
+exact rules in this package — pairwise relations proven by valgebra, enumeration of listed
+values, interval arithmetic — each tested on its own. A runtime test narrows by set
+difference over a partition, so the two branches together cover every value and overlap in
+none. An undecided cell is kept and covered.
+
+The verifier (`valplan/verify.py`) checks every program again with valgebra alone, without
+the cells, the search or the three rules. It shares the compiler and valgebra with the
+planner, so it checks the planning and not those two; the compiler is checked against the
+test suite and the `jsonschema` package, and valgebra's proofs against every drawn value
+(`tests/test_properties.py`). Where only the interval rule proves a link — valgebra does
+not decide the complement of an integer range whose float spelling is admitted — the
+verifier reports `undecided` for it.
 
 ## Limits
 
 - **Types are the specification.** Two slots with the same schema cannot be told apart: a
   task's `subject` string and a customer `name` string are interchangeable to the planner.
   Distinct schemas — patterns, enums, ranges — are what make a plan mean what it should.
+- **What is not modelled.** Side effects beyond "a call happens", tool errors (an MCP
+  result with `isError`, a missing `structuredContent`), constants written into a call, and
+  access to nested fields of a result. "Whatever the tools return" means whatever values
+  inside their output schemas.
 - **Search bounds.** The planner is complete up to its depth bound (6 calls and tests per
   path by default), over the cells it could decide, and over the first 16 argument
   bindings of each call (`MAX_BINDINGS`); a library where more than 16 bindings of one

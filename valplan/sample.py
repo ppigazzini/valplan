@@ -132,9 +132,7 @@ def _from_pattern(pattern: str, rng: random.Random) -> str | None:
     while i < len(body):
         ch = body[i]
         if ch == "\\" and i + 1 < len(body):
-            pool = {"d": string.digits, "w": string.ascii_letters + string.digits + "_"}.get(
-                body[i + 1], body[i + 1]
-            )
+            pool = _ESCAPES.get(body[i + 1], body[i + 1])
             i += 2
         elif ch == "[":
             end = body.find("]", i)
@@ -147,26 +145,45 @@ def _from_pattern(pattern: str, rng: random.Random) -> str | None:
         else:
             pool = ch
             i += 1
-        low, high, i = _count(body, i)
+        low, high, i = _count(body, i, rng)
         out.extend(rng.choice(pool) for _ in range(rng.randint(low, high)))
     return "".join(out)
 
 
+_PRINTABLE = string.ascii_letters + string.digits + "_-.@!~+"
+_ESCAPES = {"d": string.digits, "w": string.ascii_letters + string.digits + "_", "s": " \t"}
+
+
 def _expand_class(spec: str) -> str:
+    """Return the characters a bracket class admits, from a printable stock for ``[^...]``."""
+    negated = spec.startswith("^")
+    body = spec[1:] if negated else spec
     chars: list[str] = []
     j = 0
-    while j < len(spec):
-        if j + 2 < len(spec) and spec[j + 1] == "-":
-            chars.extend(chr(c) for c in range(ord(spec[j]), ord(spec[j + 2]) + 1))
+    while j < len(body):
+        if body[j] == "\\" and j + 1 < len(body):
+            chars.extend(_ESCAPES.get(body[j + 1], body[j + 1]))
+            j += 2
+        elif j + 2 < len(body) and body[j + 1] == "-":
+            chars.extend(chr(c) for c in range(ord(body[j]), ord(body[j + 2]) + 1))
             j += 3
         else:
-            chars.append(spec[j])
+            chars.append(body[j])
             j += 1
+    if negated:
+        return "".join(c for c in _PRINTABLE if c not in chars) or "a"
     return "".join(chars) or "a"
 
 
-def _count(body: str, i: int) -> tuple[int, int, int]:
+def _count(body: str, i: int, rng: random.Random | None = None) -> tuple[int, int, int]:
+    """Return the repeat range at ``body[i]`` and the index after it.
+
+    An open-ended repeat is usually short and sometimes long, so that cells carved out by a
+    length bound elsewhere -- an e-mail address longer than a subject may be -- get drawn.
+    """
     if i < len(body) and body[i] in "+*?":
+        if body[i] != "?" and rng is not None and rng.random() < 0.2:  # noqa: PLR2004
+            return (*rng.choice([(130, 130), (210, 210)]), i + 1)
         return {"+": (1, 4), "*": (0, 4), "?": (0, 1)}[body[i]] + (i + 1,)
     if i < len(body) and body[i] == "{":
         end = body.find("}", i)

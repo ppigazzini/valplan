@@ -10,20 +10,24 @@ import sys
 from pathlib import Path
 
 from valplan.study import SUITE, SuiteFile, SuiteStudy, dumps, load_suite
-from valplan.suite import run
+from valplan.suite import run, run_draft7
 
 ROOT = Path(__file__).parent.parent
 SUITE_DIR = ROOT / "tests" / "data" / "json-schema-test-suite"
+DRAFT7_DIR = ROOT / "tests" / "data" / "json-schema-test-suite-draft7"
 COMMIT = (SUITE_DIR / "COMMIT").read_text(encoding="utf-8").strip()
 
 
-def measure() -> SuiteStudy:
-    """Run every vendored suite file."""
+def measure(draft: str) -> SuiteStudy:
+    """Run every vendored suite file of one draft."""
+    outcomes = run(SUITE_DIR) if draft == "2020-12" else run_draft7(DRAFT7_DIR)
     files = [
         SuiteFile(file=stem, passed=o.passed, failed=o.failed, skipped=o.skipped, opaque=o.opaque)
-        for stem, o in run(SUITE_DIR).items()
+        for stem, o in outcomes.items()
     ]
-    return SuiteStudy(format=1, suite_commit=COMMIT, files=files)
+    return SuiteStudy(
+        format=1, draft="2020-12" if draft == "2020-12" else "7", suite_commit=COMMIT, files=files
+    )
 
 
 def table(study: SuiteStudy) -> str:
@@ -34,7 +38,10 @@ def table(study: SuiteStudy) -> str:
     skipped = sum(r["skipped"] for r in rows)
     opaque = sum(r["opaque"] for r in rows)
     lines = [
-        f"JSON-Schema-Test-Suite {study['suite_commit'][:12]}, draft 2020-12, {len(rows)} files",
+        (
+            f"JSON-Schema-Test-Suite {study['suite_commit'][:12]}, draft {study['draft']}, "
+            f"{len(rows)} files"
+        ),
         "",
         (
             f"run {passed + failed}: passed {passed}, failed {failed}; "
@@ -88,11 +95,12 @@ def main(argv: list[str]) -> int:
     out.add_argument("--json", type=Path)
     out.add_argument("--check", type=Path)
     out.add_argument("--reference", action="store_true", help="the jsonschema package instead")
+    parser.add_argument("--draft", choices=["2020-12", "7"], default="2020-12")
     args = parser.parse_args(argv)
     if args.reference:
         print(reference())
         return 0
-    study = measure()
+    study = measure(args.draft)
     print(table(study))
     if args.json:
         args.json.write_text(dumps(study, SUITE), encoding="utf-8")

@@ -85,9 +85,9 @@ class TestRefusals:
         with pytest.raises(Unsupported):
             compile_schema(schema)
 
-    def test_it_refuses_another_draft(self):
-        with pytest.raises(Unsupported, match="2020-12"):
-            compile_schema({"$schema": "http://json-schema.org/draft-07/schema#"})
+    def test_it_refuses_a_draft_other_than_2020_12_and_07(self):
+        with pytest.raises(Unsupported, match="2020-12 and 07"):
+            compile_schema({"$schema": "http://json-schema.org/draft-04/schema#"})
 
 
 def test_json_key_equates_one_and_one_point_zero_but_not_true():
@@ -113,3 +113,55 @@ class TestEcmaDialect:
     )
     def test_a_pattern_means_what_ecma_262_says(self, pattern, text, admitted):
         assert compile_schema({"pattern": pattern}).is_valid(text) is admitted
+
+
+class TestDraft7:
+    def test_an_items_array_is_a_prefix_and_additional_items_its_tail(self):
+        s = compile_schema(
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "items": [{"type": "integer"}],
+                "additionalItems": {"type": "string"},
+            }
+        )
+        assert s.is_valid([1, "a", "b"])
+        assert not s.is_valid([1, 2])
+
+    def test_dependencies_split_by_kind(self):
+        s = compile_schema(
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "dependencies": {"a": ["b"], "c": {"required": ["d"]}},
+            }
+        )
+        assert not s.is_valid({"a": 1})
+        assert not s.is_valid({"c": 1})
+        assert s.is_valid({"a": 1, "b": 2, "c": 3, "d": 4})
+
+    def test_a_ref_overrides_its_siblings(self):
+        s = compile_schema(
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "definitions": {"i": {"type": "integer"}},
+                "properties": {"x": {"$ref": "#/definitions/i", "maximum": 0}},
+            }
+        )
+        assert s.is_valid({"x": 5})
+
+    def test_a_property_named_like_a_keyword_is_a_name(self):
+        s = compile_schema(
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "properties": {"items": {"type": "array"}, "dependencies": {"type": "string"}},
+            }
+        )
+        assert s.is_valid({"items": [], "dependencies": "x"})
+        assert not s.is_valid({"items": 1})
+
+
+def test_an_unknown_keyword_is_an_annotation_and_recorded():
+    compiler = Compiler({"type": "string", "x-label": "id", "nullable": True})
+    s = compiler.compile({"type": "string", "x-label": "id", "nullable": True})
+    assert s.is_valid("a")
+    assert not s.is_valid(None)
+    assert compiler.ignored == {"x-label", "nullable"}

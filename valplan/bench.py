@@ -41,8 +41,20 @@ def _tool(name: str, args: dict[str, Any], results: dict[str, Any]) -> dict[str,
     }
 
 
-def library(n: int, seed: int) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Return an MCP ``tools/list`` result of ``n`` tools and the task it plants."""
+def _range(low: int, high: int) -> dict[str, Any]:
+    return {"type": "integer", "minimum": low, "maximum": high}
+
+
+def library(n: int, seed: int, family: str = "strings") -> tuple[dict[str, Any], dict[str, Any]]:
+    """Return an MCP ``tools/list`` result of ``n`` tools and the task it plants.
+
+    ``family="numbers"`` plants the same chain over integer ranges instead of statuses:
+    every tool also takes a quota ``k`` and returns a measure ``m``, the planted tools
+    accept the task's quota of 50, and the two finishing tools split ``m`` at 500, so
+    every strong program tests it.
+    """
+    if family == "numbers":
+        return _numbers(n, seed)
     rng = random.Random(f"bench:{n}:{seed}")
     entities = [f"e{k}" for k in range(max(6, n // 3))]
     tools = [
@@ -77,6 +89,50 @@ def library(n: int, seed: int) -> tuple[dict[str, Any], dict[str, Any]]:
     task = {
         "name": f"bench-{n}-{seed}",
         "inputs": {"type": "object", "properties": {"id": _id(entities[0])}, "required": ["id"]},
+        "goal": {"anyOf": [_id("ga"), _id("gb")]},
+    }
+    return {"tools": tools}, task
+
+
+def _numbers(n: int, seed: int) -> tuple[dict[str, Any], dict[str, Any]]:
+    rng = random.Random(f"bench-numbers:{n}:{seed}")
+    entities = [f"e{k}" for k in range(max(6, n // 3))]
+
+    def quota() -> dict[str, Any]:
+        return _range(rng.randrange(0, 50), rng.randrange(50, 1000))
+
+    tools = [
+        _tool(
+            f"step{i}",
+            {"id": _id(entities[i]), "k": quota()},
+            {"id": _id(entities[i + 1]), "m": _range(0, 1000)},
+        )
+        for i in range(3)
+    ]
+    tools.append(
+        _tool("finish_a", {"id": _id(entities[3]), "m": _range(0, 499)}, {"id": _id("ga")})
+    )
+    tools.append(
+        _tool("finish_b", {"id": _id(entities[3]), "m": _range(500, 1000)}, {"id": _id("gb")})
+    )
+    for i in range(max(0, n - len(tools))):
+        source, target = rng.sample(entities, 2)
+        low = rng.randrange(0, 1000)
+        tools.append(
+            _tool(
+                f"distract{i}",
+                {"id": _id(source), "k": _range(rng.randrange(0, 2000), rng.randrange(2000, 4000))},
+                {"id": _id(target), "m": _range(low, low + rng.randrange(1, 1000))},
+            )
+        )
+    rng.shuffle(tools)
+    task = {
+        "name": f"bench-numbers-{n}-{seed}",
+        "inputs": {
+            "type": "object",
+            "properties": {"id": _id(entities[0]), "k": _range(50, 50)},
+            "required": ["id", "k"],
+        },
         "goal": {"anyOf": [_id("ga"), _id("gb")]},
     }
     return {"tools": tools}, task
