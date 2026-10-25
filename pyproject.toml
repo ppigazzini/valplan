@@ -89,3 +89,4 @@ max-returns = 8
 # RUF001: the dialect tests are about the characters ruff calls ambiguous.
 "tests/*" = ["S101", "D", "ANN", "PLR2004", "INP001", "SLF001", "FBT003", "RUF001"]
 "tools/*" = ["INP001"]
+"examples/*" = ["INP001", "T201"]

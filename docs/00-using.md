@@ -21,6 +21,43 @@ A library directory holds two files, as `examples/helpdesk/` does.
   (what the agent holds at the start; required properties only) and a `goal` schema (the
   set the answer must fall in).
 
+## Describe tools in Python
+
+The second door, `valplan/native.py`: a tool is a Python function, its annotated
+parameters are its arguments (required unless they have a default) and its return
+annotation, a `TypedDict`, gives its results. The annotations are valgebra's own schema
+language; no JSON Schema is written.
+
+```python
+from typing import Annotated, Literal
+from typing_extensions import TypedDict
+from valgebra import Regex
+from valplan.native import python_impl, python_task, python_tool
+
+TicketId = Annotated[str, Regex(r"T-[0-9]{6}")]
+
+
+class Escalation(TypedDict, closed=True):
+    escalation_id: Annotated[str, Regex(r"ESC-[0-9]{4}")]
+
+
+def escalate(ticket_id: TicketId, tier: Literal["enterprise"]) -> Escalation: ...
+
+
+tool = python_tool(escalate)  # a Tool, like one read from tools.json
+impl = python_impl(escalate)  # the function, as the runner calls a tool
+```
+
+Every annotation must admit JSON values only, since a tool call travels as JSON;
+valgebra decides that, and refuses an open `TypedDict` (declare it `closed=True`), a tuple
+or an unannotated parameter with the reason. Python's equality is kept: `Literal[1]` is
+the integer 1, not the float 1.0. Tools from both doors plan together.
+`examples/python/helpdesk.py` plans, verifies and runs a task on three Python tools:
+
+```bash
+uv run python examples/python/helpdesk.py
+```
+
 ## Plan and verify
 
 ```bash

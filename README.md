@@ -17,6 +17,7 @@ the values left uncovered.
 | step | how | where |
 |---|---|---|
 | Compile | JSON Schema draft 2020-12, and draft-07 through an upgrade, to valgebra sets over the JSON values `json.loads` returns, keyword by keyword; every valgebra name and recipe in one boundary module | `valplan/schema.py`, `valplan/_valgebra.py` |
+| Read Python | the second door: a tool is a Python function, its annotated parameters the arguments and a `TypedDict` return the results, in valgebra's own schema language; every annotation proven to admit JSON values only | `valplan/native.py` |
 | Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty by valgebra, by enumeration of listed values or by interval arithmetic, inhabited cells proven by a member value | `valplan/abstraction.py`, `valplan/ranges.py` |
 | Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a runtime type test; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
 | Verify | every inclusion a program depends on, asked of valgebra alone, without the cells or the search; a refuted link comes with a value outside it | `valplan/verify.py` |
@@ -43,9 +44,13 @@ uv run python tools/bench.py --check docs/studies/bench.json
   status; the verifier proves every check of both (6 of 6, 14 of 14). The other two get
   weak programs that test before they call and whose stop names what is uncovered:
   `c1.tier in {'pro', 'free'}` for escalation, example countries for VAT.
-- **Synthetic libraries of 8 to 256 tools** (3 seeds each, a planted chain ending in a
-  branch): a program is found in all 18, and the verifier proves every check of every one.
-  At 256 tools, 95 predicates make 97 cells, none undecided.
+- **Synthetic libraries of 8 to 256 tools**, two families of 3 seeds each, a planted chain
+  ending in a branch: a program is found in all 36, and none has an undecided cell. With
+  string identifiers and an enum status the verifier proves every check; at 256 tools, 95
+  predicates make 97 cells. With integer quotas and measures the program branches on a
+  measure range, 597 predicates make up to 984 cells, and the verifier proves every check
+  but the two on each *else* branch, which only the interval rule proves; 80 runs against
+  tools returning random values inside their output schemas break no contract.
 - **A hand-written chain with the typical mistake** (escalating every customer) is refuted
   at the one binding that is wrong, `c1.tier <= escalate.tier`, with the value `'free'`.
 
