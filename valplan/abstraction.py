@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from valplan._valgebra import Validator, complement, intersection
-from valplan.ranges import fractions_empty, integers_empty, member
+from valplan.ranges import PeriodTooLongError, fractions_empty, integers_empty, member
 from valplan.schema import (
     ARRAY,
     BOOLEAN,
@@ -186,19 +186,31 @@ class Abstraction:
                 )
         name = next(n for n, k in KINDS if k is kind)
         if name in {"integer", "fraction"}:
-            bearing = [q for q in pos | neg if name in self._meets.get(q, {name})]
-            if all(q in self._ranges for q in bearing):
-                ins = [self._ranges[q] for q in pos]
-                outs = [self._ranges[q] for q in neg if q in bearing]
-                empty = (
-                    integers_empty(ins, outs) if name == "integer" else fractions_empty(ins, outs)
-                )
-                if not empty:
-                    found = member(ins, outs, integer=name == "integer")
-                    if found is not None:
-                        self._found.append(found)
-                return empty
+            decided = self._by_ranges(name, pos, neg)
+            if decided is not None:
+                return decided
         return self._set(kind, pos, neg).is_empty()
+
+    def _by_ranges(self, name: str, pos: frozenset[int], neg: frozenset[int]) -> bool | None:
+        """Return whether interval arithmetic proves a numeric cell empty, or None.
+
+        Where every predicate bearing on the kind is a range the cell is a question about
+        intervals, decided exactly both ways, and a member is constructed for a non-empty
+        cell. Elsewhere, and for a stepped cell too long to walk, nothing is decided here.
+        """
+        bearing = [q for q in pos | neg if name in self._meets.get(q, {name})]
+        if not all(q in self._ranges for q in bearing):
+            return None
+        ins = [self._ranges[q] for q in pos]
+        outs = [self._ranges[q] for q in neg if q in bearing]
+        try:
+            empty = integers_empty(ins, outs) if name == "integer" else fractions_empty(ins, outs)
+            found = None if empty else member(ins, outs, integer=name == "integer")
+        except PeriodTooLongError:
+            return None
+        if found is not None:
+            self._found.append(found)
+        return empty
 
     def _split(self) -> list[Cell]:
         """Split the kinds by every predicate in turn.

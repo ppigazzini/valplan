@@ -779,10 +779,12 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
 
 @dataclass(frozen=True, slots=True)
 class Interval:
-    """A numeric schema that is a range and nothing more: its kind and its two bounds.
+    """A numeric schema that is a range and nothing more: its kind, bounds and step.
 
     A missing bound is None. Bounds are exact rationals of the numbers written, so
-    ``0.1`` is one tenth, not the float nearest to it.
+    ``0.1`` is one tenth, not the float nearest to it. ``step`` is an integral
+    ``multipleOf``: the range then holds only the multiples of it, which are integers
+    whatever ``type`` says.
     """
 
     integer: bool
@@ -790,13 +792,20 @@ class Interval:
     low_open: bool = False
     high: Fraction | None = None
     high_open: bool = False
+    step: int | None = None
 
 
-_RANGE_KEYS = frozenset({"type", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"})
+_RANGE_KEYS = frozenset(
+    {"type", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"}
+)
 
 
 def interval(schema: object) -> Interval | None:
-    """Return the range a schema denotes when it is ``type`` plus bounds alone, else None."""
+    """Return the range a schema denotes when it is ``type``, bounds and a step alone.
+
+    A fractional ``multipleOf`` is not a step: it is opaque (`_multiple_of`), so a schema
+    carrying one is not a range.
+    """
     if not isinstance(schema, dict) or schema.get("type") not in {"integer", "number"}:
         return None
     if set(schema) - _RANGE_KEYS - ANNOTATIONS:
@@ -805,6 +814,9 @@ def interval(schema: object) -> Interval | None:
     if any(
         b is not None and (isinstance(b, bool) or not isinstance(b, (int, float))) for b in bounds
     ):
+        return None
+    step = schema.get("multipleOf")
+    if step is not None and (step <= 0 or not (isinstance(step, int) or step.is_integer())):
         return None
     low = high = None
     low_open = high_open = False
@@ -818,7 +830,14 @@ def interval(schema: object) -> Interval | None:
             value = Fraction(str(schema[key]))
             if high is None or value < high or (value == high and is_open):
                 high, high_open = value, is_open
-    return Interval(schema["type"] == "integer", low, low_open, high, high_open)
+    return Interval(
+        schema["type"] == "integer",
+        low,
+        low_open,
+        high,
+        high_open,
+        None if step is None else int(step),
+    )
 
 
 def _same(a: object, b: object) -> bool:

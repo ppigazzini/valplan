@@ -39,7 +39,7 @@ uv run python tools/bench.py --check docs/studies/bench.json
   4.26.0 42 of 74 (`tools/suite.py --reference`). Against that package on 400 random
   schemas and 25 random values each, over the keywords the two read alike: no
   disagreement ([`docs/03-conformance.md`](docs/03-conformance.md)).
-- **Helpdesk case study** (10 MCP tools, 4 tasks): 36 to 38 cells per task, 1 of them
+- **Helpdesk case study** (10 MCP tools, 4 tasks): 35 to 37 cells per task, none of them
   undecided. Two tasks get strong programs, one branching three ways on an invoice's
   status; the verifier proves every check of both (6 of 6, 14 of 14). The other two get
   weak programs that test before they call and whose stop names what is uncovered:

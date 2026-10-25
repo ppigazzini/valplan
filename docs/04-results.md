@@ -26,13 +26,13 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 
 | task | cells (inhabited / undecided) | program | calls | tests | stops | proven |
 |---|---|---|---:|---:|---:|---|
-| ticket | 38 (37 / 1) | strong | 2 | 0 | 0 | 6 of 6 |
-| settle-latest-invoice | 36 (35 / 1) | strong | 3 | 2 | 0 | 14 of 14 |
-| escalate | 38 (37 / 1) | weak | 3 | 1 | 1 | 9 of 10 |
-| vat-for-customer | 36 (35 / 1) | weak | 2 | 1 | 1 | 5 of 6 |
+| ticket | 37 (37 / 0) | strong | 2 | 0 | 0 | 6 of 6 |
+| settle-latest-invoice | 35 (35 / 0) | strong | 3 | 2 | 0 | 14 of 14 |
+| escalate | 37 (37 / 0) | weak | 3 | 1 | 1 | 9 of 10 |
+| vat-for-customer | 35 (35 / 0) | weak | 2 | 1 | 1 | 5 of 6 |
 
 - The predicates number 27 to 28 per task, so the minterms number up to 2^28; the cells
-  number 36 to 38.
+  number 35 to 37, every one proven inhabited by a member.
 - Both strong programs verify in full under the independent verifier. Each weak program's
   one unproven check is its stop. `escalate` stops on `c1.tier in {'pro', 'free'}`, the
   complete list, since `tier` is an enum; `vat-for-customer` stops on countries outside
@@ -94,13 +94,17 @@ every distractor's measure straddles 500.
 
 ## Undecided cells
 
-One cell per helpdesk task stays undecided, none in the synthetic libraries: the integers
-inside `get_subscription.seats` (at least 1) and `vat_rate.rate_percent` (0 to 30) and
-outside `latest_invoice.amount_cents` (1 to 500000). It is empty, since 1 to 30 lies inside
-1 to 500000, but `apply_discount.percent` also bears on the integer kind and carries a
-`multipleOf`, so the interval rule does not apply, and valgebra does not decide the
-complement of an integer range whose float spelling is admitted. The cell is kept, so it
-costs completeness, never soundness.
+None, in the helpdesk library or the synthetic ones: every cell is proven empty or proven
+inhabited by a member. The last to be decided is the helpdesk's integers inside
+`get_subscription.seats` (at least 1) and `vat_rate.rate_percent` (0 to 30) and outside
+`latest_invoice.amount_cents` (1 to 500000), next to `apply_discount.percent` (5 to 30 in
+steps of 5). valgebra does not decide the complement of an integer range whose float
+spelling is admitted; interval arithmetic proves the cell empty, since 1 to 30 lies inside
+1 to 500000, and reads the step as a lattice (`valplan/ranges.py`).
+
+An undecided cell would be kept and covered, so it would cost completeness, never
+soundness. `tests/test_ranges.py` holds the interval rule to enumeration on 3000 random
+cells of ranges and steps.
 
 ## Not measured
 
