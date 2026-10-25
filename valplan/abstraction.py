@@ -194,23 +194,26 @@ class Abstraction:
     def _by_ranges(self, name: str, pos: frozenset[int], neg: frozenset[int]) -> bool | None:
         """Return whether interval arithmetic proves a numeric cell empty, or None.
 
-        Where every predicate bearing on the kind is a range the cell is a question about
-        intervals, decided exactly both ways, and a member is constructed for a non-empty
-        cell. Elsewhere, and for a stepped cell too long to walk, nothing is decided here.
+        Leaving a predicate out of a cell's meet gives a superset of the cell, so the cell
+        is empty wherever the meet of its range predicates alone is. Where every predicate
+        bearing on the kind is a range the superset is the cell: the answer is exact both
+        ways, and a member is constructed for a non-empty cell. Otherwise a non-empty
+        superset decides nothing (None), nor does a stepped cell too long to walk.
         """
         bearing = [q for q in pos | neg if name in self._meets.get(q, {name})]
-        if not all(q in self._ranges for q in bearing):
-            return None
-        ins = [self._ranges[q] for q in pos]
-        outs = [self._ranges[q] for q in neg if q in bearing]
+        exact = all(q in self._ranges for q in bearing)
+        ins = [self._ranges[q] for q in pos if q in self._ranges]
+        outs = [self._ranges[q] for q in neg if q in bearing and q in self._ranges]
         try:
             empty = integers_empty(ins, outs) if name == "integer" else fractions_empty(ins, outs)
-            found = None if empty else member(ins, outs, integer=name == "integer")
+            if empty or not exact:
+                return True if empty else None
+            found = member(ins, outs, integer=name == "integer")
         except PeriodTooLongError:
             return None
         if found is not None:
             self._found.append(found)
-        return empty
+        return False
 
     def _split(self) -> list[Cell]:
         """Split the kinds by every predicate in turn.

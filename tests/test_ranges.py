@@ -167,3 +167,23 @@ def test_a_stepped_range_leaves_no_cell_undecided():
     ranges = {p: r for p, s in zip(preds, schemas, strict=True) if (r := interval(s)) is not None}
     a = Abstraction(preds, ranges=ranges)
     assert a.counts()["undecided"] == 0
+
+
+def test_ranges_prove_a_cell_empty_where_another_predicate_bears_on_it():
+    # No pair settles the cell: the meet of two ranges, 1 to 30, lies inside the third, and
+    # neither range alone does. The fractional step comes first, so it bears on every split
+    # after it, and valgebra decides nothing through an opaque predicate; the ranges alone
+    # prove the cell empty.
+    schemas = [
+        {"type": "number", "multipleOf": 0.25},
+        {"type": "integer", "minimum": 1},
+        {"type": "number", "minimum": 0, "maximum": 30},
+        {"type": "integer", "minimum": 1, "maximum": 500000},
+    ]
+    preds = [compile_schema(s) for s in schemas]
+    ranges = {p: r for p, s in zip(preds, schemas, strict=True) if (r := interval(s)) is not None}
+    a = Abstraction(preds, ranges=ranges)
+    inside_both_outside_third = [
+        c for c in a.cells if c.kind == "integer" and {1, 2} <= c.inside and 3 not in c.inside
+    ]
+    assert inside_both_outside_third == []

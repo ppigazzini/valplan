@@ -42,7 +42,9 @@ and small:
   or over the reals minus the integers (`valplan/ranges.py`), and a member is constructed
   where it is non-empty. A step makes a range a lattice: which integers a cell holds
   repeats with the least common multiple of its steps, so one period decides it, and a
-  period of more than 100000 multiples is left to valgebra.
+  period of more than 100000 multiples is left to valgebra. Where other predicates bear on
+  the cell too, its ranges alone still prove it empty when they leave no number: leaving
+  predicates out of a meet gives a superset.
 
 A cell valgebra proves empty is dropped. A cell a concrete value falls in is *inhabited*;
 the values come from the listed constants, from a fixed set of generic values at the
