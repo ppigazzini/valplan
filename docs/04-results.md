@@ -7,12 +7,14 @@ Every number below is printed by a committed command and recorded as counts in
 
 ```bash
 uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
+uv run python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
 ```
 
-1061 of the 1061 cases run pass, the two optional files on regular expressions included;
-327 are skipped: the `unevaluatedItems` and `unevaluatedProperties` files (200 cases),
-dynamic, anchor and remote references, and a custom metaschema. See
-[`02-compiler.md`](02-compiler.md#measured).
+Draft 2020-12, with the four optional files on regular expressions and large numbers: 1071
+of the 1071 cases run pass; 327 are skipped: the `unevaluatedItems` and
+`unevaluatedProperties` files (200 cases), dynamic, anchor and remote references, and a
+custom metaschema. Draft-07, through `upgrade`: 870 of the 870 cases run pass; 59 are
+skipped. See [`02-compiler.md`](02-compiler.md#measured).
 
 ## The helpdesk library
 
@@ -24,10 +26,10 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 
 | task | cells (inhabited / undecided) | program | calls | tests | stops | proven |
 |---|---|---|---:|---:|---:|---|
-| ticket | 38 (35 / 3) | strong | 2 | 0 | 0 | 6 of 6 |
-| settle-latest-invoice | 36 (34 / 2) | strong | 3 | 2 | 0 | 14 of 14 |
-| escalate | 38 (35 / 3) | weak | 3 | 1 | 1 | 9 of 10 |
-| vat-for-customer | 36 (34 / 2) | weak | 2 | 1 | 1 | 5 of 6 |
+| ticket | 38 (37 / 1) | strong | 2 | 0 | 0 | 6 of 6 |
+| settle-latest-invoice | 36 (35 / 1) | strong | 3 | 2 | 0 | 14 of 14 |
+| escalate | 38 (37 / 1) | weak | 3 | 1 | 1 | 9 of 10 |
+| vat-for-customer | 36 (35 / 1) | weak | 2 | 1 | 1 | 5 of 6 |
 
 - The predicates number 27 to 28 per task, so the minterms number up to 2^28; the cells
   number 36 to 38.
@@ -92,11 +94,13 @@ every distractor's measure straddles 500.
 
 ## Undecided cells
 
-2 or 3 cells per helpdesk task stay undecided, none in the synthetic libraries. They are the ones valgebra can prove neither empty
-nor inhabited and no drawn value falls in — for example a string cell carved out by the
-complements of several patterns. They are kept, so they cost completeness, never soundness.
-Each is a concrete question for valgebra's decided fragment: the emptiness of a meet of a
-pattern with the complements of a union of patterns and literals.
+One cell per helpdesk task stays undecided, none in the synthetic libraries: the integers
+inside `get_subscription.seats` (at least 1) and `vat_rate.rate_percent` (0 to 30) and
+outside `latest_invoice.amount_cents` (1 to 500000). It is empty, since 1 to 30 lies inside
+1 to 500000, but `apply_discount.percent` also bears on the integer kind and carries a
+`multipleOf`, so the interval rule does not apply, and valgebra does not decide the
+complement of an integer range whose float spelling is admitted. The cell is kept, so it
+costs completeness, never soundness.
 
 ## Not measured
 
