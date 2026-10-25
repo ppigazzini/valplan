@@ -6,7 +6,7 @@
 uv sync
 ```
 
-Python 3.14, as `.python-version` names. Runtime dependencies: valgebra, annotated-types,
+Python 3.14 or later, as `requires-python` in `pyproject.toml` says. Runtime dependencies: valgebra, annotated-types,
 typing-extensions.
 
 ## Describe a library and its tasks

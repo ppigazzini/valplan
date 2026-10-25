@@ -16,8 +16,8 @@
 
 Everything runs through `uv`; the environment is already synced, so prefer
 `uv run --no-sync`. If it is not, `uv sync` (the `dev` group is a default
-group). `.python-version` is tracked so the environment is built on the
-interpreter it names.
+group). Any Python 3.14 or later will do: `requires-python` in
+`pyproject.toml` is the only pin.
 
 ```bash
 uv run --no-sync ruff check                 # lint: every rule is enabled
