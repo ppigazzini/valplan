@@ -3,6 +3,7 @@
  "max_depth": 6,
  "rows": [
   {
+   "family": "strings",
    "tools": 8,
    "seed": 0,
    "predicates": 14,
@@ -17,6 +18,7 @@
    "expanded": 44
   },
   {
+   "family": "strings",
    "tools": 8,
    "seed": 1,
    "predicates": 13,
@@ -31,6 +33,7 @@
    "expanded": 31
   },
   {
+   "family": "strings",
    "tools": 8,
    "seed": 2,
    "predicates": 12,
@@ -45,6 +48,7 @@
    "expanded": 24
   },
   {
+   "family": "strings",
    "tools": 16,
    "seed": 0,
    "predicates": 15,
@@ -59,6 +63,7 @@
    "expanded": 61
   },
   {
+   "family": "strings",
    "tools": 16,
    "seed": 1,
    "predicates": 15,
@@ -73,6 +78,7 @@
    "expanded": 56
   },
   {
+   "family": "strings",
    "tools": 16,
    "seed": 2,
    "predicates": 16,
@@ -87,6 +93,7 @@
    "expanded": 54
   },
   {
+   "family": "strings",
    "tools": 32,
    "seed": 0,
    "predicates": 20,
@@ -101,6 +108,7 @@
    "expanded": 117
   },
   {
+   "family": "strings",
    "tools": 32,
    "seed": 1,
    "predicates": 19,
@@ -115,6 +123,7 @@
    "expanded": 128
   },
   {
+   "family": "strings",
    "tools": 32,
    "seed": 2,
    "predicates": 19,
@@ -129,6 +138,7 @@
    "expanded": 311
   },
   {
+   "family": "strings",
    "tools": 64,
    "seed": 0,
    "predicates": 31,
@@ -143,6 +153,7 @@
    "expanded": 223
   },
   {
+   "family": "strings",
    "tools": 64,
    "seed": 1,
    "predicates": 31,
@@ -157,6 +168,7 @@
    "expanded": 377
   },
   {
+   "family": "strings",
    "tools": 64,
    "seed": 2,
    "predicates": 31,
@@ -171,6 +183,7 @@
    "expanded": 51
   },
   {
+   "family": "strings",
    "tools": 128,
    "seed": 0,
    "predicates": 52,
@@ -185,6 +198,7 @@
    "expanded": 190
   },
   {
+   "family": "strings",
    "tools": 128,
    "seed": 1,
    "predicates": 52,
@@ -199,6 +213,7 @@
    "expanded": 513
   },
   {
+   "family": "strings",
    "tools": 128,
    "seed": 2,
    "predicates": 52,
@@ -213,6 +228,7 @@
    "expanded": 470
   },
   {
+   "family": "strings",
    "tools": 256,
    "seed": 0,
    "predicates": 95,
@@ -227,6 +243,7 @@
    "expanded": 227
   },
   {
+   "family": "strings",
    "tools": 256,
    "seed": 1,
    "predicates": 95,
@@ -241,6 +258,7 @@
    "expanded": 848
   },
   {
+   "family": "strings",
    "tools": 256,
    "seed": 2,
    "predicates": 95,
@@ -253,6 +271,276 @@
    "checks": 14,
    "proven": 14,
    "expanded": 277
+  },
+  {
+   "family": "numbers",
+   "tools": 8,
+   "seed": 0,
+   "predicates": 22,
+   "cells": 34,
+   "inhabited": 34,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 24
+  },
+  {
+   "family": "numbers",
+   "tools": 8,
+   "seed": 1,
+   "predicates": 21,
+   "cells": 33,
+   "inhabited": 33,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 55
+  },
+  {
+   "family": "numbers",
+   "tools": 8,
+   "seed": 2,
+   "predicates": 22,
+   "cells": 35,
+   "inhabited": 35,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 36
+  },
+  {
+   "family": "numbers",
+   "tools": 16,
+   "seed": 0,
+   "predicates": 38,
+   "cells": 66,
+   "inhabited": 66,
+   "undecided": 0,
+   "found": true,
+   "calls": 2,
+   "tests": 1,
+   "checks": 11,
+   "proven": 9,
+   "expanded": 109
+  },
+  {
+   "family": "numbers",
+   "tools": 16,
+   "seed": 1,
+   "predicates": 38,
+   "cells": 67,
+   "inhabited": 67,
+   "undecided": 0,
+   "found": true,
+   "calls": 3,
+   "tests": 1,
+   "checks": 14,
+   "proven": 12,
+   "expanded": 125
+  },
+  {
+   "family": "numbers",
+   "tools": 16,
+   "seed": 2,
+   "predicates": 38,
+   "cells": 65,
+   "inhabited": 65,
+   "undecided": 0,
+   "found": true,
+   "calls": 2,
+   "tests": 1,
+   "checks": 11,
+   "proven": 9,
+   "expanded": 95
+  },
+  {
+   "family": "numbers",
+   "tools": 32,
+   "seed": 0,
+   "predicates": 74,
+   "cells": 130,
+   "inhabited": 130,
+   "undecided": 0,
+   "found": true,
+   "calls": 3,
+   "tests": 1,
+   "checks": 14,
+   "proven": 12,
+   "expanded": 853
+  },
+  {
+   "family": "numbers",
+   "tools": 32,
+   "seed": 1,
+   "predicates": 74,
+   "cells": 134,
+   "inhabited": 134,
+   "undecided": 0,
+   "found": true,
+   "calls": 3,
+   "tests": 1,
+   "checks": 14,
+   "proven": 12,
+   "expanded": 321
+  },
+  {
+   "family": "numbers",
+   "tools": 32,
+   "seed": 2,
+   "predicates": 74,
+   "cells": 131,
+   "inhabited": 131,
+   "undecided": 0,
+   "found": true,
+   "calls": 2,
+   "tests": 1,
+   "checks": 11,
+   "proven": 9,
+   "expanded": 170
+  },
+  {
+   "family": "numbers",
+   "tools": 64,
+   "seed": 0,
+   "predicates": 149,
+   "cells": 262,
+   "inhabited": 262,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 3616
+  },
+  {
+   "family": "numbers",
+   "tools": 64,
+   "seed": 1,
+   "predicates": 148,
+   "cells": 268,
+   "inhabited": 268,
+   "undecided": 0,
+   "found": true,
+   "calls": 2,
+   "tests": 1,
+   "checks": 11,
+   "proven": 9,
+   "expanded": 117
+  },
+  {
+   "family": "numbers",
+   "tools": 64,
+   "seed": 2,
+   "predicates": 149,
+   "cells": 267,
+   "inhabited": 267,
+   "undecided": 0,
+   "found": true,
+   "calls": 3,
+   "tests": 1,
+   "checks": 14,
+   "proven": 12,
+   "expanded": 2040
+  },
+  {
+   "family": "numbers",
+   "tools": 128,
+   "seed": 0,
+   "predicates": 298,
+   "cells": 519,
+   "inhabited": 519,
+   "undecided": 0,
+   "found": true,
+   "calls": 3,
+   "tests": 1,
+   "checks": 14,
+   "proven": 12,
+   "expanded": 537
+  },
+  {
+   "family": "numbers",
+   "tools": 128,
+   "seed": 1,
+   "predicates": 298,
+   "cells": 514,
+   "inhabited": 514,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 2616
+  },
+  {
+   "family": "numbers",
+   "tools": 128,
+   "seed": 2,
+   "predicates": 297,
+   "cells": 514,
+   "inhabited": 514,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 12497
+  },
+  {
+   "family": "numbers",
+   "tools": 256,
+   "seed": 0,
+   "predicates": 597,
+   "cells": 975,
+   "inhabited": 975,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 2337
+  },
+  {
+   "family": "numbers",
+   "tools": 256,
+   "seed": 1,
+   "predicates": 597,
+   "cells": 984,
+   "inhabited": 984,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 1159
+  },
+  {
+   "family": "numbers",
+   "tools": 256,
+   "seed": 2,
+   "predicates": 597,
+   "cells": 960,
+   "inhabited": 960,
+   "undecided": 0,
+   "found": true,
+   "calls": 4,
+   "tests": 1,
+   "checks": 17,
+   "proven": 15,
+   "expanded": 34818
   }
  ]
 }

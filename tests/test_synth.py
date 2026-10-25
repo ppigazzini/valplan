@@ -174,3 +174,17 @@ def test_a_stop_is_extended_by_a_deeper_continuation_on_the_same_variable():
     assert "c4 = fb(x=x, k=c3.k)" in render(program)
     (gap,) = gaps(planner, program)
     assert gap.values == ("c",)
+
+
+class TestNumericPrograms:
+    @pytest.mark.parametrize(("n", "seed"), [(8, 0), (8, 1), (16, 1), (32, 2)])
+    def test_a_branch_the_interval_rule_proves_never_breaks_a_contract_at_run_time(self, n, seed):
+        lib_json, spec = library(n, seed, "numbers")
+        lib, task = read_tools(lib_json), read_task(spec)
+        program = Planner(lib, task, witnesses(lib, task)).plan(max_depth=6)
+        assert program is not None
+        id_pattern = spec["inputs"]["properties"]["id"]["pattern"]
+        start = {"id": id_pattern[1:-1].replace("[a-z0-9]{6}", "abc123"), "k": 15000}
+        for trial in range(20):
+            answer = run(lib, task, program, start, _mock(lib_json["tools"], f"{n}:{seed}:{trial}"))
+            assert task.goal.is_valid(answer)

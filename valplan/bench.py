@@ -49,9 +49,10 @@ def library(n: int, seed: int, family: str = "strings") -> tuple[dict[str, Any],
     """Return an MCP ``tools/list`` result of ``n`` tools and the task it plants.
 
     ``family="numbers"`` plants the same chain over integer ranges instead of statuses:
-    every tool also takes a quota ``k`` and returns a measure ``m``, the planted tools
-    accept the task's quota of 50, and the two finishing tools split ``m`` at 500, so
-    every strong program tests it.
+    every tool also takes a quota ``k`` (10000 to 20000) and returns a measure ``m`` (0 to
+    1000), the planted tools accept the task's quota of 15000, and the two finishing tools
+    split ``m`` at 500; every distractor's measure straddles 500, so every strong program
+    tests it.
     """
     if family == "numbers":
         return _numbers(n, seed)
@@ -98,8 +99,10 @@ def _numbers(n: int, seed: int) -> tuple[dict[str, Any], dict[str, Any]]:
     rng = random.Random(f"bench-numbers:{n}:{seed}")
     entities = [f"e{k}" for k in range(max(6, n // 3))]
 
+    # Quotas live in 10000..20000 and measures in 0..1000, so no quota can be passed where
+    # a measure is asked for: the schemas are the only specification the planner reads.
     def quota() -> dict[str, Any]:
-        return _range(rng.randrange(0, 50), rng.randrange(50, 1000))
+        return _range(rng.randrange(10000, 15000), rng.randrange(15000, 20000))
 
     tools = [
         _tool(
@@ -117,12 +120,15 @@ def _numbers(n: int, seed: int) -> tuple[dict[str, Any], dict[str, Any]]:
     )
     for i in range(max(0, n - len(tools))):
         source, target = rng.sample(entities, 2)
-        low = rng.randrange(0, 1000)
+        # A distractor's measure straddles 500, so it never fits one finishing tool whole:
+        # a route around the planted test through a distractor would hide the branch.
+        measure = _range(rng.randrange(0, 450), rng.randrange(551, 1000))
+        quota_range = quota()
         tools.append(
             _tool(
                 f"distract{i}",
-                {"id": _id(source), "k": _range(rng.randrange(0, 2000), rng.randrange(2000, 4000))},
-                {"id": _id(target), "m": _range(low, low + rng.randrange(1, 1000))},
+                {"id": _id(source), "k": quota_range},
+                {"id": _id(target), "m": measure},
             )
         )
     rng.shuffle(tools)
@@ -130,7 +136,7 @@ def _numbers(n: int, seed: int) -> tuple[dict[str, Any], dict[str, Any]]:
         "name": f"bench-numbers-{n}-{seed}",
         "inputs": {
             "type": "object",
-            "properties": {"id": _id(entities[0]), "k": _range(50, 50)},
+            "properties": {"id": _id(entities[0]), "k": _range(15000, 15000)},
             "required": ["id", "k"],
         },
         "goal": {"anyOf": [_id("ga"), _id("gb")]},

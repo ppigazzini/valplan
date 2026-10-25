@@ -47,9 +47,11 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run python tools/bench.py --check docs/studies/bench.json
 ```
 
-Libraries of 8 to 256 tools from `valplan/bench.py`: a planted chain of three calls ends
-in two finishing tools that split an enum status, so every strong program tests it; the
-other tools are distractors over random entities, some requiring a narrower status.
+Libraries of 8 to 256 tools from `valplan/bench.py`, 3 seeds per size, two families. In
+both a planted chain ends in two finishing tools that split a value, so every strong
+program tests it; the other tools are distractors over random entities.
+
+**Strings**: identifiers are disjoint patterns and the split value an enum status.
 
 | tools | predicates | cells | undecided | found | proven | expanded (3 seeds) |
 |---:|---:|---:|---:|---|---|---|
@@ -60,11 +62,33 @@ other tools are distractors over random entities, some requiring a narrower stat
 | 128 | 52 | 54 | 0 | 3 of 3 | every check | 190, 470, 513 |
 | 256 | 95 | 97 | 0 | 3 of 3 | every check | 227, 277, 848 |
 
-- Cells grow with the predicates, not with the minterms: 97 cells at 95 predicates. The
-  identifiers' patterns are pairwise disjoint, and each pair is decided once.
-- Two of the 18 programs have 3 calls, not 4: a distractor happens to shorten the chain.
-- The search expands at most 848 states. Building the abstraction dominates the run time,
-  which `tools/bench.py` prints beside the counts and does not record.
+**Numbers**: every tool also takes a quota (an integer range in 10000 to 20000) and
+returns a measure (a range in 0 to 1000); the finishing tools split the measure at 500, and
+every distractor's measure straddles 500.
+
+| tools | predicates | cells | undecided | found | proven | expanded (3 seeds) |
+|---:|---:|---:|---:|---|---|---|
+| 8 | 21 to 22 | 33 to 35 | 0 | 3 of 3 | all but 2 | 24, 36, 55 |
+| 16 | 38 | 65 to 67 | 0 | 3 of 3 | all but 2 | 95, 109, 125 |
+| 32 | 74 | 130 to 134 | 0 | 3 of 3 | all but 2 | 170, 321, 853 |
+| 64 | 148 to 149 | 262 to 268 | 0 | 3 of 3 | all but 2 | 117, 2040, 3616 |
+| 128 | 297 to 298 | 514 to 519 | 0 | 3 of 3 | all but 2 | 537, 2616, 12497 |
+| 256 | 597 | 960 to 984 | 0 | 3 of 3 | all but 2 | 1159, 2337, 34818 |
+
+- Cells grow with the predicates, not with the minterms: the identifiers' patterns are
+  pairwise disjoint and decided once per pair, and the numeric cells are decided by
+  interval arithmetic.
+- The two unproven checks of every numeric program are on its *else* branch: the measure
+  narrowed to `[0, 1000]` minus `[0, 499]`, bound to an argument of `[500, 1000]`. The cells
+  prove the link; valgebra answers `undecided`, because it does not decide the complement
+  of an integer range whose float spelling is admitted. `tests/test_synth.py` runs four of
+  these programs 20 times each against tools returning random values inside their output
+  schemas: no contract is broken.
+- Some programs have fewer than 4 calls: a distractor happens to shorten the chain.
+- Building the abstraction dominates the run time, which `tools/bench.py` prints beside
+  the counts and does not record: on the machine the study was produced on, 12 s for 256
+  string tools and up to 10 minutes for 256 numeric tools, where the pairwise relations of
+  597 predicates are decided one by one. The libraries run in parallel, one per core.
 
 ## Undecided cells
 
