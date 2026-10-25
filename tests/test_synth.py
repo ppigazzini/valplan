@@ -1,0 +1,135 @@
+import random
+
+import pytest
+
+from valplan.bench import library
+from valplan.contracts import task as read_task
+from valplan.contracts import tools as read_tools
+from valplan.program import Call, Return, Stop, Test, render, stops
+from valplan.run import ContractError, run
+from valplan.sample import Sampler
+from valplan.synth import Planner, gaps, witnesses
+from valplan.verify import verify
+
+
+def _plan(library, task, *, weak=False):
+    planner = Planner(library, task, witnesses(library, task))
+    return planner, planner.plan(max_depth=6, weak=weak)
+
+
+class TestHelpdesk:
+    def test_a_linear_task_gets_the_two_call_program(self, library, tasks):
+        _, program = _plan(library, tasks["ticket"])
+        assert render(program) == (
+            "c1 = find_customer(email=email)\n"
+            "c2 = open_ticket(customer_id=c1.customer_id, subject=subject)\n"
+            "return c2.ticket_id"
+        )
+
+    def test_settling_an_invoice_branches_three_ways_and_is_strong(self, library, tasks):
+        planner, program = _plan(library, tasks["settle-latest-invoice"], weak=True)
+        assert not planner.weak
+        assert stops(program) == 0
+        text = render(program)
+        assert "if c2.status in refund_invoice.invoice_status:" in text
+        assert "if c2.status in void_invoice.invoice_status:" in text
+        assert text.endswith("return c2.status")
+
+    @pytest.mark.parametrize(
+        ("name", "uncovered"), [("escalate", "c1.tier"), ("vat-for-customer", "c1.country")]
+    )
+    def test_a_task_no_program_covers_gets_a_weak_one_naming_the_gap(
+        self, library, tasks, name, uncovered
+    ):
+        assert _plan(library, tasks[name])[1] is None
+        planner, program = _plan(library, tasks[name], weak=True)
+        assert planner.weak
+        assert stops(program) == 1
+        assert f"stop  # no contract covers {uncovered} here" in render(program)
+
+    @pytest.mark.parametrize(
+        "name", ["ticket", "settle-latest-invoice", "escalate", "vat-for-customer"]
+    )
+    def test_the_independent_verifier_proves_every_link_of_every_program(
+        self, library, tasks, name
+    ):
+        _, program = _plan(library, tasks[name], weak=True)
+        checks = verify(library, tasks[name], program)
+        assert all(c.holds or c.relation == "uncovered" for c in checks)
+        assert sum(c.relation == "uncovered" for c in checks) == stops(program)
+
+
+def _mock(raw_tools, seed):
+    def impl_for(spec):
+        sampler = Sampler(spec["outputSchema"], random.Random(f"{seed}:{spec['name']}"))
+
+        def impl(_arguments):
+            drawn = sampler.draw(spec["outputSchema"], tries=200)
+            assert drawn, spec["name"]
+            return drawn[0]
+
+        return impl
+
+    return {spec["name"]: impl_for(spec) for spec in raw_tools}
+
+
+class TestExecution:
+    @pytest.mark.parametrize("seed", range(25))
+    def test_a_strong_program_never_breaks_a_contract_whatever_the_tools_return(
+        self, library, tasks, raw_tools, seed
+    ):
+        task = tasks["settle-latest-invoice"]
+        _, program = _plan(library, task)
+        answer = run(library, task, program, {"email": "ada@example.org"}, _mock(raw_tools, seed))
+        assert task.goal.is_valid(answer)
+
+    def test_a_weak_program_stops_on_its_uncovered_case(self, library, tasks, raw_tools):
+        task = tasks["escalate"]
+        _, program = _plan(library, task, weak=True)
+        impls = _mock(raw_tools, 0)
+        impls["find_customer"] = lambda _a: {
+            "customer_id": "cus_abcdefgh",
+            "tier": "free",
+            "country": "IT",
+        }
+        with pytest.raises(ContractError, match=r"no contract covers c1\.tier"):
+            run(library, task, program, {"email": "ada@example.org", "subject": "help"}, impls)
+
+    def test_a_tool_that_breaks_its_own_contract_is_named_at_the_call(
+        self, library, tasks, raw_tools
+    ):
+        task = tasks["ticket"]
+        _, program = _plan(library, task)
+        impls = _mock(raw_tools, 0)
+        impls["find_customer"] = lambda _a: {"customer_id": "nope", "tier": "free", "country": "IT"}
+        with pytest.raises(ContractError, match="find_customer returned"):
+            run(library, task, program, {"email": "ada@example.org", "subject": "help"}, impls)
+
+
+def test_programs_are_made_of_known_steps(library, tasks):
+    _, program = _plan(library, tasks["settle-latest-invoice"])
+    assert isinstance(program[0], Call)
+    assert isinstance(program[-1], Test)
+    assert not any(isinstance(s, Stop) for s in program)
+    assert isinstance(program[-1].other[-1], Test)
+    assert isinstance(program[-1].other[-1].other[-1], Return)
+
+
+class TestSyntheticLibraries:
+    @pytest.mark.parametrize("n", [8, 16, 32])
+    @pytest.mark.parametrize("seed", [0, 1, 2])
+    def test_every_program_found_is_proven_in_full_by_the_verifier(self, n, seed):
+        lib_json, spec = library(n, seed)
+        lib, task = read_tools(lib_json), read_task(spec)
+        program = Planner(lib, task, witnesses(lib, task)).plan(max_depth=6)
+        assert program is not None
+        checks = verify(lib, task, program)
+        assert all(c.holds for c in checks), [c for c in checks if not c.holds]
+
+
+def test_a_gap_lists_every_uncovered_value_when_the_cells_are_enumerated(library, tasks):
+    planner, program = _plan(library, tasks["escalate"], weak=True)
+    (gap,) = gaps(planner, program)
+    assert gap.var == "c1.tier"
+    assert gap.complete
+    assert sorted(gap.values) == ["free", "pro"]

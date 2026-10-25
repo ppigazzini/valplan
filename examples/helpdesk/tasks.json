@@ -1,0 +1,108 @@
+{
+  "tasks": [
+    {
+      "name": "ticket",
+      "description": "Open a ticket for the customer behind an e-mail address.",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "email",
+          "subject"
+        ]
+      },
+      "goal": {
+        "type": "string",
+        "pattern": "^T-[0-9]{6}$"
+      }
+    },
+    {
+      "name": "settle-latest-invoice",
+      "description": "Refund the latest invoice if paid, void it if open; a void invoice is already settled.",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "goal": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^re_[a-z0-9]{8}$"
+          },
+          {
+            "type": "string",
+            "pattern": "^cn_[a-z0-9]{8}$"
+          },
+          {
+            "const": "void"
+          }
+        ]
+      }
+    },
+    {
+      "name": "escalate",
+      "description": "Escalate a new ticket to the enterprise team.",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "email",
+          "subject"
+        ]
+      },
+      "goal": {
+        "type": "string",
+        "pattern": "^ESC-[0-9]{4}$"
+      }
+    },
+    {
+      "name": "vat-for-customer",
+      "description": "Find the VAT rate that applies to a customer.",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "goal": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 30
+      }
+    }
+  ]
+}

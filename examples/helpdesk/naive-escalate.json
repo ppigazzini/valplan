@@ -1,0 +1,31 @@
+{
+  "name": "escalate",
+  "program": [
+    {
+      "call": "find_customer",
+      "as": "c1",
+      "args": {
+        "email": "email"
+      }
+    },
+    {
+      "call": "open_ticket",
+      "as": "c2",
+      "args": {
+        "customer_id": "c1.customer_id",
+        "subject": "subject"
+      }
+    },
+    {
+      "call": "escalate",
+      "as": "c3",
+      "args": {
+        "ticket_id": "c2.ticket_id",
+        "tier": "c1.tier"
+      }
+    },
+    {
+      "return": "c3.escalation_id"
+    }
+  ]
+}

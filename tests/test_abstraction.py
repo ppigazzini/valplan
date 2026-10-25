@@ -1,0 +1,106 @@
+import random
+
+from valgebra import intersection
+
+from valplan.abstraction import Abstraction
+from valplan.contracts import tool
+from valplan.sample import Sampler
+from valplan.schema import compile_schema, finite
+from valplan.synth import Planner, witnesses
+
+
+def _cell_of(abstraction, value):
+    hits = [i for i, c in enumerate(abstraction.cells) if c.validator.is_valid(value)]
+    assert len(hits) == 1, (value, hits)
+    return hits[0]
+
+
+class TestPartition:
+    def test_every_value_lies_in_exactly_one_cell_and_predicates_are_unions_of_cells(
+        self, library, tasks
+    ):
+        planner = Planner(
+            library, tasks["settle-latest-invoice"], witnesses(library, tasks["ticket"])
+        )
+        a = planner.abstraction
+        rng = random.Random(0)
+        values = [
+            *witnesses(library, tasks["ticket"], seed=1),
+            "",
+            "x" * 300,
+            -5,
+            2.5,
+            None,
+            [],
+            {},
+        ]
+        for value in rng.sample(values, min(len(values), 150)):
+            n = _cell_of(a, value)
+            for p, pred in enumerate(a.predicates):
+                assert pred.is_valid(value) == (n in a.cells_of(pred)), (value, p)
+
+    def test_disjoint_patterns_split_linearly(self):
+        preds = [
+            compile_schema({"type": "string", "pattern": f"^{p}_[a-z]{{4}}$"})
+            for p in ("cus", "sub", "in", "re", "cn", "di", "ms")
+        ]
+        a = Abstraction(preds)
+        assert a.counts()["cells"] == 7 + len(preds)
+
+
+class TestFiniteSets:
+    def test_an_enum_cell_is_decided_by_its_listed_values(self):
+        status = {"enum": ["open", "paid", "void"]}
+        paid, opened = {"const": "paid"}, {"const": "open"}
+        goal = {"anyOf": [{"type": "string", "pattern": "^re_"}, {"const": "void"}]}
+        schemas = [status, paid, opened, goal]
+        preds = [compile_schema(s) for s in schemas]
+        listed = {
+            p: values
+            for p, s in zip(preds, schemas, strict=True)
+            if (values := finite(s)) is not None
+        }
+        a = Abstraction(preds, finite=listed)
+        assert len(a.cells_of(preds[0])) == 3
+        assert all(a.cells[i].status == "inhabited" for i in a.cells_of(preds[0]))
+
+    def test_finite_lists_both_spellings_of_an_integral_number(self):
+        assert finite({"enum": [1, "a"]}) == [1, 1.0, "a"]
+        assert finite({"type": "boolean"}) == [True, False]
+        assert finite({"type": "string"}) is None
+
+    def test_finite_filters_by_the_rest_of_the_schema(self):
+        assert finite({"enum": ["ab", "abcd"], "minLength": 3}) == ["abcd"]
+
+
+def test_counts_add_up(library, tasks):
+    a = Planner(library, tasks["ticket"], witnesses(library, tasks["ticket"])).abstraction
+    c = a.counts()
+    assert c["inhabited"] + c["undecided"] == c["cells"]
+    assert c["cells"] < c["minterms"]
+    assert intersection(a.cells[0].validator, a.cells[1].validator).is_empty()
+
+
+def test_a_tool_without_arguments_reads_as_no_slots():
+    t = tool(
+        {
+            "name": "ping",
+            "inputSchema": {"type": "object"},
+            "outputSchema": {
+                "type": "object",
+                "properties": {"ok": {"type": "boolean"}},
+                "required": ["ok"],
+            },
+        }
+    )
+    assert t.args == ()
+    assert [r.name for r in t.results] == ["ok"]
+
+
+def test_the_sampler_draws_only_values_the_schema_admits(raw_tools):
+    for spec in raw_tools:
+        sampler = Sampler(spec["outputSchema"], random.Random(spec["name"]))
+        compiled = compile_schema(spec["outputSchema"])
+        drawn = sampler.draw(spec["outputSchema"], tries=50)
+        assert drawn, spec["name"]
+        assert all(compiled.is_valid(v) for v in drawn)

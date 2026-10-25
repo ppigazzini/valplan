@@ -1,0 +1,418 @@
+{
+  "tools": [
+    {
+      "name": "find_customer",
+      "description": "Look up a customer by e-mail address.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "$ref": "#/$defs/email"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false,
+        "$defs": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "pattern": "^cus_[a-z0-9]{8}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tier": {
+            "enum": [
+              "free",
+              "pro",
+              "enterprise"
+            ]
+          },
+          "country": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "required": [
+          "customer_id",
+          "tier",
+          "country"
+        ]
+      }
+    },
+    {
+      "name": "get_subscription",
+      "description": "Return the active subscription of a customer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "pattern": "^cus_[a-z0-9]{8}$"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "pattern": "^sub_[a-z0-9]{8}$"
+          },
+          "plan": {
+            "enum": [
+              "free",
+              "pro",
+              "enterprise"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "past_due",
+              "canceled"
+            ]
+          },
+          "seats": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "subscription_id",
+          "plan",
+          "status",
+          "seats"
+        ]
+      }
+    },
+    {
+      "name": "latest_invoice",
+      "description": "Return the most recent invoice of a customer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "pattern": "^cus_[a-z0-9]{8}$"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "pattern": "^in_[a-z0-9]{8}$"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500000
+          },
+          "status": {
+            "enum": [
+              "open",
+              "paid",
+              "void"
+            ]
+          }
+        },
+        "required": [
+          "invoice_id",
+          "amount_cents",
+          "status"
+        ]
+      }
+    },
+    {
+      "name": "refund_invoice",
+      "description": "Refund part or all of a paid invoice.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "pattern": "^in_[a-z0-9]{8}$"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500000
+          },
+          "invoice_status": {
+            "const": "paid"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "amount_cents",
+          "invoice_status"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "refund_id": {
+            "type": "string",
+            "pattern": "^re_[a-z0-9]{8}$"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "refund_id",
+          "amount_cents"
+        ]
+      }
+    },
+    {
+      "name": "void_invoice",
+      "description": "Void an open invoice.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "pattern": "^in_[a-z0-9]{8}$"
+          },
+          "invoice_status": {
+            "const": "open"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "invoice_status"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "credit_note_id": {
+            "type": "string",
+            "pattern": "^cn_[a-z0-9]{8}$"
+          }
+        },
+        "required": [
+          "credit_note_id"
+        ]
+      }
+    },
+    {
+      "name": "open_ticket",
+      "description": "Open a support ticket for a customer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "pattern": "^cus_[a-z0-9]{8}$"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "priority": {
+            "enum": [
+              "low",
+              "normal",
+              "urgent"
+            ]
+          }
+        },
+        "required": [
+          "customer_id",
+          "subject"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string",
+            "pattern": "^T-[0-9]{6}$"
+          }
+        },
+        "required": [
+          "ticket_id"
+        ]
+      }
+    },
+    {
+      "name": "escalate",
+      "description": "Escalate a ticket to the enterprise success team.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string",
+            "pattern": "^T-[0-9]{6}$"
+          },
+          "tier": {
+            "const": "enterprise"
+          }
+        },
+        "required": [
+          "ticket_id",
+          "tier"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "escalation_id": {
+            "type": "string",
+            "pattern": "^ESC-[0-9]{4}$"
+          }
+        },
+        "required": [
+          "escalation_id"
+        ]
+      }
+    },
+    {
+      "name": "apply_discount",
+      "description": "Apply a retention discount to a paid plan.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "pattern": "^sub_[a-z0-9]{8}$"
+          },
+          "plan": {
+            "enum": [
+              "pro",
+              "enterprise"
+            ]
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 30,
+            "multipleOf": 5
+          }
+        },
+        "required": [
+          "subscription_id",
+          "plan",
+          "percent"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "discount_id": {
+            "type": "string",
+            "pattern": "^di_[a-z0-9]{8}$"
+          }
+        },
+        "required": [
+          "discount_id"
+        ]
+      }
+    },
+    {
+      "name": "vat_rate",
+      "description": "Return the VAT rate for an EU country.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "enum": [
+              "IT",
+              "DE",
+              "ES",
+              "FR",
+              "PL",
+              "NL"
+            ]
+          }
+        },
+        "required": [
+          "country"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "rate_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 30
+          }
+        },
+        "required": [
+          "rate_percent"
+        ]
+      }
+    },
+    {
+      "name": "send_email",
+      "description": "Send an e-mail.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "pattern": "^msg_[a-z0-9]{12}$"
+          }
+        },
+        "required": [
+          "message_id"
+        ]
+      }
+    }
+  ]
+}

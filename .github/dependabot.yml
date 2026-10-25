@@ -1,0 +1,8 @@
+# The actions are pinned to commit SHAs and `setup-uv` to a version, so nothing here
+# updates on its own. This is what opens the pull request that says one has moved.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

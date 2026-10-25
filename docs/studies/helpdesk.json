@@ -1,0 +1,63 @@
+{
+ "format": 1,
+ "library": "helpdesk",
+ "tools": 10,
+ "tasks": [
+  {
+   "task": "ticket",
+   "predicates": 28,
+   "cells": 38,
+   "inhabited": 35,
+   "undecided": 3,
+   "strong": true,
+   "calls": 2,
+   "tests": 0,
+   "stops": 0,
+   "checks": 6,
+   "proven": 6,
+   "refuted": 0
+  },
+  {
+   "task": "settle-latest-invoice",
+   "predicates": 28,
+   "cells": 36,
+   "inhabited": 34,
+   "undecided": 2,
+   "strong": true,
+   "calls": 3,
+   "tests": 2,
+   "stops": 0,
+   "checks": 14,
+   "proven": 14,
+   "refuted": 0
+  },
+  {
+   "task": "escalate",
+   "predicates": 28,
+   "cells": 38,
+   "inhabited": 35,
+   "undecided": 3,
+   "strong": false,
+   "calls": 3,
+   "tests": 1,
+   "stops": 1,
+   "checks": 10,
+   "proven": 9,
+   "refuted": 0
+  },
+  {
+   "task": "vat-for-customer",
+   "predicates": 27,
+   "cells": 36,
+   "inhabited": 34,
+   "undecided": 2,
+   "strong": false,
+   "calls": 2,
+   "tests": 1,
+   "stops": 1,
+   "checks": 6,
+   "proven": 5,
+   "refuted": 0
+  }
+ ]
+}

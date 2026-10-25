@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, cite it as below."
+title: "valplan: planning tool-using agents by predicate abstraction over a decidable algebra of JSON Schema contracts"
+type: software
+authors:
+  - family-names: Pigazzini
+    given-names: Pasquale
+    orcid: "https://orcid.org/0009-0004-6977-7317"
+license: Apache-2.0
+version: 0.0.1
+repository-code: "https://github.com/ppigazzini/valplan"
+keywords:
+  - semantic subtyping
+  - JSON Schema
+  - predicate abstraction
+  - planning under nondeterminism
+  - program synthesis
+  - tool-using agents
+  - Model Context Protocol
