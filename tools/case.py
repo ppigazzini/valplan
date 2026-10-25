@@ -9,8 +9,11 @@ A library directory holds ``tools.json`` (an MCP ``tools/list`` result) and ``ta
 
 import argparse
 import json
+import os
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+from typing import Any
 
 from valplan.contracts import task as read_task
 from valplan.contracts import tools as read_tools
@@ -25,42 +28,49 @@ def tests_in(program: Program) -> int:
     return sum(1 + tests_in(s.then) + tests_in(s.other) for s in program if isinstance(s, Test))
 
 
-def measure(library: Path) -> tuple[CaseStudy, list[str]]:
-    """Plan and verify every task; return the study and the rendered programs."""
+def run_task(job: tuple[Path, dict[str, Any]]) -> tuple[TaskRow, str]:
+    """Plan and verify one task; return its row and its rendered program."""
+    library, spec = job
     lib = read_tools(json.loads((library / "tools.json").read_text(encoding="utf-8")))
+    task = read_task(spec)
+    drawn = witnesses(lib, task)
+    planner = Planner(lib, task, drawn)
+    program = planner.plan(max_depth=6, weak=True) or ()
+    checks = verify(lib, task, program, drawn) if program else []
+    counts = planner.abstraction.counts()
+    row = TaskRow(
+        task=task.name,
+        predicates=counts["predicates"],
+        cells=counts["cells"],
+        inhabited=counts["inhabited"],
+        undecided=counts["undecided"],
+        strong=bool(program) and not planner.weak,
+        calls=calls(program),
+        tests=tests_in(program),
+        stops=stops(program) if program else 1,
+        checks=len(checks),
+        proven=sum(c.holds for c in checks),
+        refuted=sum(c.relation == "not_subset" for c in checks),
+    )
+    kind = "strong" if row["strong"] else "weak"
+    text = f"## {task.name} ({kind})\n\n```\n{render(program)}\n```"
+    uncovered = [f"- uncovered at step {g.path}: {g.describe()}" for g in gaps(planner, program)]
+    return row, "\n\n".join([text, *(["\n".join(uncovered)] if uncovered else [])])
+
+
+def measure(library: Path, jobs: int = 1) -> tuple[CaseStudy, list[str]]:
+    """Plan and verify every task, ``jobs`` at a time; return the study and the programs."""
+    tools_count = len(json.loads((library / "tools.json").read_text(encoding="utf-8"))["tools"])
     specs = json.loads((library / "tasks.json").read_text(encoding="utf-8"))["tasks"]
-    rows: list[TaskRow] = []
-    shown: list[str] = []
-    for spec in specs:
-        task = read_task(spec)
-        drawn = witnesses(lib, task)
-        planner = Planner(lib, task, drawn)
-        program = planner.plan(max_depth=6, weak=True) or ()
-        checks = verify(lib, task, program, drawn) if program else []
-        counts = planner.abstraction.counts()
-        rows.append(
-            TaskRow(
-                task=task.name,
-                predicates=counts["predicates"],
-                cells=counts["cells"],
-                inhabited=counts["inhabited"],
-                undecided=counts["undecided"],
-                strong=bool(program) and not planner.weak,
-                calls=calls(program),
-                tests=tests_in(program),
-                stops=stops(program) if program else 1,
-                checks=len(checks),
-                proven=sum(c.holds for c in checks),
-                refuted=sum(c.relation == "not_subset" for c in checks),
-            )
-        )
-        kind = "strong" if rows[-1]["strong"] else "weak"
-        text = f"## {task.name} ({kind})\n\n```\n{render(program)}\n```"
-        uncovered = [
-            f"- uncovered at step {g.path}: {g.describe()}" for g in gaps(planner, program)
-        ]
-        shown.append("\n\n".join([text, *(["\n".join(uncovered)] if uncovered else [])]))
-    return CaseStudy(format=1, library=library.name, tools=len(lib), tasks=rows), shown
+    todo = [(library, spec) for spec in specs]
+    if jobs > 1:
+        with ProcessPoolExecutor(max_workers=jobs) as pool:
+            done = list(pool.map(run_task, todo))
+    else:
+        done = [run_task(job) for job in todo]
+    rows = [row for row, _ in done]
+    study = CaseStudy(format=1, library=library.name, tools=tools_count, tasks=rows)
+    return study, [shown for _, shown in done]
 
 
 def table(study: CaseStudy) -> str:
@@ -87,8 +97,11 @@ def main(argv: list[str]) -> int:
     out = parser.add_mutually_exclusive_group()
     out.add_argument("--json", type=Path)
     out.add_argument("--check", type=Path)
+    parser.add_argument(
+        "--jobs", type=int, default=os.process_cpu_count() or 1, help="worker processes"
+    )
     args = parser.parse_args(argv)
-    study, shown = measure(args.library)
+    study, shown = measure(args.library, args.jobs)
     print(table(study))
     print()
     print("\n\n".join(shown))
