@@ -281,6 +281,11 @@ class Compiler:
         self._open: dict[str, Validator[Any]] = {}
         #: The open fixpoints whose placeholder each reference returned, in order.
         self._used: list[str] = []
+        #: Sets built around open placeholders, with the fixpoints they need open: each is
+        #: reused while those are, and dropped when one closes.
+        self._scoped: dict[str, tuple[Validator[Any], frozenset[str]]] = {}
+        #: Whether each target, by node, reaches itself through references.
+        self._recursive: dict[int, bool] = {}
         self._typed: list[frozenset[str] | None] = []
         #: Whether a keyword of each schema being compiled has guarded itself past the
         #: universe (`guard`): only then does the schema need its meet with ``JSON``.
@@ -384,6 +389,10 @@ class Compiler:
         if pointer in self._open:
             self._used.append(pointer)
             return self._open[pointer]
+        if pointer in self._scoped:
+            built, needs = self._scoped[pointer]
+            self._used.extend(needs)
+            return built
         target = self.resolve(pointer)
         mark = len(self._used)
         if not self._reaches_itself(target):
@@ -401,12 +410,20 @@ class Compiler:
                 built = recursive(body)
             except Unsupported:
                 raise
-            except Exception as exc:
-                msg = f"$ref {pointer!r} does not compile to a contractive fixpoint: {exc}"
+            except ValueError as exc:
+                msg = f"valgebra refuses the schema: $ref {pointer!r}: {exc}"
                 raise Unsupported(msg) from exc
+            finally:
+                # Sets built around this fixpoint's placeholder mean nothing once it closes.
+                self._scoped = {
+                    p: (v, needs) for p, (v, needs) in self._scoped.items() if pointer not in needs
+                }
             # The fixpoint closes over its own placeholder; what it leaves open is the rest.
             self._used[mark:] = [p for p in self._used[mark:] if p != pointer]
-        if len(self._used) == mark:
+        needs = frozenset(self._used[mark:])
+        if needs:
+            self._scoped[pointer] = (built, needs)
+        else:
             self._done[pointer] = built
         return built
 
@@ -440,6 +457,13 @@ class Compiler:
         reference, inside an `enum`, makes a target recursive that is not: the fixpoint
         it then gets denotes the same set.
         """
+        key = id(target)
+        if key in self._recursive:
+            return self._recursive[key]
+        self._recursive[key] = self._walks_back(target)
+        return self._recursive[key]
+
+    def _walks_back(self, target: object) -> bool:
         seen: set[int] = set()
         stack = list(_references(target))
         while stack:

@@ -16,11 +16,11 @@
   {
    "subset": "Github_hard",
    "schemas": 1240,
-   "compiled": 1165,
-   "refused": 75,
+   "compiled": 1166,
+   "refused": 74,
    "crashed": 0,
    "timed_out": 0,
-   "values": 44359,
+   "values": 44396,
    "disagreed": 0
   },
   {
@@ -107,7 +107,7 @@
  "refusals": [
   {
    "reason": "a $ref outside the document, to an anchor, or through an embedded $id",
-   "schemas": 6
+   "schemas": 4
   },
   {
    "reason": "a $schema it does not read",
@@ -127,7 +127,7 @@
   },
   {
    "reason": "a set valgebra refuses to build",
-   "schemas": 27
+   "schemas": 28
   },
   {
    "reason": "an embedded $id",
