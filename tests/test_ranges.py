@@ -187,3 +187,27 @@ def test_ranges_prove_a_cell_empty_where_another_predicate_bears_on_it():
         c for c in a.cells if c.kind == "integer" and {1, 2} <= c.inside and 3 not in c.inside
     ]
     assert inside_both_outside_third == []
+
+
+class TestBounds:
+    def test_a_float_bound_is_the_double_json_loads_returns(self):
+        assert interval({"type": "integer", "minimum": 1e23}) == _i(int(1e23), None)
+        tenth = _i(None, Fraction(0.1), integer=False)
+        assert interval({"type": "number", "maximum": 0.1}) == tenth
+
+    def test_a_non_finite_bound_is_not_a_range(self):
+        assert interval({"type": "number", "maximum": float("inf")}) is None
+
+    def test_the_integers_between_a_double_and_its_decimal_are_a_cell(self):
+        # 1e23 parses to 99999999999999991611392, so a minimum of 1e23 admits the 8388608
+        # integers below 10**23 that a minimum of 10**23 refuses.
+        schemas = [{"type": "integer", "minimum": 1e23}, {"type": "integer", "minimum": 10**23}]
+        preds = [compile_schema(s) for s in schemas]
+        profiles = [interval(s) for s in schemas]
+        ranges = {p: r for p, r in zip(preds, profiles, strict=True) if r is not None}
+        a = Abstraction(preds, ranges=ranges)
+        between = [c for c in a.cells if c.kind == "integer" and c.inside == frozenset({0})]
+        assert len(between) == 1
+        assert between[0].status == "inhabited"
+        assert preds[0].is_valid(between[0].witness)
+        assert not preds[1].is_valid(between[0].witness)

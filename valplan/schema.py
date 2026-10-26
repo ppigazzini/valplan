@@ -781,8 +781,11 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
 class Interval:
     """A numeric schema that is a range and nothing more: its kind, bounds and step.
 
-    A missing bound is None. Bounds are exact rationals of the numbers written, so
-    ``0.1`` is one tenth, not the float nearest to it. ``step`` is an integral
+    A missing bound is None. A bound is the exact value of the number ``json.loads``
+    returned, which is what membership compares against: ``1e23`` is the double
+    99999999999999991611392, not 10**23, and ``0.1`` is the double nearest one tenth. A
+    reading of the decimal written would prove inclusions membership refutes, at the
+    integers between the two. ``step`` is an integral
     ``multipleOf``: the range then holds only the multiples of it, which are integers
     whatever ``type`` says.
     """
@@ -804,7 +807,8 @@ def interval(schema: object) -> Interval | None:
     """Return the range a schema denotes when it is ``type``, bounds and a step alone.
 
     A fractional ``multipleOf`` is not a step: it is opaque (`_multiple_of`), so a schema
-    carrying one is not a range.
+    carrying one is not a range. Nor is one with a non-finite bound, which ``json.loads``
+    returns for ``1e400``: no exact rational denotes it.
     """
     if not isinstance(schema, dict) or schema.get("type") not in {"integer", "number"}:
         return None
@@ -815,6 +819,8 @@ def interval(schema: object) -> Interval | None:
         b is not None and (isinstance(b, bool) or not isinstance(b, (int, float))) for b in bounds
     ):
         return None
+    if any(isinstance(b, float) and not math.isfinite(b) for b in bounds):
+        return None
     step = schema.get("multipleOf")
     if step is not None and (step <= 0 or not (isinstance(step, int) or step.is_integer())):
         return None
@@ -822,12 +828,12 @@ def interval(schema: object) -> Interval | None:
     low_open = high_open = False
     for key, is_open in (("minimum", False), ("exclusiveMinimum", True)):
         if key in schema:
-            value = Fraction(str(schema[key]))
+            value = Fraction(schema[key])
             if low is None or value > low or (value == low and is_open):
                 low, low_open = value, is_open
     for key, is_open in (("maximum", False), ("exclusiveMaximum", True)):
         if key in schema:
-            value = Fraction(str(schema[key]))
+            value = Fraction(schema[key])
             if high is None or value < high or (value == high and is_open):
                 high, high_open = value, is_open
     return Interval(
