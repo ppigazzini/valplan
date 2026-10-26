@@ -43,7 +43,10 @@ A schema whose `$schema` names draft-07, as schemas generated from TypeScript ty
 do, is rewritten by `upgrade` into the draft 2020-12 schema with the same meaning before
 it is compiled: an `items` array becomes `prefixItems` and `additionalItems` becomes
 `items`; `dependencies` splits into `dependentRequired` and `dependentSchemas`; a `$ref`
-drops its siblings, which draft-07 ignores. Only keywords that hold subschemas are
+drops its siblings, which draft-07 ignores, but for `definitions` and `$defs`; and a
+keyword a later draft added -- `prefixItems`, `minContains` or `dependentRequired` written
+into a draft-07 schema -- is dropped, since draft-07 reads it as an annotation. Only
+keywords that hold subschemas are
 descended into, so a property named `items` stays a name. `valplan.contracts` upgrades a
 tool's schemas the same way.
 

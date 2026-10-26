@@ -935,6 +935,26 @@ def _same(a: object, b: object) -> bool:
 _ONE = frozenset({"not", "if", "then", "else", "additionalProperties", "contains", "propertyNames"})
 _MANY = frozenset({"allOf", "anyOf", "oneOf"})
 _MAP = frozenset({"properties", "patternProperties", "definitions", "$defs"})
+#: Keywords later drafts added. Draft-07 does not know them, so in a draft-07 schema they
+#: are annotations, and `upgrade` drops them rather than let draft 2020-12 assert them.
+#: ``$defs`` stays: it asserts nothing in either draft, and a pointer may name it.
+_LATER = frozenset(
+    {
+        "prefixItems",
+        "minContains",
+        "maxContains",
+        "dependentRequired",
+        "dependentSchemas",
+        "unevaluatedItems",
+        "unevaluatedProperties",
+        "$anchor",
+        "$dynamicRef",
+        "$dynamicAnchor",
+        "$recursiveRef",
+        "$recursiveAnchor",
+        "$vocabulary",
+    }
+)
 
 
 def upgrade(schema: object) -> object:
@@ -942,8 +962,10 @@ def upgrade(schema: object) -> object:
 
     The keywords whose meaning changed: an ``items`` array is ``prefixItems``, with
     ``additionalItems`` as ``items``; ``dependencies`` splits into ``dependentRequired``
-    and ``dependentSchemas``; and a ``$ref`` overrides its siblings, so they are dropped.
-    ``definitions`` keeps its name, so every JSON pointer into the document still resolves.
+    and ``dependentSchemas``; and a ``$ref`` overrides its siblings, so they are dropped,
+    but for ``definitions`` and ``$defs``, which a pointer may name. ``definitions`` keeps
+    its name, so every JSON pointer into the document still resolves. A keyword a later
+    draft added is an annotation in draft-07 and is dropped (`_LATER`).
     Only the keywords that hold subschemas are descended into: a property named ``items``
     is a name, not a keyword.
     """
@@ -951,11 +973,12 @@ def upgrade(schema: object) -> object:
         return schema
     if "$ref" in schema:
         out: dict[str, Any] = {"$ref": schema["$ref"]}
-        if "definitions" in schema:
-            out["definitions"] = {k: upgrade(v) for k, v in schema["definitions"].items()}
+        for key in ("definitions", "$defs"):
+            if isinstance(schema.get(key), dict):
+                out[key] = {k: upgrade(v) for k, v in schema[key].items()}
         return out
     out = {}
-    for key, value in schema.items():
+    for key, value in ((k, v) for k, v in schema.items() if k not in _LATER):
         if key == "$schema":
             out[key] = DRAFT
         elif key in {"items", "additionalItems"}:

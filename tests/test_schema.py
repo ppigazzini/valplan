@@ -171,6 +171,30 @@ class TestDraft7:
         assert s.is_valid({"items": [], "dependencies": "x"})
         assert not s.is_valid({"items": 1})
 
+    @pytest.mark.parametrize(
+        ("keywords", "value"),
+        [
+            ({"contains": {"const": 1}, "minContains": 2}, [1]),
+            ({"prefixItems": [{"type": "string"}]}, [1]),
+            ({"dependentRequired": {"a": ["b"]}}, {"a": 1}),
+            ({"dependentSchemas": {"a": False}}, {"a": 1}),
+        ],
+    )
+    def test_a_keyword_a_later_draft_added_asserts_nothing(self, keywords, value):
+        schema = {"$schema": "http://json-schema.org/draft-07/schema#", **keywords}
+        assert compile_schema(schema).is_valid(value)
+
+    def test_a_ref_keeps_the_defs_beside_it(self):
+        s = compile_schema(
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "$defs": {"i": {"type": "integer"}},
+                "$ref": "#/$defs/i",
+            }
+        )
+        assert s.is_valid(1)
+        assert not s.is_valid("a")
+
 
 def test_an_unknown_keyword_is_an_annotation_and_recorded():
     compiler = Compiler({"type": "string", "x-label": "id", "nullable": True})
