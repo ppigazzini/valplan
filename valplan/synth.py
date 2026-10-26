@@ -28,7 +28,18 @@ from valplan._valgebra import Validator, complement, intersection
 from valplan.abstraction import Abstraction, Cells, SoundnessError
 from valplan.contracts import Slot, Task, Tool
 from valplan.native import is_native, native_values
-from valplan.program import Call, Program, Return, Step, Stop, Test, prune, sink, stops
+from valplan.program import (
+    Call,
+    Program,
+    Return,
+    Step,
+    Stop,
+    Test,
+    drop_unused,
+    prune,
+    sink,
+    stops,
+)
 from valplan.sample import Sampler
 from valplan.schema import Compiler, branches, finite, interval
 
@@ -228,7 +239,10 @@ class Planner:
             for binding in self._bindings(tool, then, forced=(slot.name, narrowed)):
                 yes = self._call(tool, binding, then, depth - 1, made, weak)
                 break
-            if yes is None:
+            # A test is a guarded call: its then branch must need the call it guards. One
+            # that only returns what the test narrowed is a goal test, and would return any
+            # input that happens to look like an answer as one.
+            if yes is None or drop_unused(yes)[:1] != yes[:1]:
                 continue
             rest = Var(v.name, v.cells - inside, intersection(v.schema, complement(slot.schema)))
             no = self._solve(self._replace(held, rest), depth - 1, made, weak)

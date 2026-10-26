@@ -256,9 +256,14 @@ def prune(program: Program) -> Program:
     Removal runs to a fixpoint: a call only a removed call read is unused in turn. Each
     round removes a call or ends, so it ends.
     """
+    return relabel(drop_unused(program))
+
+
+def drop_unused(program: Program) -> Program:
+    """Return ``program`` without the calls no later step on their path reads, labels kept."""
     while (pruned := _prune(program)) != program:
         program = pruned
-    return relabel(program)
+    return program
 
 
 def _prune(program: Program) -> Program:

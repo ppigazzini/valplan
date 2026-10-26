@@ -332,3 +332,11 @@ class TestDegenerateContracts:
         empty = {"type": "string", "minLength": 5, "maxLength": 2}
         with pytest.raises(Unsupported, match="admits no value"):
             read_tools({"tools": [self._tool("broken", {"x": {"type": "string"}}, {"g": empty})]})
+
+    def test_a_test_whose_branch_only_returns_the_tested_value_is_not_made(self):
+        g = {"type": "string", "pattern": "^G[0-9]{3}$"}
+        y = {"type": "string", "pattern": "^Y$"}
+        lib = read_tools({"tools": [self._tool("use", {"g": g}, {"y": y})]})
+        inputs = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
+        task = read_task({"name": "t", "inputs": inputs, "goal": g})
+        assert Planner(lib, task, witnesses(lib, task)).plan(weak=True) is None
