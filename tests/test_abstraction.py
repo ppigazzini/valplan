@@ -133,6 +133,10 @@ class TestSamplerEdges:
         assert all(v >= 10**400 for v in self._draw({"type": "number", "minimum": 10**400}))
         assert self._draw({"type": "number", "maximum": float("inf")})
 
+    def test_a_brace_that_opens_no_count_is_a_literal(self):
+        # The class ends at its escaped `]` to the sampler, which then meets `{\|}`.
+        assert self._draw({"type": "string", "pattern": r"^[a\]{\|}]+$"}) is not None
+
     def test_a_huge_length_bound_draws_short_values(self):
         drawn = self._draw({"type": "string", "maxLength": 2**31 - 1})
         drawn += self._draw({"type": "array", "maxItems": 2**31 - 1})

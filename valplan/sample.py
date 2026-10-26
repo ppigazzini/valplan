@@ -11,6 +11,7 @@ rejection elsewhere: ``not``, ``if`` and an unsatisfiable mix simply yield nothi
 
 import math
 import random
+import re
 import string
 from typing import Any
 
@@ -207,10 +208,13 @@ def _count(body: str, i: int, rng: random.Random | None = None) -> tuple[int, in
         if body[i] != "?" and rng is not None and rng.random() < 0.2:  # noqa: PLR2004
             return (*rng.choice([(130, 130), (210, 210)]), i + 1)
         return {"+": (1, 4), "*": (0, 4), "?": (0, 1)}[body[i]] + (i + 1,)
-    if i < len(body) and body[i] == "{":
-        end = body.find("}", i)
-        parts = body[i + 1 : end].split(",")
-        low = int(parts[0])
-        high = int(parts[1]) if len(parts) > 1 and parts[1] else low + 3 if len(parts) > 1 else low
-        return low, high, end + 1
+    count = _COUNT.match(body, i)
+    if count is not None:
+        low = int(count[1])
+        high = int(count[3]) if count[3] else low + 3 if count[2] else low
+        return low, high, count.end()
     return 1, 1, i
+
+
+#: A repeat count, ``{m}``, ``{m,}`` or ``{m,n}``. Any other ``{`` is a literal brace.
+_COUNT = re.compile(r"\{([0-9]+)(,([0-9]*))?\}")
