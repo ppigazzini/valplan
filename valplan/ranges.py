@@ -154,8 +154,8 @@ def _minus(p: Piece, hole: Piece) -> list[Piece]:
 def fractions_empty(pos: Sequence[Interval], neg: Sequence[Interval]) -> bool:
     """Return whether no non-integer number lies in every ``pos`` range and no ``neg`` one.
 
-    A stepped range holds integers only: inside one the cell is empty, and outside one
-    excludes no non-integer.
+    An integer or stepped range holds integers only: inside one the cell is empty, and
+    outside one excludes no non-integer.
     """
     whole: Piece = (-math.inf, True, math.inf, True)
     for r in pos:
@@ -164,7 +164,7 @@ def fractions_empty(pos: Sequence[Interval], neg: Sequence[Interval]) -> bool:
         whole = _meet(whole, _piece(r))
     pieces = [whole] if _nonempty(whole) else []
     for r in neg:
-        if r.step is None:
+        if not r.integer and r.step is None:
             pieces = [q for p in pieces for q in _minus(p, _piece(r))]
     for low, low_open, high, high_open in pieces:
         if low < high:
@@ -175,7 +175,9 @@ def fractions_empty(pos: Sequence[Interval], neg: Sequence[Interval]) -> bool:
 
 
 def _holds(x: Fraction, r: Interval) -> bool:
-    if r.step is not None and (x.denominator != 1 or x.numerator % r.step):
+    if (r.integer or r.step is not None) and x.denominator != 1:
+        return False
+    if r.step is not None and x.numerator % r.step:
         return False
     if r.low is not None and (x < r.low or (r.low_open and x == r.low)):
         return False

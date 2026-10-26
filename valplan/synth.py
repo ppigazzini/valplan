@@ -79,6 +79,10 @@ class Planner:
                 continue
             compiler = Compiler(source if root is None else root)
             unions[schema] = [compiler.compile(b) for b in parts]
+            # A branch's range lets the interval rule read the union as ranges.
+            ranges |= {
+                v: r for v, b in zip(unions[schema], parts, strict=True) if (r := interval(b))
+            }
         self.abstraction = Abstraction(predicates, witnesses, listed, ranges, unions)
         self.goal = self.abstraction.cells_of(task.goal)
         self._whole: dict[tuple[str, tuple[Validator[Any], ...]], bool] = {}

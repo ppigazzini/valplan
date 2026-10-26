@@ -188,3 +188,47 @@ class TestNumericPrograms:
         for trial in range(20):
             answer = run(lib, task, program, start, _mock(lib_json["tools"], f"{n}:{seed}:{trial}"))
             assert task.goal.is_valid(answer)
+
+
+def test_a_nullable_range_gets_a_strong_program_that_runs_on_both_halves():
+    out = {"type": "object", "properties": {"r": {"const": "r"}}, "required": ["r"]}
+
+    def takes(name, arg):
+        properties = {"x": arg}
+        return {
+            "name": name,
+            "inputSchema": {"type": "object", "properties": properties, "required": ["x"]},
+            "outputSchema": out,
+        }
+
+    window = {"type": "number", "exclusiveMinimum": 5000, "exclusiveMaximum": 5001}
+    v = {"anyOf": [{"type": "null"}, window]}
+    lib = read_tools(
+        {
+            "tools": [
+                {
+                    "name": "get",
+                    "inputSchema": {"type": "object"},
+                    "outputSchema": {"type": "object", "properties": {"v": v}, "required": ["v"]},
+                },
+                takes("take_null", {"type": "null"}),
+                takes("take_pos", {"type": "number", "minimum": 0}),
+                takes("take_int", {"type": "integer"}),
+            ]
+        }
+    )
+    task = read_task(
+        {"name": "t", "inputs": {"type": "object", "properties": {}}, "goal": {"const": "r"}}
+    )
+    planner = Planner(lib, task, witnesses(lib, task))
+    program = planner.plan()
+    assert program is not None
+    assert not planner.weak
+
+    def returns(result):
+        return lambda _arguments: result
+
+    for value in (None, 5000.5):
+        impls = {name: returns({"r": "r"}) for name in ("take_null", "take_pos", "take_int")}
+        impls["get"] = returns({"v": value})
+        assert run(lib, task, program, {}, impls) == "r"

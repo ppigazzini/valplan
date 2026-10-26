@@ -29,14 +29,23 @@ def _i(lo, hi, *, integer=True, lo_open=False, hi_open=False, step=None):
 def _holds(n, r):
     lo_ok = r.low is None or n > r.low or (n == r.low and not r.low_open)
     hi_ok = r.high is None or n < r.high or (n == r.high and not r.high_open)
-    return lo_ok and hi_ok and (r.step is None or n % r.step == 0)
+    whole = Fraction(n).denominator == 1
+    kind_ok = whole or (not r.integer and r.step is None)
+    return lo_ok and hi_ok and kind_ok and (r.step is None or not whole or n % r.step == 0)
 
 
-def _random_range(rng):
+def _random_range(rng, *, integer=True):
     lo = rng.choice([None, *range(-30, 31)])
     hi = rng.choice([None, *range(-30, 31)])
     step = rng.choice([None, None, 1, 2, 3, 4, 5, 6])
-    return _i(lo, hi, lo_open=rng.random() < 0.3, hi_open=rng.random() < 0.3, step=step)
+    return _i(
+        lo,
+        hi,
+        integer=integer,
+        lo_open=rng.random() < 0.3,
+        hi_open=rng.random() < 0.3,
+        step=step,
+    )
 
 
 class TestIntegers:
@@ -119,6 +128,24 @@ class TestFractions:
             _i(5, 10, integer=False, lo_open=True),
         ]
         assert fractions_empty([whole], open_halves)
+
+    def test_every_answer_agrees_with_enumeration(self):
+        # With integer bounds a set of non-integers is a union of open unit intervals, so it
+        # is non-empty iff it holds a half-integer. Integer and stepped ranges hold none.
+        rng = random.Random(1)
+        for _ in range(3000):
+            pos = [
+                _random_range(rng, integer=rng.random() < 0.2) for _ in range(rng.randrange(1, 4))
+            ]
+            neg = [_random_range(rng, integer=rng.random() < 0.4) for _ in range(rng.randrange(4))]
+            halves = [Fraction(2 * k + 1, 2) for k in range(-40, 40)]
+            exists = any(
+                all(_holds(x, r) for r in pos) and not any(_holds(x, r) for r in neg)
+                for x in halves
+            )
+            assert fractions_empty(pos, neg) is not exists, (pos, neg)
+            found = member(pos, neg, integer=False)
+            assert (found is not None) == exists, (pos, neg)
 
     def test_a_stepped_range_holds_no_fraction_and_excludes_none(self):
         assert fractions_empty([_i(0, 10, integer=False, step=2)], [])
@@ -212,3 +239,20 @@ class TestBounds:
         assert between[0].status == "inhabited"
         assert preds[0].is_valid(between[0].witness)
         assert not preds[1].is_valid(between[0].witness)
+
+
+def test_a_union_of_ranges_is_decided_a_range_at_a_time():
+    window = {"type": "number", "exclusiveMinimum": 5000, "exclusiveMaximum": 5001}
+    nonneg = {"type": "number", "minimum": 0}
+    preds = [compile_schema({"anyOf": [{"type": "null"}, window]}), compile_schema(nonneg)]
+    parts = [compile_schema({"type": "null"}), compile_schema(window)]
+    w, n = interval(window), interval(nonneg)
+    assert w is not None
+    assert n is not None
+    a = Abstraction(preds, ranges={preds[1]: n, parts[1]: w}, unions={preds[0]: parts})
+    numeric = [
+        (c.kind, c.inside, c.status)
+        for c in a.cells
+        if c.kind in {"integer", "fraction"} and 0 in c.inside
+    ]
+    assert numeric == [("fraction", frozenset({0, 1}), "inhabited")]

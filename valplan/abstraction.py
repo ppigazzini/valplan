@@ -129,6 +129,9 @@ class Abstraction:
             self._ids[p]: list(values) for p, values in (finite or {}).items() if p in self._ids
         }
         self._ranges = {self._ids[p]: r for p, r in (ranges or {}).items() if p in self._ids}
+        #: Every range given, by its set: a union's branches have theirs here too.
+        self._profiles = dict(ranges or {})
+        self._forms: dict[tuple[int, str], list[Interval] | None] = {}
         self._branches = {
             self._ids[p]: list(parts)
             for p, parts in (unions or {}).items()
@@ -235,29 +238,66 @@ class Abstraction:
             for choice in itertools.product(*choices)
         )
 
+    def _range_form(self, q: int, name: str) -> list[Interval] | None:
+        """Return the ranges whose union predicate ``q`` is within kind ``name``, or None.
+
+        A range is its own form. A union is the union of its branches that meet the kind,
+        so it has one when each of those is a range: ``null`` or a bounded number is one
+        range within the numbers. A branch that misses the kind is left out, not read as a
+        range: an integer range holds no fraction, and as a hole it would remove some.
+        """
+        key = (q, name)
+        if key not in self._forms:
+            form: list[Interval] | None = None
+            if q in self._ranges:
+                form = [self._ranges[q]]
+            elif q in self._branches:
+                kind = dict(KINDS)[name]
+                form = []
+                for b in self._branches[q]:
+                    if intersection(kind, b).is_empty():
+                        continue
+                    r = self._profiles.get(b)
+                    if r is None:
+                        form = None
+                        break
+                    form.append(r)
+            self._forms[key] = form
+        return self._forms[key]
+
     def _by_ranges(self, name: str, pos: frozenset[int], neg: frozenset[int]) -> bool | None:
         """Return whether interval arithmetic proves a numeric cell empty, or None.
 
         Leaving a predicate out of a cell's meet gives a superset of the cell, so the cell
-        is empty wherever the meet of its range predicates alone is. Where every predicate
-        bearing on the kind is a range the superset is the cell: the answer is exact both
-        ways, and a member is constructed for a non-empty cell. Otherwise a non-empty
-        superset decides nothing (None), nor does a stepped cell too long to walk.
+        is empty wherever the meet of its range predicates alone is. A union of ranges
+        inside it is decided a range at a time, and outside it each of its ranges is a hole.
+        Where every predicate bearing on the kind has a range form the superset is the cell:
+        the answer is exact both ways, and a member is constructed for a non-empty cell.
+        Otherwise a non-empty superset decides nothing (None), nor does a stepped cell too
+        long to walk, nor one inside more unions than `MAX_BRANCHES` choices allow.
         """
         bearing = [q for q in pos | neg if name in self._meets.get(q, {name})]
-        exact = all(q in self._ranges for q in bearing)
-        ins = [self._ranges[q] for q in pos if q in self._ranges]
-        outs = [self._ranges[q] for q in neg if q in bearing and q in self._ranges]
+        forms = {q: self._range_form(q, name) for q in bearing}
+        exact = all(f is not None for f in forms.values())
+        ins = [f for q in pos if (f := forms.get(q)) is not None]
+        outs = [r for q in neg if (f := forms.get(q)) is not None for r in f]
+        if math.prod(len(f) for f in ins) > MAX_BRANCHES:
+            return None
+        integer = name == "integer"
         try:
-            empty = integers_empty(ins, outs) if name == "integer" else fractions_empty(ins, outs)
-            if empty or not exact:
-                return True if empty else None
-            found = member(ins, outs, integer=name == "integer")
+            for choice in itertools.product(*ins):
+                inside = list(choice)
+                if integers_empty(inside, outs) if integer else fractions_empty(inside, outs):
+                    continue
+                if not exact:
+                    return None
+                found = member(inside, outs, integer=integer)
+                if found is not None:
+                    self._found.append(found)
+                return False
         except PeriodTooLongError:
             return None
-        if found is not None:
-            self._found.append(found)
-        return False
+        return True
 
     def _split(self) -> list[Cell]:
         """Split the kinds by every predicate in turn.
