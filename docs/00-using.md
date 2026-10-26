@@ -50,7 +50,9 @@ impl = python_impl(escalate)  # the function, as the runner calls a tool
 
 Every annotation must admit JSON values only, since a tool call travels as JSON;
 valgebra decides that, and refuses an open `TypedDict` (declare it `closed=True`), a tuple
-or an unannotated parameter with the reason. Python's equality is kept: `Literal[1]` is
+or an unannotated parameter with the reason. A class no JSON value is an instance of, an
+`IntEnum` or `StrEnum`, is refused too: write a `Literal` of its values. Python's equality
+is kept: `Literal[1]` is
 the integer 1, not the float 1.0. Tools from both doors plan together.
 `examples/python/helpdesk.py` plans, verifies and runs a task on three Python tools:
 

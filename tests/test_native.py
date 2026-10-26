@@ -1,4 +1,5 @@
 import runpy
+from enum import IntEnum, StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -24,6 +25,14 @@ class Rate(TypedDict, closed=True):
 
 class Open(TypedDict):
     x: int
+
+
+class Tier(StrEnum):
+    PRO = "pro"
+
+
+class Level(IntEnum):
+    ONE = 1
 
 
 def vat_anywhere(country: Country) -> Rate:
@@ -58,6 +67,9 @@ class TestReading:
             ("open", "not JSON values"),
             ("star", "by keyword"),
             ("plain_return", "TypedDict"),
+            ("strenum", "no JSON value is a Tier"),
+            ("intenum", "no JSON value is a Level"),
+            ("enum_literal", "is a Tier, no JSON value"),
         ],
     )
     def test_it_refuses_what_is_not_a_json_contract(self, fn, reason):
@@ -73,11 +85,23 @@ class TestReading:
         def plain_return(x: int) -> int:
             return x
 
+        def strenum(x: Tier) -> None:
+            del x
+
+        def intenum(x: Level) -> None:
+            del x
+
+        def enum_literal(x: Literal[Tier.PRO]) -> None:
+            del x
+
         named = {
             "tuple": takes_tuple,
             "open": takes_open,
             "star": star,
             "plain_return": plain_return,
+            "strenum": strenum,
+            "intenum": intenum,
+            "enum_literal": enum_literal,
         }
         with pytest.raises(Unsupported, match=reason):
             python_tool(named.get(fn, fn) if isinstance(fn, str) else fn, name="t")

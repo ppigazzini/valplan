@@ -10,7 +10,10 @@ One rule keeps the planner's universe what it is: every annotation must denote J
 values only, because a tool call and its result travel as JSON whatever language wrote
 the tool. valgebra decides that inclusion, so the check is the algebra's, not a list of
 allowed forms: an open `TypedDict` (any extra key, any value) or a `tuple` is refused with
-the reason, and `closed=True` (PEP 728) is the fix for the first.
+the reason, and `closed=True` (PEP 728) is the fix for the first. A class that is no JSON
+type, an `IntEnum` or `StrEnum`, passes that inclusion, since its members are ints or
+strings, and admits no value a call receives over JSON; it is refused by name, and a
+`Literal` of the values it stands for is the fix.
 
 Python's semantics are kept, not JSON Schema's: `Literal[1]` is the integer 1 and not the
 float 1.0, and `int` admits `True`. A contract that wants JSON Schema's reading writes it
@@ -29,9 +32,39 @@ from valplan._valgebra import Validator
 from valplan.contracts import Slot, Task, Tool
 from valplan.schema import JSON, Unsupported
 
+#: The classes of the values `json.loads` returns: a subclass of one, an `IntEnum` or a
+#: `StrEnum`, has members that are JSON values to an inclusion check, and yet no value a
+#: call receives over JSON is one of them.
+_JSON_CLASSES = (NoneType, bool, int, float, str, list, dict)
+
+
+def _json_classes_only(annotation: object, where: str) -> None:
+    """Refuse ``annotation`` where it names a class, or lists a value, outside JSON's own."""
+    origin = get_origin(annotation)
+    if origin is typing.Annotated:
+        _json_classes_only(get_args(annotation)[0], where)
+    elif origin is Literal:
+        for value in get_args(annotation):
+            if type(value) not in _JSON_CLASSES:
+                msg = f"{where}: the literal {value!r} is a {type(value).__name__}, no JSON value"
+                raise Unsupported(msg)
+    elif origin is not None:
+        for arg in get_args(annotation):
+            _json_classes_only(arg, where)
+    elif is_typeddict(annotation):
+        for hint in _hints(annotation).values():
+            _json_classes_only(hint, where)
+    elif isinstance(annotation, type) and annotation not in _JSON_CLASSES:
+        msg = (
+            f"{where}: no JSON value is a {annotation.__name__}; spell its values as a "
+            "Literal of the JSON values they are"
+        )
+        raise Unsupported(msg)
+
 
 def _json_only(annotation: object, where: str) -> Validator[Any]:
     """Compile ``annotation`` and refuse it unless every value it admits is a JSON value."""
+    _json_classes_only(annotation, where)
     try:
         compiled = Validator(annotation)
     except Exception as exc:
