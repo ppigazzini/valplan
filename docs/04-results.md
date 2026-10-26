@@ -126,7 +126,7 @@ draft.
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Github_easy | 1943 | 1914 | 29 | 0 | 0 | 81421 | 1 |
 | Github_hard | 1240 | 1166 | 74 | 0 | 0 | 44396 | 0 |
-| Github_medium | 1976 | 1907 | 69 | 0 | 0 | 79220 | 0 |
+| Github_medium | 1976 | 1908 | 68 | 0 | 0 | 79247 | 0 |
 | Github_trivial | 444 | 439 | 5 | 0 | 0 | 16433 | 7 |
 | Github_ultra | 164 | 149 | 15 | 0 | 0 | 5003 | 0 |
 | Glaiveai2K | 1707 | 1689 | 18 | 0 | 0 | 78104 | 0 |
@@ -134,14 +134,14 @@ draft.
 | Kubernetes | 1064 | 1063 | 1 | 0 | 0 | 43400 | 0 |
 | Snowplow | 403 | 400 | 3 | 0 | 0 | 17345 | 0 |
 | WashingtonPost | 125 | 125 | 0 | 0 | 0 | 5150 | 0 |
-| all | 9558 | 9300 | 258 | 0 | 0 | 387607 | 8 |
+| all | 9558 | 9301 | 257 | 0 | 0 | 387634 | 8 |
 
-- 9300 of the 9558 schemas compile, none crashes, none times out. Of the 258 refused, 138
+- 9301 of the 9558 schemas compile, none crashes, none times out. Of the 257 refused, 138
   hold an embedded `$id`, 58 use `dependencies` or `additionalItems` in a schema declaring
-  no older draft, 28 build sets valgebra refuses, 21 hold a pattern outside valgebra's
+  no older draft, 28 build sets valgebra refuses, 20 hold a pattern outside valgebra's
   regex dialect, lookaheads and a backreference among them; the rest are listed by
   `tools/corpus.py`.
-- Membership differs from the package's on 8 of the 387607 values, each a reading the
+- Membership differs from the package's on 8 of the 387634 values, each a reading the
   ledger records: 7 are `1e300` under a draft-04 `integer`, and 1 is `"\n"` under a
   pattern ending in `$`, which Python's `re` matches before a final newline.
 

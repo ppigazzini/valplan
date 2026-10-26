@@ -26,11 +26,11 @@
   {
    "subset": "Github_medium",
    "schemas": 1976,
-   "compiled": 1907,
-   "refused": 69,
+   "compiled": 1908,
+   "refused": 68,
    "crashed": 0,
    "timed_out": 0,
-   "values": 79220,
+   "values": 79247,
    "disagreed": 0
   },
   {
@@ -119,7 +119,7 @@
   },
   {
    "reason": "a pattern outside valgebra's regex dialect",
-   "schemas": 21
+   "schemas": 20
   },
   {
    "reason": "a property name valgebra cannot hold",

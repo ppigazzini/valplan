@@ -688,7 +688,8 @@ def ecma(pattern: str) -> str:
     ``\d``, ``\w`` and ``\s`` become the ASCII and ECMA-262 classes they denote there, and
     ``\D``, ``\W`` and ``\S`` their complements; ``.`` stops at ECMA-262's four line
     terminators; ``\b`` and ``\B`` are boundaries of ECMA-262's ASCII word characters, and
-    inside a class ``\b`` is a backspace; ``\cX`` becomes the control character it names.
+    inside a class ``\b`` is a backspace; ``\cX`` becomes the control character it names,
+    and ``\0`` the NUL; a ``[``, ``&`` or ``~`` inside a class is the character itself.
     A class holding a negated shorthand, ``[\s\S]`` or ``[a\D]``, becomes the alternation
     of its parts, since valgebra's engine refuses a set nested in a set; a negated class
     holding one denotes an intersection the alternation cannot spell, and is refused.
@@ -709,6 +710,8 @@ def ecma(pattern: str) -> str:
             elif nxt == "c" and i + 2 < len(pattern) and pattern[i + 2].isalpha():
                 out.append(f"\\x{{{ord(pattern[i + 2]) % 32:02X}}}")
                 i += 1
+            elif nxt == "0" and not pattern[i + 2 : i + 3].isdigit():
+                out.append("\\x00")
             else:
                 out.append(pattern[i : i + 2])
             i += 2
@@ -765,11 +768,15 @@ def _class(body: str) -> str:
             elif nxt == "c" and i + 2 < len(body) and body[i + 2].isalpha():
                 kept.append(f"\\x{{{ord(body[i + 2]) % 32:02X}}}")
                 i += 1
+            elif nxt == "0" and not body[i + 2 : i + 3].isdigit():
+                kept.append("\\x00")
             else:
                 kept.append(body[i : i + 2])
             i += 2
         else:
-            kept.append(body[i])
+            # Literal in an ECMA-262 class; a nested set, an intersection and a symmetric
+            # difference to valgebra's engine.
+            kept.append(f"\\{body[i]}" if body[i] in "[&~" else body[i])
             i += 1
     inner = "".join(kept)
     if not complements:

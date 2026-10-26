@@ -237,6 +237,10 @@ class TestEcmaDialect:
             (r"^[a\D]$", "7", False),
             (r"^[^]$", "\n", True),
             (r"^[]$", "", False),
+            (r"^[a&&b]$", "&", True),
+            (r"^[a~~b]$", "~", True),
+            (r"^[a[]$", "[", True),
+            (r"^a\0b$", "a\x00b", True),
         ],
     )
     def test_a_pattern_means_what_ecma_262_says(self, pattern, text, admitted):
