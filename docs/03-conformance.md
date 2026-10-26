@@ -54,6 +54,7 @@ draft-07 schema `upgrade` translates them.
 | `$` before a final newline | no match | match | no match | the specification |
 | fractional `multipleOf` | the decimal numbers written | binary floats: `0.0075` is not a multiple of `0.0001` | exact rationals: a value's shortest decimal, an integral value its integer | the specification; an integral value read as its integer agrees with an integral step's reading, as it must, since a multiple of 3 is one of 1.5 |
 | a number written with a fraction or an exponent: a bound, a constant | the decimal number written | the double `json.loads` returns | the double `json.loads` returns | the universe is what `json.loads` returns: `{"maximum": 1e23}` refuses `10**23`, since `1e23` parses to 99999999999999991611392 |
+| a string holding a lone surrogate, which `json.loads` returns for `"\udc00"` | a pattern searches its code units | Python's `re` searches its code points | no pattern matches it, and a property name holding one is refused | valgebra's engine reads Unicode text, and such a string is none; RFC 8259 calls its behaviour unpredictable |
 | integral constants above 2**53 | one number each | one number each | one number each, its float spelling only when the float is the same number | `9007199254740993` and `9007199254740992.0` are two numbers |
 | `additionalItems`, `dependencies` in a 2020-12 schema | not keywords: annotations | annotations | refused | see the inventory |
 

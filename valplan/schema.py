@@ -238,11 +238,18 @@ def _literal(value: object) -> object:
     return Literal[value]  # ty: ignore[invalid-type-form]
 
 
+#: The code points UTF-16 pairs; a string holding one alone is no Unicode text.
+_SURROGATES = range(0xD800, 0xE000)
+
+
 def _field(key: str) -> str:
     # valgebra reads a trailing `?` on a record key as "optional"; a JSON key that ends in
     # one cannot be told apart from that marker.
     if key.endswith("?"):
         msg = f"property name {key!r} ends in '?', which valgebra reads as optional"
+        raise Unsupported(msg)
+    if any(ord(ch) in _SURROGATES for ch in key):
+        msg = f"property name {key!r} holds a lone surrogate, which is no Unicode text"
         raise Unsupported(msg)
     return key
 
@@ -295,6 +302,17 @@ class Compiler:
         if schema is self.root and schema.get("$schema", DRAFT) not in {DRAFT, *DRAFT7}:
             msg = f"$schema {schema['$schema']!r}: drafts 2020-12 and 07 are supported"
             raise Unsupported(msg)
+        try:
+            return self._compile_object(schema)
+        except Unsupported:
+            raise
+        except ValueError as exc:
+            # valgebra's own refusals -- its nesting limit, a key that is no Unicode text --
+            # are refusals of the schema, and a caller handles them as one.
+            msg = f"valgebra refuses the schema: {exc}"
+            raise Unsupported(msg) from exc
+
+    def _compile_object(self, schema: dict[str, Any]) -> Validator[Any]:
         named = schema.get("type")
         typed = frozenset(named if isinstance(named, list) else [named]) if named else None
         parts: list[object] = []

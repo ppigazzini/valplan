@@ -111,6 +111,19 @@ def test_an_integral_float_is_read_alike_by_integral_and_fractional_steps():
     assert compile_schema({"multipleOf": 0.0001}).is_valid(0.0075)
 
 
+def test_a_schema_past_valgebras_nesting_limit_is_refused_not_raised():
+    schema = {"type": "string"}
+    for _ in range(80):
+        schema = {"properties": {"a": schema}}
+    with pytest.raises(Unsupported, match="valgebra refuses"):
+        compile_schema(schema)
+
+
+def test_a_property_name_with_a_lone_surrogate_is_refused():
+    with pytest.raises(Unsupported, match="lone surrogate"):
+        compile_schema({"properties": {"\ud800": {}}})
+
+
 def test_a_pointer_through_an_embedded_resource_is_refused():
     schema = {
         "$defs": {
