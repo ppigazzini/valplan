@@ -30,6 +30,7 @@ uv run --no-sync python tools/suite.py --draft 7 --check docs/studies/json-schem
 uv run --no-sync python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
 uv run --no-sync python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
 uv run --no-sync python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
+uv run --no-sync python tools/corpus.py --check docs/studies/jsonschemabench.json   # fetches the corpus once
 uv run --no-sync python tools/bench.py --check docs/studies/bench.json   # 2.5 minutes on 48 cores, 10 on 4
 ```
 

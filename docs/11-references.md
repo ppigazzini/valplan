@@ -21,6 +21,10 @@
   generation for JSON Schema. PVLDB 15(13), 2022.
 - A. Habib, A. Shinnar, M. Hirzel, M. Pradel. Finding data compatibility bugs with JSON
   subschema checking. ISSTA 2021. [arXiv:1911.12651](https://arxiv.org/abs/1911.12651)
+- S. Geng, H. Cooper, M. Moskal, S. Jenkins, J. Berman, N. Ranchin, R. West, E. Horvitz,
+  H. Nori. JSONSchemaBench: a rigorous benchmark of structured outputs for language models.
+  [arXiv:2501.10868](https://arxiv.org/abs/2501.10868), 2025. Its 9558 schemas are the
+  real-world corpus of `tools/corpus.py`.
 - [JSON Schema draft 2020-12](https://json-schema.org/draft/2020-12) and the
   [JSON-Schema-Test-Suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite) (MIT).
 

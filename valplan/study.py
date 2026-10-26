@@ -89,6 +89,36 @@ class BenchStudy(TypedDict, closed=True):
     rows: list[BenchRow]
 
 
+class CorpusSubset(TypedDict, closed=True):
+    """The compiler on one subset of a corpus of real-world schemas."""
+
+    subset: str
+    schemas: Count
+    compiled: Count
+    refused: Count
+    crashed: Count
+    timed_out: Count
+    values: Count
+    disagreed: Count
+
+
+class Refusal(TypedDict, closed=True):
+    """How many schemas of a corpus the compiler refuses for one reason."""
+
+    reason: str
+    schemas: Count
+
+
+class CorpusStudy(TypedDict, closed=True):
+    """The compiler on a corpus of real-world schemas, fetched at a pinned commit."""
+
+    format: Literal[1]
+    corpus: str
+    commit: str
+    subsets: list[CorpusSubset]
+    refusals: list[Refusal]
+
+
 class StudyError(ValueError):
     """A study file that is malformed or contradicts itself."""
 
@@ -96,6 +126,7 @@ class StudyError(ValueError):
 SUITE = Validator(SuiteStudy)
 CASE = Validator(CaseStudy)
 BENCH = Validator(BenchStudy)
+CORPUS = Validator(CorpusStudy)
 
 
 def _load[T](schema: Validator[T], text: str) -> T:
@@ -133,6 +164,21 @@ def load_bench(text: str) -> BenchStudy:
         if row["inhabited"] + row["undecided"] != row["cells"] or row["proven"] > row["checks"]:
             msg = f"bench row {row['family']}/{row['tools']}/{row['seed']} contradicts itself"
             raise StudyError(msg)
+    return study
+
+
+def load_corpus(text: str) -> CorpusStudy:
+    """Parse and check a corpus study, and the rules between fields of each subset."""
+    study = _load(CORPUS, text)
+    for row in study["subsets"]:
+        outcomes = row["compiled"] + row["refused"] + row["crashed"] + row["timed_out"]
+        if outcomes != row["schemas"] or row["disagreed"] > row["values"]:
+            msg = f"corpus subset {row['subset']} contradicts itself"
+            raise StudyError(msg)
+    refused = sum(r["schemas"] for r in study["refusals"])
+    if refused != sum(row["refused"] for row in study["subsets"]):
+        msg = "the refusals by reason do not add up to the refused schemas"
+        raise StudyError(msg)
     return study
 
 

@@ -22,6 +22,14 @@ gives the verdict the specification gives. A keyword it cannot translate raises
   uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
   ```
 
+- **Real-world schemas.** JSONSchemaBench's 9558, fetched at a pinned commit and never
+  vendored, each checked on drawn and generic values against the `jsonschema` package's
+  validator for its draft:
+
+  ```bash
+  uv run python tools/corpus.py --check docs/studies/jsonschemabench.json
+  ```
+
 - **The `jsonschema` package**, pinned in the development group, as a second
   implementation: `tests/test_properties.py` compares membership on 400 random schemas
   and 25 random values each, over the keywords whose meaning the two share exactly.

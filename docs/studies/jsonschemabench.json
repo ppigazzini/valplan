@@ -1,0 +1,149 @@
+{
+ "format": 1,
+ "corpus": "guidance-ai/jsonschemabench",
+ "commit": "9a94995b9279ae3af3aed4b2629172790b968d14",
+ "subsets": [
+  {
+   "subset": "Github_easy",
+   "schemas": 1943,
+   "compiled": 1914,
+   "refused": 29,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 81421,
+   "disagreed": 1
+  },
+  {
+   "subset": "Github_hard",
+   "schemas": 1240,
+   "compiled": 1165,
+   "refused": 75,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 44359,
+   "disagreed": 0
+  },
+  {
+   "subset": "Github_medium",
+   "schemas": 1976,
+   "compiled": 1907,
+   "refused": 69,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 79220,
+   "disagreed": 0
+  },
+  {
+   "subset": "Github_trivial",
+   "schemas": 444,
+   "compiled": 439,
+   "refused": 5,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 16433,
+   "disagreed": 7
+  },
+  {
+   "subset": "Github_ultra",
+   "schemas": 164,
+   "compiled": 149,
+   "refused": 15,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 5003,
+   "disagreed": 0
+  },
+  {
+   "subset": "Glaiveai2K",
+   "schemas": 1707,
+   "compiled": 1689,
+   "refused": 18,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 78104,
+   "disagreed": 0
+  },
+  {
+   "subset": "JsonSchemaStore",
+   "schemas": 492,
+   "compiled": 448,
+   "refused": 44,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 17135,
+   "disagreed": 0
+  },
+  {
+   "subset": "Kubernetes",
+   "schemas": 1064,
+   "compiled": 1063,
+   "refused": 1,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 43400,
+   "disagreed": 0
+  },
+  {
+   "subset": "Snowplow",
+   "schemas": 403,
+   "compiled": 400,
+   "refused": 3,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 17345,
+   "disagreed": 0
+  },
+  {
+   "subset": "WashingtonPost",
+   "schemas": 125,
+   "compiled": 125,
+   "refused": 0,
+   "crashed": 0,
+   "timed_out": 0,
+   "values": 5150,
+   "disagreed": 0
+  }
+ ],
+ "refusals": [
+  {
+   "reason": "a $ref outside the document, to an anchor, or through an embedded $id",
+   "schemas": 6
+  },
+  {
+   "reason": "a $schema it does not read",
+   "schemas": 5
+  },
+  {
+   "reason": "a pattern outside valgebra's regex dialect",
+   "schemas": 21
+  },
+  {
+   "reason": "a property name valgebra cannot hold",
+   "schemas": 1
+  },
+  {
+   "reason": "a schema is an object or a boolean, got list",
+   "schemas": 1
+  },
+  {
+   "reason": "a set valgebra refuses to build",
+   "schemas": 27
+  },
+  {
+   "reason": "an embedded $id",
+   "schemas": 138
+  },
+  {
+   "reason": "the keyword additionalItems",
+   "schemas": 15
+  },
+  {
+   "reason": "the keyword dependencies",
+   "schemas": 43
+  },
+  {
+   "reason": "the keyword unevaluatedProperties",
+   "schemas": 2
+  }
+ ]
+}

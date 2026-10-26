@@ -28,4 +28,5 @@ jobs:
       - run: uv run python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
       - run: uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
       - run: uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
+      - run: uv run python tools/corpus.py --check docs/studies/jsonschemabench.json
       - run: uv run python tools/bench.py --check docs/studies/bench.json

@@ -115,3 +115,16 @@ def test_the_program_verified_from_elsewhere_proves_every_check_but_its_stop():
     escalate = task(next(s for s in specs if s["name"] == "escalate"))
     checks = verify(lib, escalate, from_json(json.loads(block)))
     assert [c.relation for c in checks if not c.holds] == ["uncovered"]
+
+
+def test_the_pages_quote_the_corpus_totals():
+    rows = _study("jsonschemabench.json")["subsets"]
+    total = {k: sum(r[k] for r in rows) for k in ("schemas", "compiled", "values", "disagreed")}
+    crashed = sum(r["crashed"] + r["timed_out"] for r in rows)
+    assert crashed == 0
+    readme, page = _page("README.md"), _page("docs/04-results.md")
+    assert f"{total['schemas']} schemas" in readme
+    assert f"{total['compiled']} compile, none crashes" in readme
+    assert f"{total['disagreed']} of {total['values']} values" in readme
+    assert f"{total['compiled']} of the {total['schemas']} schemas compile, none crashes" in page
+    assert f"on {total['disagreed']} of the {total['values']} values" in page

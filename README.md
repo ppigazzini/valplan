@@ -40,6 +40,10 @@ uv run python tools/bench.py --check docs/studies/bench.json
   4.26.0 42 of 74 (`tools/suite.py --reference`). Against that package on 400 random
   schemas and 25 random values each, over the keywords the two read alike: no
   disagreement ([`docs/03-conformance.md`](docs/03-conformance.md)).
+- **Real-world schemas** (JSONSchemaBench, 9558 schemas from GitHub, the JSON Schema
+  Store, Kubernetes and function-calling data): 9299 compile, none crashes; membership
+  differs from the `jsonschema` package's on 8 of 387570 values, each a reading the ledger
+  records.
 - **Helpdesk case study** (10 MCP tools, 4 tasks): 35 to 37 cells per task, none of them
   undecided. Two tasks get strong programs, one branching three ways on an invoice's
   status; the verifier proves every check of both (6 of 6, 14 of 14). The other two get
