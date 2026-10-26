@@ -184,9 +184,18 @@ class Abstraction:
         return self._apart[key]
 
     def _below(self, i: int, j: int) -> bool:
+        """Return whether predicate ``i`` is proven to lie below predicate ``j``.
+
+        A pair already proven disjoint is not asked: ``i`` lies below ``j`` there only if
+        ``i`` is empty, and a predicate a split reaches is not proven empty in the kind it
+        splits. Not asking proves nothing, and the split asks about the cell instead.
+        """
         if (i, j) not in self._under:
-            target = self.predicates[j]
-            self._under[i, j] = all(a.is_subtype_of(target) for a in self._parts(i))
+            if self._apart.get((min(i, j), max(i, j))):
+                self._under[i, j] = False
+            else:
+                target = self.predicates[j]
+                self._under[i, j] = all(a.is_subtype_of(target) for a in self._parts(i))
         return self._under[i, j]
 
     def _set(
