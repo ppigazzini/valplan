@@ -29,7 +29,7 @@ from typing import Any, Literal, get_args, get_origin, get_type_hints
 from typing_extensions import is_typeddict
 
 from valplan._valgebra import Validator
-from valplan.contracts import RESULT_NAME, Slot, Task, Tool
+from valplan.contracts import RESULT_NAME, Slot, Task, Tool, inhabited
 from valplan.schema import JSON, Unsupported
 
 #: The classes of the values `json.loads` returns: a subclass of one, an `IntEnum` or a
@@ -133,11 +133,12 @@ def _results(tool_name: str, annotation: object) -> tuple[Slot, ...]:
         raise Unsupported(msg)
     hints = _hints(annotation)
     required = getattr(annotation, "__required_keys__", frozenset(hints))
-    return tuple(
+    found = tuple(
         Slot(key, _json_only(hints[key], f"{tool_name} -> {key}"), hints[key])
         for key in hints
         if key in required
     )
+    return inhabited(found, f"{tool_name}: result")
 
 
 def python_impl(fn: Callable[..., Any]) -> Callable[[dict[str, Any]], dict[str, Any]]:
@@ -166,6 +167,7 @@ def python_task(name: str, inputs: Mapping[str, object] | type, goal: object) ->
         Slot(key, _json_only(annotation, f"{name}.{key}"), annotation)
         for key, annotation in named.items()
     )
+    inhabited(slots, f"{name}: input")
     for slot in slots:
         if RESULT_NAME.match(slot.name):
             msg = f"input {slot.name!r} is named like a call's result"

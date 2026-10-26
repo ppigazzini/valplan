@@ -90,6 +90,19 @@ def slots(schema: Mapping[str, Any], *, required_only: bool) -> tuple[Slot, ...]
     )
 
 
+def inhabited(found: tuple[Slot, ...], where: str) -> tuple[Slot, ...]:
+    """Return ``found``, refusing a slot valgebra proves admits no value.
+
+    Every claim about a result or an input that admits nothing holds vacuously: a program
+    returning it is proven, and no run can reach the return.
+    """
+    for slot in found:
+        if slot.schema.is_empty():
+            msg = f"{where} {slot.name!r} admits no value: every claim about it holds vacuously"
+            raise Unsupported(msg)
+    return found
+
+
 def _current(schema: Any) -> Any:
     """Return ``schema`` in draft 2020-12, upgrading it when it declares draft-07."""
     if isinstance(schema, dict) and schema.get("$schema") in DRAFT7:
@@ -114,7 +127,7 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         whole = compiler.compile(spec["inputSchema"])
         args = slots(spec["inputSchema"], required_only=False)
         out = spec.get("outputSchema")
-        results = slots(out, required_only=True) if out is not None else ()
+        results = inhabited(slots(out, required_only=True), "result") if out is not None else ()
         output = Compiler(out).compile(out) if out is not None else JSON
     except Unsupported as exc:
         msg = f"tool {name!r}: {exc}"
@@ -176,7 +189,7 @@ RESULT_NAME = re.compile(r"c[0-9]+\.")
 def task(spec: Mapping[str, Any]) -> Task:
     """Read a task: ``{"name", "inputs": <object schema>, "goal": <schema>}``."""
     goal = _current(spec.get("goal", True))
-    inputs = slots(_current(spec["inputs"]), required_only=True)
+    inputs = inhabited(slots(_current(spec["inputs"]), required_only=True), "input")
     for slot in inputs:
         if RESULT_NAME.match(slot.name):
             msg = f"input {slot.name!r} is named like a call's result"

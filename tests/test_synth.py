@@ -317,3 +317,18 @@ class TestNames:
         }
         with pytest.raises(Unsupported, match="named like a call's result"):
             read_task({"name": "t", "inputs": inputs, "goal": True})
+
+
+class TestDegenerateContracts:
+    @staticmethod
+    def _tool(name, args, out):
+        return {
+            "name": name,
+            "inputSchema": {"type": "object", "properties": args, "required": list(args)},
+            "outputSchema": {"type": "object", "properties": out, "required": list(out)},
+        }
+
+    def test_a_result_that_admits_no_value_is_refused(self):
+        empty = {"type": "string", "minLength": 5, "maxLength": 2}
+        with pytest.raises(Unsupported, match="admits no value"):
+            read_tools({"tools": [self._tool("broken", {"x": {"type": "string"}}, {"g": empty})]})
