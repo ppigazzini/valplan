@@ -1,7 +1,7 @@
 import runpy
 from enum import IntEnum, StrEnum
 from pathlib import Path
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Literal, NotRequired, TypedDict
 
 import pytest
 from annotated_types import Ge, Le
@@ -34,6 +34,26 @@ class Level(IntEnum):
     ONE = 1
 
 
+class Page[T](TypedDict, closed=True):
+    items: list[T]
+    first: T
+    cursor: NotRequired[str]
+
+
+class Pair[A, B = Country](TypedDict, closed=True):
+    left: A
+    right: B
+
+
+class LevelPage[T](TypedDict, closed=True):
+    items: list[T]
+    level: Level
+
+
+class RatePair(Pair[Rate]):
+    pass
+
+
 def vat_anywhere(country: Country) -> Rate:
     """Return a VAT rate for any country."""
     return Rate(rate_percent=20.0 if country != "US" else 0.0)
@@ -59,6 +79,13 @@ class TestReading:
         t = python_tool(double)
         assert [(r.name, r.path) for r in t.results] == [("$", ())]
         assert t.output.is_valid(4)
+
+    def test_an_open_typeddict_result_is_refused(self):
+        def f() -> Open:
+            return Open(x=1)
+
+        with pytest.raises(Unsupported, match="not JSON values"):
+            python_tool(f)
 
     def test_a_function_returning_nothing_has_no_results(self):
         def ping(host: str) -> None:
@@ -107,6 +134,51 @@ class TestReading:
         }
         with pytest.raises(Unsupported, match=reason):
             python_tool(named.get(fn, fn) if isinstance(fn, str) else fn, name="t")
+
+
+class TestGenericRecords:
+    def test_an_applied_typeddict_gives_its_keys_with_the_argument_in_place(self):
+        def page(country: Country) -> Page[Country]:
+            return Page(items=[country], first=country)
+
+        t = python_tool(page)
+        results = {s.name: s.schema for s in t.results}
+        assert list(results) == ["items", "first"]
+        assert results["first"].is_valid("FR")
+        assert not results["first"].is_valid("fr")
+        assert results["items"].is_valid(["FR", "DE"])
+        assert t.output.is_valid({"items": ["FR"], "first": "FR", "cursor": "c"})
+
+    def test_a_typeddict_deriving_from_an_applied_one_reads_its_fields_bound(self):
+        def pair() -> RatePair:
+            return RatePair(left=Rate(rate_percent=1.0), right="FR")
+
+        results = {s.name: s.schema for s in python_tool(pair).results}
+        assert results["left"].is_valid({"rate_percent": 20.0})
+        assert not results["left"].is_valid({"rate_percent": 31.0})
+        assert results["right"].is_valid("FR")
+
+    def test_a_parameter_left_out_takes_its_default(self):
+        def pair() -> Pair[int]:
+            return Pair(left=1, right="FR")
+
+        results = {s.name: s.schema for s in python_tool(pair).results}
+        assert results["right"].is_valid("FR")
+        assert not results["right"].is_valid("fr")
+
+    def test_an_applied_typeddict_is_held_to_json_classes_in_every_field(self):
+        def levels(x: LevelPage[int]) -> None:
+            del x
+
+        with pytest.raises(Unsupported, match="no JSON value is a Level"):
+            python_tool(levels)
+
+    def test_a_task_takes_an_applied_typeddict_of_inputs(self):
+        task = python_task("t", Pair[int], Rate)
+        assert [(s.name, s.schema.is_valid("FR")) for s in task.inputs] == [
+            ("left", False),
+            ("right", True),
+        ]
 
 
 class TestFiniteValues:

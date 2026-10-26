@@ -2,7 +2,8 @@
 
 A tool is a function. Its annotated parameters are its arguments -- required unless they
 have a default -- and its return annotation gives its results: the keys a `TypedDict`
-requires, or, for any other annotation, the whole value as one result, ``$``. The
+requires, a generic one applied (`Page[Ticket]`) read with its arguments in place, or, for
+any other annotation, the whole value as one result, ``$``. The
 annotations are valgebra's own schema language (a class, a `Literal`, an `Annotated` bound
 or `Regex`, a union, a `TypedDict`, a list), so no JSON Schema is written and none is
 translated.
@@ -47,12 +48,12 @@ def _json_classes_only(annotation: object, where: str) -> None:
             if type(value) not in _JSON_CLASSES:
                 msg = f"{where}: the literal {value!r} is a {type(value).__name__}, no JSON value"
                 raise Unsupported(msg)
+    elif _record(annotation) is not None:
+        for hint in _fields(annotation).values():
+            _json_classes_only(hint, where)
     elif origin is not None:
         for arg in get_args(annotation):
             _json_classes_only(arg, where)
-    elif is_typeddict(annotation):
-        for hint in _hints(annotation).values():
-            _json_classes_only(hint, where)
     elif isinstance(annotation, type) and annotation not in _JSON_CLASSES:
         msg = (
             f"{where}: no JSON value is a {annotation.__name__}; spell its values as a "
@@ -80,6 +81,43 @@ def _json_only(annotation: object, where: str) -> Validator[Any]:
 
 def _hints(target: Any) -> dict[str, Any]:
     return get_type_hints(target, include_extras=True)
+
+
+def _record(annotation: object) -> Any:
+    """Return the `TypedDict` class ``annotation`` is, or applies to arguments, or None."""
+    cls = get_origin(annotation) or annotation
+    return cls if is_typeddict(cls) else None
+
+
+def _fields(annotation: object) -> dict[str, Any]:
+    """Return the fields of a `TypedDict`, each read with the type parameters bound.
+
+    `typing` hands a generic record's hints back holding its parameters, bound nowhere.
+    valgebra binds each to the argument the class is applied to, or that a base it derives
+    from was applied to, or else to its PEP 696 default; a field is read here the same way,
+    so a result's slot is the set the record's own schema gives its key.
+    """
+    record = _record(annotation)
+    bound = _bindings(record, get_args(annotation))
+    return {key: _bound(hint, bound) for key, hint in _hints(record).items()}
+
+
+def _bindings(record: Any, args: tuple[Any, ...]) -> dict[Any, Any]:
+    params = getattr(record, "__parameters__", ())
+    bound = dict(zip(params, args, strict=False))
+    bound |= {p: p.__default__ for p in params[len(args) :] if p.has_default()}
+    for base in getattr(record, "__orig_bases__", ()):
+        origin = get_origin(base)
+        if origin is not None and is_typeddict(origin):
+            bound |= _bindings(origin, tuple(_bound(a, bound) for a in get_args(base)))
+    return bound
+
+
+def _bound(hint: Any, bound: dict[Any, Any]) -> Any:
+    if isinstance(hint, typing.TypeVar):
+        return bound.get(hint, hint)
+    params = getattr(hint, "__parameters__", ())
+    return hint[tuple(bound.get(p, p) for p in params)] if params else hint
 
 
 def python_tool(fn: Callable[..., Any], *, name: str | None = None) -> Tool:
@@ -127,15 +165,19 @@ def python_tool(fn: Callable[..., Any], *, name: str | None = None) -> Tool:
 def _results(tool_name: str, annotation: object) -> tuple[Slot, ...]:
     if annotation is None or annotation is NoneType:
         return ()
-    if not is_typeddict(annotation):
+    record = _record(annotation)
+    if record is None:
         # A result that is no object is one slot, the whole result, as an MCP tool's is.
         whole = _json_only(annotation, f"{tool_name} -> $")
         return inhabited((Slot("$", whole, annotation, path=()),), f"{tool_name}: result")
-    hints = _hints(annotation)
-    required = getattr(annotation, "__required_keys__", frozenset(hints))
+    # The record is held whole, as an argument is: an open one admits non-JSON values under
+    # the keys it does not name, and its output check would pass them.
+    _json_only(annotation, f"{tool_name} -> result")
+    fields = _fields(annotation)
+    required = getattr(record, "__required_keys__", frozenset(fields))
     found = tuple(
-        Slot(key, _json_only(hints[key], f"{tool_name} -> {key}"), hints[key])
-        for key in hints
+        Slot(key, _json_only(fields[key], f"{tool_name} -> {key}"), fields[key])
+        for key in fields
         if key in required
     )
     return inhabited(found, f"{tool_name}: result")
@@ -157,10 +199,11 @@ def python_task(name: str, inputs: Mapping[str, object] | type, goal: object) ->
     ``inputs`` maps each input's name to its annotation, or is a `TypedDict` whose required
     keys are the inputs.
     """
-    if isinstance(inputs, type) and is_typeddict(inputs):
-        hints = _hints(inputs)
-        required = getattr(inputs, "__required_keys__", frozenset(hints))
-        named = {k: v for k, v in hints.items() if k in required}
+    record = _record(inputs)
+    if record is not None:
+        fields = _fields(inputs)
+        required = getattr(record, "__required_keys__", frozenset(fields))
+        named = {k: v for k, v in fields.items() if k in required}
     else:
         named = dict(typing.cast("Mapping[str, object]", inputs))
     slots = tuple(
