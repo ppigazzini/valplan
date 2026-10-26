@@ -270,6 +270,8 @@ class Compiler:
         self.ignored: set[str] = set()
         self._done: dict[str, Validator[Any]] = {}
         self._open: dict[str, Validator[Any]] = {}
+        #: The open fixpoints whose placeholder each reference returned, in order.
+        self._used: list[str] = []
         self._typed: list[frozenset[str] | None] = []
         #: Whether a keyword of each schema being compiled has guarded itself past the
         #: universe (`guard`): only then does the schema need its meet with ``JSON``.
@@ -363,32 +365,63 @@ class Compiler:
         any other is compiled in place. Each fixpoint is a definition, and valgebra admits
         128 in one set, so the 200 `$defs` a generated schema may carry are compiled
         inline, not as 200 definitions.
+
+        A set is kept for reuse only when it holds no placeholder of a fixpoint still being
+        built: the placeholder stands for its fixpoint inside that fixpoint's builder alone,
+        and a set built around one means something else, or nothing, anywhere else.
         """
         if pointer in self._done:
             return self._done[pointer]
         if pointer in self._open:
+            self._used.append(pointer)
             return self._open[pointer]
         target = self.resolve(pointer)
+        mark = len(self._used)
         if not self._reaches_itself(target):
-            self._done[pointer] = self.compile(target)
-            return self._done[pointer]
+            built = self.compile(target)
+        else:
 
-        def body(this: Validator[Any]) -> Validator[Any]:
-            self._open[pointer] = this
+            def body(this: Validator[Any]) -> Validator[Any]:
+                self._open[pointer] = this
+                try:
+                    return self.compile(target)
+                finally:
+                    del self._open[pointer]
+
             try:
-                return self.compile(target)
-            finally:
-                del self._open[pointer]
-
-        try:
-            built = recursive(body)
-        except Unsupported:
-            raise
-        except Exception as exc:
-            msg = f"$ref {pointer!r} does not compile to a contractive fixpoint: {exc}"
-            raise Unsupported(msg) from exc
-        self._done[pointer] = built
+                built = recursive(body)
+            except Unsupported:
+                raise
+            except Exception as exc:
+                msg = f"$ref {pointer!r} does not compile to a contractive fixpoint: {exc}"
+                raise Unsupported(msg) from exc
+            # The fixpoint closes over its own placeholder; what it leaves open is the rest.
+            self._used[mark:] = [p for p in self._used[mark:] if p != pointer]
+        if len(self._used) == mark:
+            self._done[pointer] = built
         return built
+
+    def closed(self, schema: object) -> Callable[[], Validator[Any]]:
+        """Return a getter of the set ``schema`` compiles to, for a callback to check against.
+
+        An opaque predicate's callback runs at membership time, outside every fixpoint's
+        builder, where a set holding the placeholder of a fixpoint then being built means
+        nothing. Such a set is compiled again, by a fresh compiler, the first time the
+        callback asks for it; any other is the set compiled now.
+        """
+        mark = len(self._used)
+        built = self.compile(schema)
+        if len(self._used) == mark:
+            return lambda: built
+        root = self.root
+        cache: list[Validator[Any]] = []
+
+        def get() -> Validator[Any]:
+            if not cache:
+                cache.append(Compiler(root).compile(schema))
+            return cache[0]
+
+        return get
 
     def _reaches_itself(self, target: object) -> bool:
         """Return whether a reference inside ``target`` leads back to it, through any others.
@@ -563,13 +596,15 @@ def _contains(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     """
     if "contains" not in s:
         return JSON
-    inner = c.compile(s["contains"])
     if "minContains" not in s and "maxContains" not in s:
+        inner = c.compile(s["contains"])
         return c.guard("array", intersection(ARRAY, complement(each(complement(inner)))))
     c.opaque.add("minContains/maxContains")
     low, high = s.get("minContains", 1), s.get("maxContains", math.inf)
+    contained = c.closed(s["contains"])
 
     def counted(items: list[Any]) -> bool:
+        inner = contained()
         return low <= sum(inner.is_valid(x) for x in items) <= high
 
     return c.guard("array", opaque(list[Any], counted))
@@ -723,9 +758,9 @@ def _object_by_pattern(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     keys are key types or literals, so a key narrowed by a pattern has no clause to sit in.
     """
     c.opaque.add("patternProperties")
-    props = {k: c.compile(v) for k, v in s.get("properties", {}).items()}
-    patterns = [(_search(p), c.compile(v)) for p, v in s["patternProperties"].items()]
-    extra = c.compile(s.get("additionalProperties", True))
+    props = {k: c.closed(v) for k, v in s.get("properties", {}).items()}
+    patterns = [(_search(p), c.closed(v)) for p, v in s["patternProperties"].items()]
+    extra = c.closed(s.get("additionalProperties", True))
     required = list(s.get("required", []))
 
     def admits(obj: dict[str, Any]) -> bool:
@@ -737,7 +772,7 @@ def _object_by_pattern(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
                 matched.append(props[key])
             if not matched:
                 matched = [extra]
-            if not all(sub.is_valid(value) for sub in matched):
+            if not all(sub().is_valid(value) for sub in matched):
                 return False
         return True
 
@@ -746,9 +781,10 @@ def _object_by_pattern(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
 
 def _property_names(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     c.opaque.add("propertyNames")
-    names = c.compile(s["propertyNames"])
+    named = c.closed(s["propertyNames"])
 
     def admits(obj: dict[str, Any]) -> bool:
+        names = named()
         return all(names.is_valid(k) for k in obj)
 
     return c.guard("object", opaque(dict[str, Any], admits))

@@ -155,6 +155,30 @@ def test_a_reference_that_reaches_itself_is_a_fixpoint():
     assert not s.is_valid({"kids": [{"kids": [1]}]})
 
 
+#: A recursive schema reached through `patternProperties`, whose check is a callback run at
+#: membership time, outside every fixpoint's builder.
+_PATTERNED = {
+    "type": "object",
+    "patternProperties": {"^[a-z]": {"$ref": "#/$defs/h"}},
+    "additionalProperties": False,
+}
+_TREE = {"$defs": {"h": {"oneOf": [{"type": "number"}, _PATTERNED]}}, "$ref": "#/$defs/h"}
+
+
+class TestRecursionThroughCallbacks:
+    @pytest.mark.parametrize(
+        ("value", "admitted"),
+        [({"k": 1}, True), ({"k": {"j": 2}}, True), ({"k": "x"}, False), ({"K": 1}, False)],
+    )
+    def test_a_pattern_property_reaching_its_fixpoint_checks_the_fixpoint(self, value, admitted):
+        assert compile_schema(_TREE).is_valid(value) is admitted
+
+    def test_a_set_built_inside_a_fixpoint_is_not_reused_outside_it(self):
+        c = Compiler(_TREE)
+        c.ref("#/$defs/h")
+        assert c.compile(_PATTERNED).is_valid({"k": 1})
+
+
 def test_a_pointer_through_an_embedded_resource_is_refused():
     schema = {
         "$defs": {
