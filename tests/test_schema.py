@@ -95,6 +95,21 @@ def test_json_key_equates_one_and_one_point_zero_but_not_true():
     assert json_key(1) != json_key(True)
 
 
+def test_a_pointer_through_an_embedded_resource_is_refused():
+    schema = {
+        "$defs": {
+            "z": {"type": "string"},
+            "x": {
+                "$id": "http://example.com/x.json",
+                "$defs": {"z": {"type": "integer"}, "y": {"$ref": "#/$defs/z"}},
+            },
+        },
+        "$ref": "#/$defs/x/$defs/y",
+    }
+    with pytest.raises(Unsupported, match="embedded"):
+        compile_schema(schema)
+
+
 class TestEcmaDialect:
     @pytest.mark.parametrize(
         ("pattern", "text", "admitted"),

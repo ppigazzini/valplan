@@ -368,6 +368,11 @@ class Compiler:
         node = self.root
         for raw in unquote(pointer[1:]).split("/")[1:]:
             part = raw.replace("~1", "/").replace("~0", "~")
+            if node is not self.root and isinstance(node, dict) and "$id" in node:
+                # The pointer enters an embedded resource, whose `$ref`s resolve against
+                # its own base URI; reading them against the root would misread them.
+                msg = f"$ref {pointer!r} passes through an embedded $id resource"
+                raise Unsupported(msg)
             if isinstance(node, dict) and part in node:
                 node = node[part]
             elif isinstance(node, dict) and part == "items" and "prefixItems" in node:

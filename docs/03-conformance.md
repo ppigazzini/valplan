@@ -37,7 +37,7 @@ Every keyword of the draft 2020-12 vocabularies is in exactly one class, and
 | translated exactly | `type`, `enum`, `const`, the four bounds, an integral `multipleOf`, `minLength`, `maxLength`, `pattern`, `prefixItems`, `items`, `contains`, `minItems`, `maxItems`, `properties`, `required`, `additionalProperties`, `minProperties`, `maxProperties`, `dependentRequired`, `dependentSchemas`, `allOf`, `anyOf`, `oneOf`, `not`, `if`/`then`/`else`, `$ref` (local pointers), a root `$id` |
 | translated as an opaque predicate | `patternProperties`, `propertyNames`, `uniqueItems`, `minContains`, `maxContains`, a fractional `multipleOf` |
 | annotations | `title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `format`, the three `content*` keywords, `$schema`, `$vocabulary`, `$comment`, `$defs` |
-| refused | `unevaluatedProperties`, `unevaluatedItems`, `$anchor`, `$dynamicRef`, `$dynamicAnchor`; an embedded `$id`; a reference outside the document |
+| refused | `unevaluatedProperties`, `unevaluatedItems`, `$anchor`, `$dynamicRef`, `$dynamicAnchor`; an embedded `$id`, and a pointer through one; a reference outside the document |
 
 A keyword outside the vocabularies is an annotation, as draft 2020-12 says to treat it,
 and `Compiler.ignored` records it: `x-label` or OpenAPI's `nullable` assert nothing. Two

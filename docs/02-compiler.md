@@ -68,7 +68,7 @@ predicates: membership is exact, and a relation that has to look inside one answ
 
 `Unsupported` names the keyword: `unevaluatedProperties`, `unevaluatedItems`,
 `$dynamicRef`, `$dynamicAnchor`, `$anchor` references, references outside the document, an
-embedded `$id`, a draft other than 2020-12 and 07, and a property name ending in `?`
+embedded `$id` and a pointer through one, a draft other than 2020-12 and 07, and a property name ending in `?`
 (valgebra reads that suffix as "optional"). A keyword outside the vocabularies is an
 annotation, as draft 2020-12 says, and `Compiler.ignored` records it.
 
