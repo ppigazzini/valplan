@@ -8,6 +8,7 @@ from valplan.contracts import tools as read_tools
 from valplan.program import Call, Return, Stop, Test, render, stops
 from valplan.run import ContractError, run
 from valplan.sample import Sampler
+from valplan.schema import Unsupported
 from valplan.synth import Planner, gaps, witnesses
 from valplan.verify import verify
 
@@ -278,3 +279,41 @@ class TestRunnerContracts:
         lib, task, program = self._library()
         with pytest.raises(ContractError, match="input q is missing"):
             run(lib, task, program, {}, {"get": lambda _a: {"id": "a"}})
+
+
+class TestNames:
+    def test_a_tool_name_with_dots_plans(self):
+        out = {"type": "object", "properties": {"r": {"const": "r"}}, "required": ["r"]}
+
+        def takes(name, arg):
+            properties = {"x": arg}
+            return {
+                "name": name,
+                "inputSchema": {"type": "object", "properties": properties, "required": ["x"]},
+                "outputSchema": out,
+            }
+
+        lib = read_tools(
+            {
+                "tools": [
+                    takes("billing.small", {"type": "integer", "maximum": 9}),
+                    takes("billing.large", {"type": "integer", "minimum": 10}),
+                ]
+            }
+        )
+        inputs = {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}
+        task = read_task({"name": "t", "inputs": inputs, "goal": {"const": "r"}})
+        planner = Planner(lib, task, witnesses(lib, task))
+        program = planner.plan()
+        assert program is not None
+        assert not planner.weak
+        assert not [c for c in verify(lib, task, program) if c.relation == "not_subset"]
+
+    def test_an_input_named_like_a_result_is_refused(self):
+        inputs = {
+            "type": "object",
+            "properties": {"c1.id": {"type": "string"}},
+            "required": ["c1.id"],
+        }
+        with pytest.raises(Unsupported, match="named like a call's result"):
+            read_task({"name": "t", "inputs": inputs, "goal": True})

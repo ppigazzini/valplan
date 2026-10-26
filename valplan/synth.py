@@ -432,10 +432,19 @@ def _listed(source: object, root: object) -> list[Any] | None:
 
 
 def slot_named(tools: Sequence[Tool], against: str) -> Slot:
-    """Return the argument slot ``"<tool>.<arg>"`` names."""
-    name, _, arg = against.partition(".")
-    for t in tools:
-        if t.name == name:
-            return t.arg(arg)
-    msg = f"no tool {name!r}"
-    raise KeyError(msg)
+    """Return the argument slot ``"<tool>.<arg>"`` names.
+
+    MCP lets a tool name hold dots, so ``against`` is matched against each tool's whole
+    name rather than split at its first dot; a name with two readings is refused.
+    """
+    found = [
+        slot
+        for t in tools
+        if against.startswith(f"{t.name}.")
+        for slot in t.args
+        if slot.name == against[len(t.name) + 1 :]
+    ]
+    if len(found) != 1:
+        msg = f"{against!r} names {'no' if not found else 'more than one'} tool argument"
+        raise KeyError(msg)
+    return found[0]

@@ -18,7 +18,8 @@ A library directory holds two files, as `examples/helpdesk/` does.
   `properties` takes no arguments. A result field is available to later calls only when
   the output schema requires it.
 - `tasks.json` is `{"tasks": [...]}`, each task with a `name`, an `inputs` object schema
-  (what the agent holds at the start; required properties only) and a `goal` schema (the
+  (what the agent holds at the start; required properties only, none named like a call's
+  result, `c1.id`) and a `goal` schema (the
   set the answer must fall in).
 
 ## Describe tools in Python

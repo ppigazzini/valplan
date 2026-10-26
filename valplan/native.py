@@ -29,7 +29,7 @@ from typing import Any, Literal, get_args, get_origin, get_type_hints
 from typing_extensions import is_typeddict
 
 from valplan._valgebra import Validator
-from valplan.contracts import Slot, Task, Tool
+from valplan.contracts import RESULT_NAME, Slot, Task, Tool
 from valplan.schema import JSON, Unsupported
 
 #: The classes of the values `json.loads` returns: a subclass of one, an `IntEnum` or a
@@ -166,6 +166,10 @@ def python_task(name: str, inputs: Mapping[str, object] | type, goal: object) ->
         Slot(key, _json_only(annotation, f"{name}.{key}"), annotation)
         for key, annotation in named.items()
     )
+    for slot in slots:
+        if RESULT_NAME.match(slot.name):
+            msg = f"input {slot.name!r} is named like a call's result"
+            raise Unsupported(msg)
     return Task(name, slots, _json_only(goal, f"{name} goal"), goal)
 
 

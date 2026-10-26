@@ -14,6 +14,7 @@ carries (``allOf``, ``if``/``then``, ``dependentRequired``) is not lost: the ver
 checks the assembled argument object against the whole compiled input schema as well.
 """
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -167,12 +168,22 @@ class Task:
     goal_source: object = field(compare=False, repr=False, default=True)
 
 
+#: The names a program gives call results, ``c1.id``: an input spelled so would be read
+#: as the result of the call it names.
+RESULT_NAME = re.compile(r"c[0-9]+\.")
+
+
 def task(spec: Mapping[str, Any]) -> Task:
     """Read a task: ``{"name", "inputs": <object schema>, "goal": <schema>}``."""
     goal = _current(spec.get("goal", True))
+    inputs = slots(_current(spec["inputs"]), required_only=True)
+    for slot in inputs:
+        if RESULT_NAME.match(slot.name):
+            msg = f"input {slot.name!r} is named like a call's result"
+            raise Unsupported(msg)
     return Task(
         spec["name"],
-        slots(_current(spec["inputs"]), required_only=True),
+        inputs,
         compile_schema(goal) if goal is not True else JSON,
         goal,
     )
