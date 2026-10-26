@@ -133,13 +133,17 @@ def plain(schema: Mapping[str, Any]) -> bool:
     """Return whether an object schema has no constraint across its properties.
 
     ``additionalProperties`` may be absent, ``true`` or ``false``: a program binds only
-    declared arguments, so the clause for undeclared keys never meets a bound one.
+    declared arguments, so the clause for undeclared keys never meets a bound one. A
+    required key outside ``properties`` is no argument slot, so no binding supplies it, and
+    the schema is not plain: the record check then refuses every binding, as it must.
     """
     extra = schema.get("additionalProperties", True)
+    declared = schema.get("properties", {})
     return (
         schema.get("type") == "object"
         and set(schema) - _PLAIN_KEYS - ANNOTATIONS == set()
         and extra in (True, False)
+        and set(schema.get("required", [])) <= set(declared)
     )
 
 

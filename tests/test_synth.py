@@ -232,3 +232,17 @@ def test_a_nullable_range_gets_a_strong_program_that_runs_on_both_halves():
         impls = {name: returns({"r": "r"}) for name in ("take_null", "take_pos", "take_int")}
         impls["get"] = returns({"v": value})
         assert run(lib, task, program, {}, impls) == "r"
+
+
+def test_a_required_key_outside_properties_makes_the_tool_uncallable():
+    out = {"type": "object", "properties": {"r": {"const": "r"}}, "required": ["r"]}
+    needs_token = {
+        "type": "object",
+        "properties": {"a": {"type": "string"}},
+        "required": ["a", "token"],
+    }
+    lib = read_tools({"tools": [{"name": "f", "inputSchema": needs_token, "outputSchema": out}]})
+    inputs = {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]}
+    task = read_task({"name": "t", "inputs": inputs, "goal": {"const": "r"}})
+    assert not lib[0].plain
+    assert Planner(lib, task, witnesses(lib, task)).plan() is None
