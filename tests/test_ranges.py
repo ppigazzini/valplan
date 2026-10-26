@@ -1,3 +1,4 @@
+import math
 import random
 from fractions import Fraction
 
@@ -11,6 +12,7 @@ from valplan.ranges import (
     integer_member,
     integers_empty,
     member,
+    special_member,
 )
 from valplan.schema import Interval, compile_schema, interval
 
@@ -256,3 +258,30 @@ def test_a_union_of_ranges_is_decided_a_range_at_a_time():
         if c.kind in {"integer", "fraction"} and 0 in c.inside
     ]
     assert numeric == [("fraction", frozenset({0, 1}), "inhabited")]
+
+
+class TestSpecialNumbers:
+    def test_nan_lies_only_in_an_unbounded_range(self):
+        found = special_member([_i(None, None, integer=False)], [])
+        assert found is not None
+        assert math.isnan(found)
+        assert (
+            special_member([_i(None, None, integer=False)], [_i(None, None, integer=False)]) is None
+        )
+
+    def test_an_infinity_lies_past_the_open_side_alone(self):
+        assert special_member([_i(0, None, integer=False)], []) == math.inf
+        assert special_member([_i(None, 0, integer=False)], []) == -math.inf
+        assert special_member([_i(0, 1, integer=False)], []) is None
+        assert special_member([_i(None, None)], []) is None
+
+    def test_a_number_in_neither_half_line_is_nan_and_its_cell_is_inhabited(self):
+        schemas = [{"type": "number", "minimum": 0}, {"type": "number", "maximum": 0}]
+        preds = [compile_schema(s) for s in schemas]
+        profiles = [interval(s) for s in schemas]
+        ranges = {p: r for p, r in zip(preds, profiles, strict=True) if r is not None}
+        a = Abstraction(preds, ranges=ranges)
+        outside = [c for c in a.cells if c.kind == "fraction" and not c.inside]
+        assert len(outside) == 1
+        assert outside[0].status == "inhabited"
+        assert math.isnan(outside[0].witness)

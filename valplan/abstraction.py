@@ -24,7 +24,13 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from valplan._valgebra import Validator, complement, intersection
-from valplan.ranges import PeriodTooLongError, fractions_empty, integers_empty, member
+from valplan.ranges import (
+    PeriodTooLongError,
+    fractions_empty,
+    integers_empty,
+    member,
+    special_member,
+)
 from valplan.schema import (
     ARRAY,
     BOOLEAN,
@@ -287,11 +293,17 @@ class Abstraction:
         try:
             for choice in itertools.product(*ins):
                 inside = list(choice)
-                if integers_empty(inside, outs) if integer else fractions_empty(inside, outs):
+                if integer:
+                    if integers_empty(inside, outs):
+                        continue
+                # The fraction kind holds NaN and the infinities besides the non-integer reals.
+                elif fractions_empty(inside, outs) and special_member(inside, outs) is None:
                     continue
                 if not exact:
                     return None
                 found = member(inside, outs, integer=integer)
+                if found is None and not integer:
+                    found = special_member(inside, outs)
                 if found is not None:
                     self._found.append(found)
                 return False

@@ -40,7 +40,9 @@ and small:
   the integer or fraction kind is a range — `type`, bounds and an integral `multipleOf`,
   nothing else — the cell is a question about intervals, decided exactly over the integers
   or over the reals minus the integers (`valplan/ranges.py`), and a member is constructed
-  where it is non-empty. A step makes a range a lattice: which integers a cell holds
+  where it is non-empty. The fraction kind also holds `NaN` and the two infinities, which
+  `json.loads` returns: `NaN` lies only in a range without bounds, an infinity only past
+  the open side, and the rule decides the three exactly. A step makes a range a lattice: which integers a cell holds
   repeats with the least common multiple of its steps, so one period decides it, and a
   period of more than 100000 multiples is left to valgebra. Where other predicates bear on
   the cell too, its ranges alone still prove it empty when they leave no number: leaving
