@@ -112,10 +112,13 @@ verifier reports `undecided` for it.
   result with `isError`, a missing `structuredContent`), constants written into a call, and
   access to nested fields of a result. "Whatever the tools return" means whatever values
   inside their output schemas.
-- **Search bounds.** The planner is complete up to its depth bound (6 calls and tests per
-  path by default), over the cells it could decide, and over the first 16 argument
-  bindings of each call (`MAX_BINDINGS`); a library where more than 16 bindings of one
-  call type-check can hide a program.
+- **Search bounds.** The planner searches to a depth bound (6 calls and tests per path by
+  default) over the cells it could decide. A guarded call's other arguments must be held
+  when its test is made, so a call only the *then* branch needs counts on the *else* path
+  too, and a program within the bound can need a deeper search to be found. Of each call
+  it takes the first binding whose argument record checks, among at most 16 candidates
+  (`MAX_BINDINGS`): a result's type does not depend on the binding, so one stands for all,
+  and a library whose first 16 candidates all fail the record check can hide a program.
 - **Opaque keywords.** A slot that uses `patternProperties`, `propertyNames`,
   `uniqueItems`, `min/maxContains` or a fractional `multipleOf` has exact membership but
   leaves relations through it undecided ([`02-compiler.md`](02-compiler.md)).

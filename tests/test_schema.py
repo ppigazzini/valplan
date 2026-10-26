@@ -29,7 +29,7 @@ class TestSemantics:
         assert s.is_valid({"x": 1})
         assert not s.is_valid({"x": "1"})
 
-    def test_a_fractional_step_is_checked_in_decimal_arithmetic(self):
+    def test_a_fractional_step_is_checked_in_exact_rational_arithmetic(self):
         compiler = Compiler({"multipleOf": 0.0001})
         assert compiler.compile({"multipleOf": 0.0001}).is_valid(0.0075)
         assert compiler.opaque == {"multipleOf"}

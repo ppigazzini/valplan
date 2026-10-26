@@ -57,8 +57,9 @@ def run_draft7(directory: Path) -> dict[str, Outcome]:
 def run(directory: Path) -> dict[str, Outcome]:
     """Run every suite file in ``directory`` and its ``optional/``, by relative stem.
 
-    Of the optional files, the vendored ones are the two on regular expressions: draft
-    2020-12 says a pattern is ECMA-262, and only those files test what that means.
+    Of the optional files, the vendored ones are the four on regular expressions and on
+    large numbers: draft 2020-12 says a pattern is ECMA-262 and a number a JSON number, and
+    those files test what that means.
     """
     files = sorted(directory.glob("*.json")) + sorted(directory.glob("optional/*.json"))
     return {p.relative_to(directory).with_suffix("").as_posix(): run_file(p) for p in files}

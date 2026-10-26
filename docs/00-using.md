@@ -95,9 +95,12 @@ wherever a name belongs:
 ```json
 [
   {"call": "find_customer", "as": "c1", "args": {"email": "email"}},
+  {"call": "open_ticket", "as": "c2",
+   "args": {"customer_id": "c1.customer_id", "subject": "subject"}},
   {"if": "c1.tier", "in": "escalate.tier",
-   "then": [{"call": "escalate", "as": "c2", "args": {"tier": "c1.tier", "ticket_id": "t"}},
-            {"return": "c2.escalation_id"}],
+   "then": [{"call": "escalate", "as": "c3",
+             "args": {"tier": "c1.tier", "ticket_id": "c2.ticket_id"}},
+            {"return": "c3.escalation_id"}],
    "else": [{"stop": "c1.tier"}]}
 ]
 ```

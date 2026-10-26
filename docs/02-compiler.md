@@ -20,7 +20,7 @@ keyword's kind, the guard's other half is empty after the meet and is left out.
 | `type` | union of kinds; `integer` is an `int` that is not a `bool`, or a `float` that is a multiple of 1 |
 | `enum`, `const` | union of the constants under JSON equality: `1` and `1.0` are one number, `true` is not `1`; arrays and objects compare structurally |
 | `minimum`, `maximum`, `exclusive*` | bound refinements on `int` and `float` |
-| `multipleOf` | an integral step is valgebra's `MultipleOf`; a fractional step is opaque, checked in `decimal` arithmetic |
+| `multipleOf` | an integral step is valgebra's `MultipleOf`; a fractional step is opaque, checked in exact rational arithmetic |
 | `minLength`, `maxLength` | length refinements, in code points |
 | `pattern` | `p` becomes `(?s:.*)(?:p')(?s:.*)`, where `p'` rewrites `\d`, `\w`, `\s`, their negations, `.`, `\b`, `\B` and `\cX` to what ECMA-262 gives them, and a class holding a negated shorthand, `[\s\S]`, to an alternation: ECMA-262 searches, valgebra's `Regex` matches the whole string, and the two dialects read those constructs differently; a negated class holding a negated shorthand is refused |
 | `prefixItems`, `items` | the union of the shorter fixed prefixes and the prefix followed by a repeated tail |

@@ -97,3 +97,18 @@ class TestBenchmark:
             if row not in page:
                 missing.append(row)
         assert missing == []
+
+
+def test_the_program_verified_from_elsewhere_proves_every_check_but_its_stop():
+    from valplan.contracts import task, tools  # noqa: PLC0415
+    from valplan.program import from_json  # noqa: PLC0415
+    from valplan.verify import verify  # noqa: PLC0415
+
+    text = (ROOT / "docs" / "00-using.md").read_text(encoding="utf-8")
+    block = text.split("## Verify a program from elsewhere")[1].split("```json")[1].split("```")[0]
+    library = ROOT / "examples" / "helpdesk"
+    lib = tools(json.loads((library / "tools.json").read_text(encoding="utf-8")))
+    specs = json.loads((library / "tasks.json").read_text(encoding="utf-8"))["tasks"]
+    escalate = task(next(s for s in specs if s["name"] == "escalate"))
+    checks = verify(lib, escalate, from_json(json.loads(block)))
+    assert [c.relation for c in checks if not c.holds] == ["uncovered"]
