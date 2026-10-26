@@ -246,3 +246,35 @@ def test_a_required_key_outside_properties_makes_the_tool_uncallable():
     task = read_task({"name": "t", "inputs": inputs, "goal": {"const": "r"}})
     assert not lib[0].plain
     assert Planner(lib, task, witnesses(lib, task)).plan() is None
+
+
+class TestRunnerContracts:
+    @staticmethod
+    def _library():
+        out = {
+            "type": "object",
+            "properties": {"id": {"type": "string"}, "tier": {"enum": ["pro", "free"]}},
+            "required": ["id"],
+            "additionalProperties": False,
+            "dependentRequired": {"tier": ["id"]},
+            "allOf": [{"properties": {"id": {"maxLength": 6}}}],
+        }
+        inputs = {"type": "object", "properties": {"q": {"type": "string"}}, "required": ["q"]}
+        lib = read_tools({"tools": [{"name": "get", "inputSchema": inputs, "outputSchema": out}]})
+        task = read_task({"name": "t", "inputs": inputs, "goal": {"type": "string"}})
+        program = (Call("c1", "get", (("q", "q"),)), Return("c1.id"))
+        return lib, task, program
+
+    @pytest.mark.parametrize(
+        "result",
+        [{"id": "cus_ab", "extra": 1}, {"id": "cus_abc"}, {"id": "cus_ab", "tier": "gold"}],
+    )
+    def test_a_result_outside_its_output_schema_is_named_at_the_call(self, result):
+        lib, task, program = self._library()
+        with pytest.raises(ContractError, match="outside its output schema"):
+            run(lib, task, program, {"q": "x"}, {"get": lambda _a: result})
+
+    def test_a_missing_input_is_named(self):
+        lib, task, program = self._library()
+        with pytest.raises(ContractError, match="input q is missing"):
+            run(lib, task, program, {}, {"get": lambda _a: {"id": "a"}})

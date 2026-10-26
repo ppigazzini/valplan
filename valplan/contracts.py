@@ -58,6 +58,9 @@ class Tool:
     #: an argument record is inside it exactly when each bound argument is inside its own
     #: slot and every required argument is bound.
     plain: bool = False
+    #: The whole output schema, which the runner checks every result against; the
+    #: universe when the tool declares none.
+    output: Validator[Any] = field(default=JSON, compare=False, repr=False)
 
     def arg(self, name: str) -> Slot:
         """Return the argument slot called ``name``."""
@@ -111,6 +114,7 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         args = slots(spec["inputSchema"], required_only=False)
         out = spec.get("outputSchema")
         results = slots(out, required_only=True) if out is not None else ()
+        output = Compiler(out).compile(out) if out is not None else JSON
     except Unsupported as exc:
         msg = f"tool {name!r}: {exc}"
         raise Unsupported(msg) from exc
@@ -123,6 +127,7 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         frozenset(compiler.opaque),
         frozenset(compiler.ignored),
         plain=plain(spec["inputSchema"]),
+        output=output,
     )
 
 

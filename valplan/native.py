@@ -78,7 +78,8 @@ def python_tool(fn: Callable[..., Any], *, name: str | None = None) -> Tool:
         required = param.default is inspect.Parameter.empty
         args.append(Slot(param.name, compiled, annotation, required))
         record[param.name if required else f"{param.name}?"] = compiled
-    results = _results(tool_name, hints.get("return"))
+    returned = hints.get("return")
+    results = _results(tool_name, returned)
     doc = inspect.getdoc(fn) or ""
     return Tool(
         tool_name,
@@ -87,6 +88,7 @@ def python_tool(fn: Callable[..., Any], *, name: str | None = None) -> Tool:
         Validator(record),
         doc.splitlines()[0] if doc else "",
         plain=True,
+        output=Validator(returned) if results else JSON,
     )
 
 
