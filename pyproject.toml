@@ -45,7 +45,6 @@ addopts = "-q"
 testpaths = ["tests"]
 faulthandler_timeout = 600
 faulthandler_exit_on_timeout = true
-markers = ["slow: whole-suite and benchmark runs; minutes, not seconds"]
 
 [tool.ty.environment]
 python-version = "3.14"

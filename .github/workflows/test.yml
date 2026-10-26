@@ -2,6 +2,10 @@ name: test
 
 on: [push, pull_request]
 
+# The job reads the repository and writes nothing back.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: lint, types, tests, published studies
