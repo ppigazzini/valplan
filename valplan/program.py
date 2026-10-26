@@ -252,8 +252,13 @@ def prune(program: Program) -> Program:
     The renumbering runs once, over the whole program. Renumbering each branch on its own
     would restart at ``c1`` inside a branch whose path already holds a ``c1``, and a read
     of the outer variable would then name the inner one.
+
+    Removal runs to a fixpoint: a call only a removed call read is unused in turn. Each
+    round removes a call or ends, so it ends.
     """
-    return relabel(_prune(program))
+    while (pruned := _prune(program)) != program:
+        program = pruned
+    return relabel(program)
 
 
 def _prune(program: Program) -> Program:

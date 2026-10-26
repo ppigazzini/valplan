@@ -31,6 +31,15 @@ def test_prune_drops_a_call_nothing_reads_and_renumbers():
     assert render(prune(program)) == "c1 = a(x=in)\nc2 = b(y=c1.out)\nreturn c2.out"
 
 
+def test_prune_drops_a_call_only_a_dropped_call_read():
+    program = (
+        Call("c1", "f", ()),
+        Call("c2", "g", (("x", "c1.a"),)),
+        Return("x"),
+    )
+    assert prune(program) == (Return("x"),)
+
+
 def test_prune_inside_a_branch_keeps_every_read_on_the_variable_it_named():
     program = (
         Call("c1", "a", (("x", "in"),)),
