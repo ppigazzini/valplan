@@ -5,7 +5,7 @@
  "tasks": [
   {
    "task": "ticket",
-   "predicates": 28,
+   "predicates": 27,
    "cells": 37,
    "inhabited": 37,
    "undecided": 0,
@@ -19,7 +19,7 @@
   },
   {
    "task": "settle-latest-invoice",
-   "predicates": 28,
+   "predicates": 27,
    "cells": 35,
    "inhabited": 35,
    "undecided": 0,
@@ -33,7 +33,7 @@
   },
   {
    "task": "escalate",
-   "predicates": 28,
+   "predicates": 27,
    "cells": 37,
    "inhabited": 37,
    "undecided": 0,
@@ -47,7 +47,7 @@
   },
   {
    "task": "vat-for-customer",
-   "predicates": 27,
+   "predicates": 26,
    "cells": 35,
    "inhabited": 35,
    "undecided": 0,

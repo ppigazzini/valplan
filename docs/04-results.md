@@ -31,7 +31,7 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 | escalate | 37 (37 / 0) | weak | 3 | 1 | 1 | 9 of 10 |
 | vat-for-customer | 35 (35 / 0) | weak | 2 | 1 | 1 | 5 of 6 |
 
-- The predicates number 27 to 28 per task, so the minterms number up to 2^28; the cells
+- The predicates number 26 to 27 per task, so the minterms number up to 2^27; the cells
   number 35 to 37, every one proven inhabited by a member.
 - Both strong programs verify in full under the independent verifier. Each weak program's
   one unproven check is its stop. `escalate` stops on `c1.tier in {'pro', 'free'}`, the

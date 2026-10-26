@@ -357,12 +357,21 @@ class Compiler:
             parts.append(handler(self, schema))
 
     def ref(self, pointer: str) -> Validator[Any]:
-        """Return the set a local JSON pointer names, as a fixpoint over its target."""
+        """Return the set a local JSON pointer names.
+
+        A target that reaches itself through references is a `valgebra.recursive` fixpoint;
+        any other is compiled in place. Each fixpoint is a definition, and valgebra admits
+        128 in one set, so the 200 `$defs` a generated schema may carry are compiled
+        inline, not as 200 definitions.
+        """
         if pointer in self._done:
             return self._done[pointer]
         if pointer in self._open:
             return self._open[pointer]
         target = self.resolve(pointer)
+        if not self._reaches_itself(target):
+            self._done[pointer] = self.compile(target)
+            return self._done[pointer]
 
         def body(this: Validator[Any]) -> Validator[Any]:
             self._open[pointer] = this
@@ -380,6 +389,28 @@ class Compiler:
             raise Unsupported(msg) from exc
         self._done[pointer] = built
         return built
+
+    def _reaches_itself(self, target: object) -> bool:
+        """Return whether a reference inside ``target`` leads back to it, through any others.
+
+        Every ``$ref`` string in a subtree counts, at any depth, so a target inside a
+        subtree a reference names is reached too. A string that only looks like a
+        reference, inside an `enum`, makes a target recursive that is not: the fixpoint
+        it then gets denotes the same set.
+        """
+        seen: set[int] = set()
+        stack = list(_references(target))
+        while stack:
+            try:
+                node = self.resolve(stack.pop())
+            except Unsupported:
+                continue
+            if node is target:
+                return True
+            if id(node) not in seen:
+                seen.add(id(node))
+                stack.extend(_references(node))
+        return False
 
     def resolve(self, pointer: str) -> object:
         """Return the node a local JSON pointer names, or raise `Unsupported`."""
@@ -408,6 +439,21 @@ class Compiler:
                 msg = f"$ref {pointer!r} names nothing in the document"
                 raise Unsupported(msg)
         return node
+
+
+def _references(node: object) -> list[str]:
+    """Return every ``$ref`` string in ``node``'s subtree."""
+    found: list[str] = []
+    stack = [node]
+    while stack:
+        here = stack.pop()
+        if isinstance(here, dict):
+            if isinstance(here.get("$ref"), str):
+                found.append(here["$ref"])
+            stack.extend(here.values())
+        elif isinstance(here, list):
+            stack.extend(here)
+    return found
 
 
 def _type(_c: Compiler, s: dict[str, Any]) -> Validator[Any]:

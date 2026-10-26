@@ -135,6 +135,26 @@ def test_a_draft_07_document_compiles_only_through_upgrade():
     assert compile_schema(schema).is_valid({"x": "abc"})
 
 
+def test_two_hundred_definitions_compile_in_place():
+    # Each fixpoint is a valgebra definition, and a set admits 128.
+    schema = {
+        "type": "object",
+        "$defs": {f"d{i}": {"type": "string", "pattern": f"^d{i}_$"} for i in range(200)},
+        "properties": {f"p{i}": {"$ref": f"#/$defs/d{i}"} for i in range(200)},
+    }
+    s = compile_schema(schema)
+    assert s.is_valid({"p7": "d7_"})
+    assert not s.is_valid({"p7": "d8_"})
+
+
+def test_a_reference_that_reaches_itself_is_a_fixpoint():
+    item = {"$ref": "#/$defs/tree"}
+    tree = {"type": "object", "properties": {"kids": {"type": "array", "items": item}}}
+    s = compile_schema({"$defs": {"tree": tree}, "$ref": "#/$defs/tree"})
+    assert s.is_valid({"kids": [{"kids": []}]})
+    assert not s.is_valid({"kids": [{"kids": [1]}]})
+
+
 def test_a_pointer_through_an_embedded_resource_is_refused():
     schema = {
         "$defs": {
