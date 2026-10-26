@@ -50,7 +50,7 @@ draft-07 schema `upgrade` translates them.
 
 | what | the specification | `jsonschema` 4.26.0 | valplan | why |
 |---|---|---|---|---|
-| `pattern` classes `\d`, `\w`, `\s`, `.` | ECMA-262: ASCII digits and word characters, ECMA-262 white space, any character but four line terminators | Python's `re`: Unicode classes | ECMA-262 | the specification; on `optional/ecmascript-regex` the package passes 42 of 74, valplan 74 of 74 (`tools/suite.py --reference`) |
+| `pattern` classes `\d`, `\w`, `\s`, `.`, boundaries `\b`, `\B` | ECMA-262: ASCII digits and word characters, ECMA-262 white space, any character but four line terminators, boundaries of ASCII word characters | Python's `re`: Unicode classes | ECMA-262 | the specification; on `optional/ecmascript-regex` the package passes 42 of 74, valplan 74 of 74 (`tools/suite.py --reference`) |
 | `$` before a final newline | no match | match | no match | the specification |
 | fractional `multipleOf` | the decimal numbers written | binary floats: `0.0075` is not a multiple of `0.0001` | exact rationals | the specification |
 | a number written with a fraction or an exponent: a bound, a constant | the decimal number written | the double `json.loads` returns | the double `json.loads` returns | the universe is what `json.loads` returns: `{"maximum": 1e23}` refuses `10**23`, since `1e23` parses to 99999999999999991611392 |

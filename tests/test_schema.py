@@ -109,10 +109,23 @@ class TestEcmaDialect:
             (r"^[^\d]$", "١", True),
             (r"^\cJ$", "\n", True),
             (r"^abc$", "abc\n", False),
+            (r"a\b", "aé", True),
+            (r"a\B", "aé", False),
+            (r"\bfoo\b", "afoo", False),
+            (r"^[\b]$", "\x08", True),
+            (r"^[\s\S]$", "\n", True),
+            (r"^[a\D]$", "x", True),
+            (r"^[a\D]$", "7", False),
+            (r"^[^]$", "\n", True),
+            (r"^[]$", "", False),
         ],
     )
     def test_a_pattern_means_what_ecma_262_says(self, pattern, text, admitted):
         assert compile_schema({"pattern": pattern}).is_valid(text) is admitted
+
+    def test_a_negated_class_holding_a_negated_shorthand_is_refused(self):
+        with pytest.raises(Unsupported, match="negated shorthand"):
+            compile_schema({"pattern": r"[^a\S]"})
 
 
 class TestDraft7:

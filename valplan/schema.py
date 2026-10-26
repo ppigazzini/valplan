@@ -21,7 +21,7 @@ Two places where JSON Schema's model is not Python's are handled rather than inh
 - **``pattern`` searches, in ECMA-262's dialect.** ECMA-262 ``test`` is unanchored and
   valgebra's ``Regex`` matches the whole string, so ``p`` compiles to
   ``(?s:.*)(?:p)(?s:.*)``, after `ecma` rewrites the classes the two dialects read
-  differently: ``\\d``, ``\\w``, ``\\s``, ``.`` and ``\\cX``.
+  differently: ``\\d``, ``\\w``, ``\\s``, ``\\b``, ``.`` and ``\\cX``.
 
 Five keywords have no counterpart in valgebra's set language -- ``patternProperties`` and
 ``propertyNames`` need map keys narrowed by a pattern, ``uniqueItems`` and
@@ -516,13 +516,17 @@ _CLASSES = {"d": _DIGIT, "w": _WORD, "s": _ECMA_SPACE}
 def ecma(pattern: str) -> str:
     r"""Rewrite an ECMA-262 pattern into valgebra's regex dialect, with ECMA-262's meaning.
 
-    ``\d``, ``\w`` and ``\s`` and their negations become the ASCII and ECMA-262 classes
-    they denote there, ``.`` stops at ECMA-262's four line terminators, and ``\cX`` becomes
-    the control character it names. Everything else passes through; a construct valgebra's
-    engine refuses is refused when the set is built.
+    ``\d``, ``\w`` and ``\s`` become the ASCII and ECMA-262 classes they denote there, and
+    ``\D``, ``\W`` and ``\S`` their complements; ``.`` stops at ECMA-262's four line
+    terminators; ``\b`` and ``\B`` are boundaries of ECMA-262's ASCII word characters, and
+    inside a class ``\b`` is a backspace; ``\cX`` becomes the control character it names.
+    A class holding a negated shorthand, ``[\s\S]`` or ``[a\D]``, becomes the alternation
+    of its parts, since valgebra's engine refuses a set nested in a set; a negated class
+    holding one denotes an intersection the alternation cannot spell, and is refused.
+    Everything else passes through; a construct valgebra's engine refuses is refused when
+    the set is built.
     """
     out: list[str] = []
-    in_class = False
     i = 0
     while i < len(pattern):
         ch = pattern[i]
@@ -530,39 +534,82 @@ def ecma(pattern: str) -> str:
             nxt = pattern[i + 1]
             if nxt.lower() in _CLASSES:
                 body = _CLASSES[nxt.lower()]
-                negated = nxt.isupper()
-                if in_class:
-                    out.append(f"[^{body}]" if negated else body)
-                else:
-                    out.append(f"[^{body}]" if negated else f"[{body}]")
-                i += 2
-                continue
-            if nxt == "c" and i + 2 < len(pattern) and pattern[i + 2].isalpha():
+                out.append(f"[^{body}]" if nxt.isupper() else f"[{body}]")
+            elif nxt in "bB":
+                out.append(f"(?-u:\\{nxt})")
+            elif nxt == "c" and i + 2 < len(pattern) and pattern[i + 2].isalpha():
                 out.append(f"\\x{{{ord(pattern[i + 2]) % 32:02X}}}")
-                i += 3
-                continue
-            out.append(pattern[i : i + 2])
+                i += 1
+            else:
+                out.append(pattern[i : i + 2])
             i += 2
-            continue
-        if not in_class and ch == "[":
-            if pattern.startswith("[^]", i):
-                out.append("(?s:.)")
-                i += 3
-                continue
-            if pattern.startswith("[]", i):
-                out.append("[^\\s\\S]")
-                i += 2
-                continue
-            in_class = True
-        elif in_class and ch == "]":
-            in_class = False
-        elif not in_class and ch == ".":
+        elif ch == "[":
+            close = _class_end(pattern, i)
+            out.append(_class(pattern[i + 1 : close]))
+            i = close + 1
+        elif ch == ".":
             out.append(r"[^\n\r\u{2028}\u{2029}]")
             i += 1
-            continue
-        out.append(ch)
-        i += 1
+        else:
+            out.append(ch)
+            i += 1
     return "".join(out)
+
+
+def _class_end(pattern: str, start: int) -> int:
+    """Return the index of the ``]`` that closes the class opened at ``start``.
+
+    In ECMA-262 a ``]`` right after ``[`` or ``[^`` closes the class -- ``[]`` matches
+    nothing and ``[^]`` anything -- and an escaped ``]`` does not close it.
+    """
+    i = start + 1
+    if pattern.startswith("^", i):
+        i += 1
+    while i < len(pattern):
+        if pattern[i] == "\\":
+            i += 2
+            continue
+        if pattern[i] == "]":
+            return i
+        i += 1
+    msg = f"pattern {pattern!r} has an unclosed class"
+    raise Unsupported(msg)
+
+
+def _class(body: str) -> str:
+    r"""Rewrite one class body, between ``[`` and ``]``, with ECMA-262's meaning."""
+    negated = body.startswith("^")
+    if negated:
+        body = body[1:]
+    if not body:
+        return "(?s:.)" if negated else "[^\\s\\S]"
+    kept: list[str] = []
+    complements: list[str] = []
+    i = 0
+    while i < len(body):
+        if body[i] == "\\" and i + 1 < len(body):
+            nxt = body[i + 1]
+            if nxt.lower() in _CLASSES:
+                (complements if nxt.isupper() else kept).append(_CLASSES[nxt.lower()])
+            elif nxt == "b":
+                kept.append("\\x08")
+            elif nxt == "c" and i + 2 < len(body) and body[i + 2].isalpha():
+                kept.append(f"\\x{{{ord(body[i + 2]) % 32:02X}}}")
+                i += 1
+            else:
+                kept.append(body[i : i + 2])
+            i += 2
+        else:
+            kept.append(body[i])
+            i += 1
+    inner = "".join(kept)
+    if not complements:
+        return f"[{'^' if negated else ''}{inner}]"
+    if negated:
+        msg = f"negated class [^{body}] holds a negated shorthand: an intersection"
+        raise Unsupported(msg)
+    parts = ([f"[{inner}]"] if inner else []) + [f"[^{c}]" for c in complements]
+    return f"(?:{'|'.join(parts)})"
 
 
 def _search(pattern: str) -> Validator[Any]:
