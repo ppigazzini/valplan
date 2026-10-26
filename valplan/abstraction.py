@@ -17,6 +17,8 @@ or a precision gap in the procedure. Keeping it is what makes every plan sound; 
 only make the planner miss a plan, never accept a wrong one.
 """
 
+import itertools
+import math
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -88,6 +90,11 @@ GENERIC: tuple[Any, ...] = (
 )
 
 
+#: How many branch choices one emptiness question may distribute into before it is asked
+#: of the cell's whole set instead: each union in a cell multiplies them.
+MAX_BRANCHES = 32
+
+
 class SoundnessError(AssertionError):
     """A concrete value fell in a cell the decision procedure called empty."""
 
@@ -112,6 +119,7 @@ class Abstraction:
         witnesses: Iterable[Any] = (),
         finite: Mapping[Validator[Any], Sequence[Any]] | None = None,
         ranges: Mapping[Validator[Any], Interval] | None = None,
+        unions: Mapping[Validator[Any], Sequence[Validator[Any]]] | None = None,
     ) -> None:
         self.predicates: list[Validator[Any]] = []
         self._ids: dict[Validator[Any], int] = {}
@@ -121,6 +129,11 @@ class Abstraction:
             self._ids[p]: list(values) for p, values in (finite or {}).items() if p in self._ids
         }
         self._ranges = {self._ids[p]: r for p, r in (ranges or {}).items() if p in self._ids}
+        self._branches = {
+            self._ids[p]: list(parts)
+            for p, parts in (unions or {}).items()
+            if p in self._ids and len(parts) > 1
+        }
         self._meets: dict[int, set[str]] = {}
         #: Members the range arithmetic constructed while deciding cells non-empty.
         self._found: list[Any] = []
@@ -143,15 +156,28 @@ class Abstraction:
             self.predicates.append(predicate)
         return self._ids[predicate]
 
+    def _parts(self, i: int) -> list[Validator[Any]]:
+        """Return the sets whose union predicate ``i`` is: its branches, or itself.
+
+        A union is decided a branch at a time. The identities are exact -- a meet with a
+        union is the union of the meets, a complement of one the meet of the complements --
+        and valgebra 0.0.20 proves a meet with a bare union of patterns empty only branch
+        by branch: ``integer & (ga | gb)`` stays open while ``integer & ga`` is proven.
+        """
+        return self._branches.get(i, [self.predicates[i]])
+
     def _disjoint(self, i: int, j: int) -> bool:
         key = (min(i, j), max(i, j))
         if key not in self._apart:
-            self._apart[key] = intersection(self.predicates[i], self.predicates[j]).is_empty()
+            self._apart[key] = all(
+                intersection(a, b).is_empty() for a in self._parts(i) for b in self._parts(j)
+            )
         return self._apart[key]
 
     def _below(self, i: int, j: int) -> bool:
         if (i, j) not in self._under:
-            self._under[i, j] = self.predicates[i].is_subtype_of(self.predicates[j])
+            target = self.predicates[j]
+            self._under[i, j] = all(a.is_subtype_of(target) for a in self._parts(i))
         return self._under[i, j]
 
     def _set(
@@ -189,7 +215,25 @@ class Abstraction:
             decided = self._by_ranges(name, pos, neg)
             if decided is not None:
                 return decided
-        return self._set(kind, pos, neg).is_empty()
+        return self._proven_empty(kind, pos, neg)
+
+    def _proven_empty(self, kind: Validator[Any], pos: frozenset[int], neg: frozenset[int]) -> bool:
+        """Return whether valgebra proves the cell empty, asked a union branch at a time.
+
+        Inside a union the cell is the union of its meets with each branch, so it is empty
+        when every branch choice is; outside one it is outside every branch. A cell inside
+        more unions than `MAX_BRANCHES` choices allow is asked about as a whole.
+        """
+        kept = [q for q in sorted(neg) if not any(self._disjoint(q, p) for p in pos)]
+        outside = [complement(b) for q in kept for b in self._parts(q)]
+        inside = [self.predicates[p] for p in sorted(pos) if p not in self._branches]
+        choices = [self._parts(p) for p in sorted(pos) if p in self._branches]
+        if math.prod(len(c) for c in choices) > MAX_BRANCHES:
+            return self._set(kind, pos, neg).is_empty()
+        return all(
+            intersection(kind, *inside, *choice, *outside).is_empty()
+            for choice in itertools.product(*choices)
+        )
 
     def _by_ranges(self, name: str, pos: frozenset[int], neg: frozenset[int]) -> bool | None:
         """Return whether interval arithmetic proves a numeric cell empty, or None.
@@ -229,8 +273,12 @@ class Abstraction:
         self._under: dict[tuple[int, int], bool] = {}
         kinds = dict(KINDS)
         cells = [(frozenset[int](), frozenset[int](), name) for name in kinds]
-        for i, p in enumerate(self.predicates):
-            meets = {name for name, kind in kinds.items() if not intersection(kind, p).is_empty()}
+        for i in range(len(self.predicates)):
+            meets = {
+                name
+                for name, kind in kinds.items()
+                if any(not intersection(kind, b).is_empty() for b in self._parts(i))
+            }
             self._meets[i] = meets
             out: list[tuple[frozenset[int], frozenset[int], str]] = []
             for pos, neg, name in cells:

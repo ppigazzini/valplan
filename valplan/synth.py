@@ -30,7 +30,7 @@ from valplan.contracts import Slot, Task, Tool
 from valplan.native import is_native, native_values
 from valplan.program import Call, Program, Return, Step, Stop, Test, prune, sink, stops
 from valplan.sample import Sampler
-from valplan.schema import finite, interval
+from valplan.schema import Compiler, branches, finite, interval
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +70,16 @@ class Planner:
         goal_range = None if is_native(task.goal_source) else interval(task.goal_source)
         if goal_range is not None:
             ranges[task.goal] = goal_range
-        self.abstraction = Abstraction(predicates, witnesses, listed, ranges)
+        sources = [(s.schema, s.source, s.root) for s in named]
+        sources.append((task.goal, task.goal_source, None))
+        unions: dict[Validator[Any], list[Validator[Any]]] = {}
+        for schema, source, root in sources:
+            parts = None if is_native(source) else branches(source)
+            if parts is None:
+                continue
+            compiler = Compiler(source if root is None else root)
+            unions[schema] = [compiler.compile(b) for b in parts]
+        self.abstraction = Abstraction(predicates, witnesses, listed, ranges, unions)
         self.goal = self.abstraction.cells_of(task.goal)
         self._whole: dict[tuple[str, tuple[Validator[Any], ...]], bool] = {}
         self._failed: set[tuple[frozenset[Cells], int, bool]] = set()

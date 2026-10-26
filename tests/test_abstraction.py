@@ -104,3 +104,14 @@ def test_the_sampler_draws_only_values_the_schema_admits(raw_tools):
         drawn = sampler.draw(spec["outputSchema"], tries=50)
         assert drawn, spec["name"]
         assert all(compiled.is_valid(v) for v in drawn)
+
+
+class TestUnions:
+    def test_a_union_meets_only_the_kinds_its_branches_meet(self):
+        ga = {"type": "string", "pattern": "^ga_[a-z0-9]{6}$"}
+        gb = {"type": "string", "pattern": "^gb_[a-z0-9]{6}$"}
+        preds = [compile_schema(s) for s in (ga, gb, {"anyOf": [ga, gb]}, {"type": "integer"})]
+        a = Abstraction(preds, unions={preds[2]: [preds[0], preds[1]]})
+        inside_union = [c for c in a.cells if 2 in c.inside]
+        assert {c.kind for c in inside_union} == {"string"}
+        assert all(c.inside & {0, 1} for c in inside_union)

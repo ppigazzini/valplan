@@ -847,6 +847,27 @@ def interval(schema: object) -> Interval | None:
     )
 
 
+def branches(schema: object) -> list[object] | None:
+    """Return the subschemas whose union ``schema`` is, when it is a union and nothing more.
+
+    An ``anyOf`` with no other assertion is the union of its branches, and a ``type`` list
+    with nothing else the union of its kinds; a branch that is itself such a union is
+    flattened. Each branch compiles, against the same root, to a set whose union is the
+    one ``schema`` compiles to, so a question about the union can be asked of each branch.
+    """
+    if not isinstance(schema, dict):
+        return None
+    keys = set(schema) - ANNOTATIONS
+    if keys == {"anyOf"} and isinstance(schema["anyOf"], list) and len(schema["anyOf"]) > 1:
+        out: list[object] = []
+        for sub in schema["anyOf"]:
+            out += branches(sub) or [sub]
+        return out
+    if keys == {"type"} and isinstance(schema["type"], list) and len(schema["type"]) > 1:
+        return [{"type": name} for name in schema["type"]]
+    return None
+
+
 def _same(a: object, b: object) -> bool:
     return type(a) is type(b) and json_key(a) == json_key(b)
 
