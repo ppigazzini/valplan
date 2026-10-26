@@ -124,6 +124,17 @@ def test_a_property_name_with_a_lone_surrogate_is_refused():
         compile_schema({"properties": {"\ud800": {}}})
 
 
+def test_a_draft_07_document_compiles_only_through_upgrade():
+    schema = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {"s": {"type": "string"}},
+        "properties": {"x": {"$ref": "#/definitions/s", "maxLength": 1}},
+    }
+    with pytest.raises(Unsupported, match="through `upgrade`"):
+        Compiler(schema).compile(schema)
+    assert compile_schema(schema).is_valid({"x": "abc"})
+
+
 def test_a_pointer_through_an_embedded_resource_is_refused():
     schema = {
         "$defs": {

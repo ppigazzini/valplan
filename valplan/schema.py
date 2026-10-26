@@ -299,7 +299,12 @@ class Compiler:
         if not isinstance(schema, dict):
             msg = f"a schema is an object or a boolean, got {type(schema).__name__}"
             raise Unsupported(msg)
-        if schema is self.root and schema.get("$schema", DRAFT) not in {DRAFT, *DRAFT7}:
+        if schema is self.root and schema.get("$schema", DRAFT) in DRAFT7:
+            # Read as 2020-12, a draft-07 document asserts what draft-07 ignores: the
+            # siblings of a `$ref`, the keywords later drafts added.
+            msg = "a draft-07 document compiles through `upgrade` (`compile_schema` does it)"
+            raise Unsupported(msg)
+        if schema is self.root and schema.get("$schema", DRAFT) != DRAFT:
             msg = f"$schema {schema['$schema']!r}: drafts 2020-12 and 07 are supported"
             raise Unsupported(msg)
         try:
