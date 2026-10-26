@@ -95,6 +95,15 @@ def test_json_key_equates_one_and_one_point_zero_but_not_true():
     assert json_key(1) != json_key(True)
 
 
+@pytest.mark.parametrize("key", ["minLength", "maxLength", "minItems", "maxItems"])
+def test_an_integral_float_count_is_its_integer_and_leaves_the_integer_intact(key):
+    # 7.0 and 7 are one number; reading 7.0 must not change what a later 7 compiles to.
+    as_float = compile_schema({key: 7.0})
+    as_int = compile_schema({key: 7})
+    for value in ("x" * 6, "x" * 7, "x" * 8, [0] * 6, [0] * 7, [0] * 8):
+        assert as_float.is_valid(value) == as_int.is_valid(value)
+
+
 def test_a_pointer_through_an_embedded_resource_is_refused():
     schema = {
         "$defs": {

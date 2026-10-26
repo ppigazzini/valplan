@@ -431,12 +431,26 @@ def _multiple_of(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     return c.guard("number", intersection(opaque(int | float, multiple), NOT_BOOL))
 
 
+def _count(s: dict[str, Any], key: str) -> int:
+    """Return a length keyword's value as an int: ``2.0`` is the integer 2 in 2020-12.
+
+    valgebra takes an int, and `typing.Annotated` caches ``MaxLen(2.0)`` as equal to
+    ``MaxLen(2)``, so a float reaching it would make every later ``MaxLen(2)`` fail too.
+    """
+    value = s[key]
+    integral = isinstance(value, int) or (isinstance(value, float) and value.is_integer())
+    if isinstance(value, bool) or not integral or value < 0:
+        msg = f"{key} {value!r} is not a non-negative integer"
+        raise Unsupported(msg)
+    return int(value)
+
+
 def _min_length(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    return c.guard("string", Annotated[str, MinLen(s["minLength"])])
+    return c.guard("string", Annotated[str, MinLen(_count(s, "minLength"))])
 
 
 def _max_length(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    return c.guard("string", Annotated[str, MaxLen(s["maxLength"])])
+    return c.guard("string", Annotated[str, MaxLen(_count(s, "maxLength"))])
 
 
 def _pattern(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -444,11 +458,11 @@ def _pattern(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
 
 
 def _min_items(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    return c.guard("array", Annotated[list[Any], MinLen(s["minItems"])])
+    return c.guard("array", Annotated[list[Any], MinLen(_count(s, "minItems"))])
 
 
 def _max_items(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    return c.guard("array", Annotated[list[Any], MaxLen(s["maxItems"])])
+    return c.guard("array", Annotated[list[Any], MaxLen(_count(s, "maxItems"))])
 
 
 def _items(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
@@ -695,11 +709,11 @@ def _unique_items(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
 
 
 def _min_properties(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    return c.guard("object", Annotated[dict[str, Any], MinLen(s["minProperties"])])
+    return c.guard("object", Annotated[dict[str, Any], MinLen(_count(s, "minProperties"))])
 
 
 def _max_properties(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
-    return c.guard("object", Annotated[dict[str, Any], MaxLen(s["maxProperties"])])
+    return c.guard("object", Annotated[dict[str, Any], MaxLen(_count(s, "maxProperties"))])
 
 
 def _dependent_required(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
