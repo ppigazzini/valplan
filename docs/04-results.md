@@ -60,12 +60,12 @@ program tests it; the other tools are distractors over random entities.
 
 | tools | predicates | cells | undecided | found | proven | expanded (3 seeds) |
 |---:|---:|---:|---:|---|---|---|
-| 8 | 12 to 14 | 17 to 18 | 0 | 3 of 3 | every check | 24, 31, 44 |
-| 16 | 15 to 16 | 18 | 0 | 3 of 3 | every check | 54, 56, 61 |
-| 32 | 19 to 20 | 22 | 0 | 3 of 3 | every check | 117, 128, 311 |
-| 64 | 31 | 33 | 0 | 3 of 3 | every check | 51, 223, 377 |
-| 128 | 52 | 54 | 0 | 3 of 3 | every check | 190, 470, 513 |
-| 256 | 95 | 97 | 0 | 3 of 3 | every check | 227, 277, 848 |
+| 8 | 12 to 14 | 17 to 18 | 0 | 3 of 3 | every check | 24, 33, 47 |
+| 16 | 15 to 16 | 18 | 0 | 3 of 3 | every check | 54, 59, 64 |
+| 32 | 19 to 20 | 22 | 0 | 3 of 3 | every check | 117, 138, 343 |
+| 64 | 31 | 33 | 0 | 3 of 3 | every check | 51, 235, 389 |
+| 128 | 52 | 54 | 0 | 3 of 3 | every check | 205, 488, 548 |
+| 256 | 95 | 97 | 0 | 3 of 3 | every check | 243, 290, 929 |
 
 **Numbers**: every tool also takes a quota (an integer range in 10000 to 20000) and
 returns a measure (a range in 0 to 1000); the finishing tools split the measure at 500, and

@@ -340,3 +340,35 @@ class TestDegenerateContracts:
         inputs = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
         task = read_task({"name": "t", "inputs": inputs, "goal": g})
         assert Planner(lib, task, witnesses(lib, task)).plan(weak=True) is None
+
+
+def test_a_then_branch_makes_the_call_only_it_needs_within_the_depth():
+    # Each branch's guarded tool needs a second argument only a no-argument call makes.
+    # Made before the test, that call would lengthen the other path to 7 steps.
+    def tool(name, args, out):
+        return {
+            "name": name,
+            "inputSchema": {"type": "object", "properties": args, "required": list(args)},
+            "outputSchema": {"type": "object", "properties": out, "required": list(out)},
+        }
+
+    def pat(prefix):
+        return {"type": "string", "pattern": f"^{prefix}_[a-z]{{3}}$"}
+
+    goal = {"type": "string", "pattern": "^G[0-9]{3}$"}
+    specs = [tool("mkP", {}, {"p": pat("P")}), tool("mkQ", {}, {"q": pat("Q")})]
+    for side, other, x in (("A", "p", "a"), ("B", "q", "b")):
+        specs.append(
+            tool(f"{side}1", {"x": {"const": x}, other: pat(other.upper())}, {"k": pat(f"{side}1")})
+        )
+        specs.append(tool(f"{side}2", {"k": pat(f"{side}1")}, {"k": pat(f"{side}2")}))
+        specs.append(tool(f"{side}3", {"k": pat(f"{side}2")}, {"k": pat(f"{side}3")}))
+        specs.append(tool(f"{side}4", {"k": pat(f"{side}3")}, {"g": goal}))
+    lib = read_tools({"tools": specs})
+    inputs = {"type": "object", "properties": {"x": {"enum": ["a", "b"]}}, "required": ["x"]}
+    task = read_task({"name": "depth", "inputs": inputs, "goal": goal})
+    planner = Planner(lib, task, witnesses(lib, task))
+    program = planner.plan(max_depth=6)
+    assert program is not None
+    assert not planner.weak
+    assert isinstance(program[0], Test)

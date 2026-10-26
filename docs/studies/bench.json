@@ -15,7 +15,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 44
+   "expanded": 47
   },
   {
    "family": "strings",
@@ -30,7 +30,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 31
+   "expanded": 33
   },
   {
    "family": "strings",
@@ -60,7 +60,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 61
+   "expanded": 64
   },
   {
    "family": "strings",
@@ -75,7 +75,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 56
+   "expanded": 59
   },
   {
    "family": "strings",
@@ -120,7 +120,7 @@
    "tests": 1,
    "checks": 18,
    "proven": 18,
-   "expanded": 128
+   "expanded": 138
   },
   {
    "family": "strings",
@@ -135,7 +135,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 311
+   "expanded": 343
   },
   {
    "family": "strings",
@@ -150,7 +150,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 223
+   "expanded": 235
   },
   {
    "family": "strings",
@@ -165,7 +165,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 377
+   "expanded": 389
   },
   {
    "family": "strings",
@@ -195,7 +195,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 190
+   "expanded": 205
   },
   {
    "family": "strings",
@@ -210,7 +210,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 513
+   "expanded": 548
   },
   {
    "family": "strings",
@@ -225,7 +225,7 @@
    "tests": 1,
    "checks": 12,
    "proven": 12,
-   "expanded": 470
+   "expanded": 488
   },
   {
    "family": "strings",
@@ -240,7 +240,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 227
+   "expanded": 243
   },
   {
    "family": "strings",
@@ -255,7 +255,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 848
+   "expanded": 929
   },
   {
    "family": "strings",
@@ -270,7 +270,7 @@
    "tests": 1,
    "checks": 14,
    "proven": 14,
-   "expanded": 277
+   "expanded": 290
   },
   {
    "family": "numbers",

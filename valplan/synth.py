@@ -235,14 +235,11 @@ class Planner:
         for v, inside, tool, slot in self._tests(held):
             narrowed = Var(v.name, v.cells & inside, intersection(v.schema, slot.schema))
             then = self._replace(held, narrowed)
-            yes = None
-            for binding in self._bindings(tool, then, forced=(slot.name, narrowed)):
-                yes = self._call(tool, binding, then, depth - 1, made, weak)
-                break
+            yes = self._guarded(tool, slot.name, narrowed, then, depth - 1, made, weak)
             # A test is a guarded call: its then branch must need the call it guards. One
             # that only returns what the test narrowed is a goal test, and would return any
             # input that happens to look like an answer as one.
-            if yes is None or drop_unused(yes)[:1] != yes[:1]:
+            if yes is None or not _guards(drop_unused(yes), tool.name, slot.name, v.name):
                 continue
             rest = Var(v.name, v.cells - inside, intersection(v.schema, complement(slot.schema)))
             no = self._solve(self._replace(held, rest), depth - 1, made, weak)
@@ -251,6 +248,52 @@ class Planner:
             if no is not None:
                 return (Test(v.name, f"{tool.name}.{slot.name}", yes, no),)
         self._failed.add(key)
+        return None
+
+    def _guarded(
+        self,
+        tool: Tool,
+        arg: str,
+        narrowed: Var,
+        held: tuple[Var, ...],
+        depth: int,
+        made: int,
+        weak: bool,  # noqa: FBT001
+    ) -> Program | None:
+        """Return a then branch that calls ``tool`` with ``arg`` bound to the narrowed value.
+
+        The tool's other arguments need not be held at the test: the branch first calls,
+        one at a time and within its depth, tools whose results fit an argument still
+        missing. A call only this branch needs is then not made on the other path, and a
+        program within the depth bound is not pushed past it.
+        """
+        for binding in self._bindings(tool, held, forced=(arg, narrowed)):
+            return self._call(tool, binding, held, depth, made, weak)
+        missing = [
+            self.abstraction.cells_of(s.schema)
+            for s in tool.args
+            if s.required
+            and s.name != arg
+            and not any(v.cells <= self.abstraction.cells_of(s.schema) for v in held)
+        ]
+        if not missing or depth <= 1:
+            return None
+        for producer in self.tools:
+            for binding in self._bindings(producer, held):
+                label = f"c{made + 1}"
+                fresh = tuple(
+                    Var(f"{label}.{r.name}", self.abstraction.cells_of(r.schema), r.schema)
+                    for r in producer.results
+                )
+                if not any(f.cells <= m for f in fresh for m in missing):
+                    break
+                rest = self._guarded(tool, arg, narrowed, held + fresh, depth - 1, made + 1, weak)
+                if rest is not None:
+                    return (
+                        Call(label, producer.name, tuple((a, v.name) for a, v in binding)),
+                        *rest,
+                    )
+                break
         return None
 
     def _call(
@@ -439,6 +482,16 @@ def witnesses(tools: Sequence[Tool], task: Task, seed: int = 0, tries: int = 40)
         rng = random.Random(f"{seed}:{name}")
         out += Sampler(slot.root, rng).draw(slot.source, tries)
     return out
+
+
+def _guards(branch: Program, tool: str, arg: str, var: str) -> bool:
+    """Return whether ``branch`` calls ``tool`` with ``arg`` bound to ``var`` before any test."""
+    for step in branch:
+        if isinstance(step, Call) and step.tool == tool and (arg, var) in step.args:
+            return True
+        if not isinstance(step, Call):
+            return False
+    return False
 
 
 def _listed(source: object, root: object) -> list[Any] | None:
