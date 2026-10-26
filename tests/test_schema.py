@@ -104,6 +104,13 @@ def test_an_integral_float_count_is_its_integer_and_leaves_the_integer_intact(ke
         assert as_float.is_valid(value) == as_int.is_valid(value)
 
 
+def test_an_integral_float_is_read_alike_by_integral_and_fractional_steps():
+    value = float(3 * 2**70)
+    assert compile_schema({"multipleOf": 3}).is_valid(value)
+    assert compile_schema({"multipleOf": 1.5}).is_valid(value)
+    assert compile_schema({"multipleOf": 0.0001}).is_valid(0.0075)
+
+
 def test_a_pointer_through_an_embedded_resource_is_refused():
     schema = {
         "$defs": {

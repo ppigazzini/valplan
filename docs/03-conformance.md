@@ -52,7 +52,7 @@ draft-07 schema `upgrade` translates them.
 |---|---|---|---|---|
 | `pattern` classes `\d`, `\w`, `\s`, `.`, boundaries `\b`, `\B` | ECMA-262: ASCII digits and word characters, ECMA-262 white space, any character but four line terminators, boundaries of ASCII word characters | Python's `re`: Unicode classes | ECMA-262 | the specification; on `optional/ecmascript-regex` the package passes 42 of 74, valplan 74 of 74 (`tools/suite.py --reference`) |
 | `$` before a final newline | no match | match | no match | the specification |
-| fractional `multipleOf` | the decimal numbers written | binary floats: `0.0075` is not a multiple of `0.0001` | exact rationals | the specification |
+| fractional `multipleOf` | the decimal numbers written | binary floats: `0.0075` is not a multiple of `0.0001` | exact rationals: a value's shortest decimal, an integral value its integer | the specification; an integral value read as its integer agrees with an integral step's reading, as it must, since a multiple of 3 is one of 1.5 |
 | a number written with a fraction or an exponent: a bound, a constant | the decimal number written | the double `json.loads` returns | the double `json.loads` returns | the universe is what `json.loads` returns: `{"maximum": 1e23}` refuses `10**23`, since `1e23` parses to 99999999999999991611392 |
 | integral constants above 2**53 | one number each | one number each | one number each, its float spelling only when the float is the same number | `9007199254740993` and `9007199254740992.0` are two numbers |
 | `additionalItems`, `dependencies` in a 2020-12 schema | not keywords: annotations | annotations | refused | see the inventory |

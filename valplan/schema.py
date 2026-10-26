@@ -425,8 +425,14 @@ def _multiple_of(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     exact = Fraction(str(step))
 
     def multiple(value: float) -> bool:
-        finite_value = isinstance(value, int) or math.isfinite(value)
-        return finite_value and Fraction(str(value)) % exact == 0
+        if isinstance(value, float) and not math.isfinite(value):
+            return False
+        # An integral value is the integer it is, as an integral step reads it; the shortest
+        # decimal of a large float is not: 3 * 2**70 as a float prints 3.541774862152234e+21,
+        # which is no multiple of 1.5, while the integer is one, as a multiple of 3 must be.
+        if isinstance(value, int) or value.is_integer():
+            return Fraction(int(value)) % exact == 0
+        return Fraction(str(value)) % exact == 0
 
     return c.guard("number", intersection(opaque(int | float, multiple), NOT_BOOL))
 
