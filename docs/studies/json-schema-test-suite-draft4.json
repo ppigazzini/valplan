@@ -1,0 +1,217 @@
+{
+ "format": 1,
+ "draft": "4",
+ "suite_commit": "89e83a74014617ffbe79a56d83d14d054cd11417",
+ "files": [
+  {
+   "file": "additionalItems",
+   "passed": 17,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "additionalProperties",
+   "passed": 16,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 8
+  },
+  {
+   "file": "allOf",
+   "passed": 27,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "anyOf",
+   "passed": 15,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "default",
+   "passed": 7,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "definitions",
+   "passed": 0,
+   "failed": 0,
+   "skipped": 2,
+   "opaque": 0
+  },
+  {
+   "file": "dependencies",
+   "passed": 29,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "enum",
+   "passed": 49,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "format",
+   "passed": 36,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "infinite-loop-detection",
+   "passed": 2,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "items",
+   "passed": 21,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "maxItems",
+   "passed": 4,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "maxLength",
+   "passed": 5,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "maxProperties",
+   "passed": 8,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "maximum",
+   "passed": 14,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "minItems",
+   "passed": 4,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "minLength",
+   "passed": 5,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "minProperties",
+   "passed": 8,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "minimum",
+   "passed": 17,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "multipleOf",
+   "passed": 11,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 8
+  },
+  {
+   "file": "not",
+   "passed": 20,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "oneOf",
+   "passed": 23,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "pattern",
+   "passed": 9,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "patternProperties",
+   "passed": 18,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 18
+  },
+  {
+   "file": "properties",
+   "passed": 24,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 8
+  },
+  {
+   "file": "ref",
+   "passed": 33,
+   "failed": 0,
+   "skipped": 12,
+   "opaque": 0
+  },
+  {
+   "file": "refRemote",
+   "passed": 0,
+   "failed": 0,
+   "skipped": 17,
+   "opaque": 0
+  },
+  {
+   "file": "required",
+   "passed": 17,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "type",
+   "passed": 79,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 0
+  },
+  {
+   "file": "uniqueItems",
+   "passed": 69,
+   "failed": 0,
+   "skipped": 0,
+   "opaque": 41
+  }
+ ]
+}

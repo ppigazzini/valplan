@@ -3,31 +3,37 @@
 uv run python tools/suite.py
 uv run python tools/suite.py --json docs/studies/json-schema-test-suite.json
 uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
+uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
 """
 
 import argparse
 import sys
 from pathlib import Path
+from typing import Literal, cast
 
 from valplan.study import SUITE, SuiteFile, SuiteStudy, dumps, load_suite
-from valplan.suite import run, run_draft7
+from valplan.suite import run, run_older
 
 ROOT = Path(__file__).parent.parent
 SUITE_DIR = ROOT / "tests" / "data" / "json-schema-test-suite"
-DRAFT7_DIR = ROOT / "tests" / "data" / "json-schema-test-suite-draft7"
+#: The vendored files of each older draft, run through `upgrade`.
+OLDER_DIRS = {
+    d: ROOT / "tests" / "data" / f"json-schema-test-suite-draft{d}" for d in ("7", "6", "4")
+}
 COMMIT = (SUITE_DIR / "COMMIT").read_text(encoding="utf-8").strip()
 
 
-def measure(draft: str) -> SuiteStudy:
+type Draft = Literal["2020-12", "7", "6", "4"]
+
+
+def measure(draft: Draft) -> SuiteStudy:
     """Run every vendored suite file of one draft."""
-    outcomes = run(SUITE_DIR) if draft == "2020-12" else run_draft7(DRAFT7_DIR)
+    outcomes = run(SUITE_DIR) if draft == "2020-12" else run_older(OLDER_DIRS[draft], int(draft))
     files = [
         SuiteFile(file=stem, passed=o.passed, failed=o.failed, skipped=o.skipped, opaque=o.opaque)
         for stem, o in outcomes.items()
     ]
-    return SuiteStudy(
-        format=1, draft="2020-12" if draft == "2020-12" else "7", suite_commit=COMMIT, files=files
-    )
+    return SuiteStudy(format=1, draft=draft, suite_commit=COMMIT, files=files)
 
 
 def table(study: SuiteStudy) -> str:
@@ -95,12 +101,12 @@ def main(argv: list[str]) -> int:
     out.add_argument("--json", type=Path)
     out.add_argument("--check", type=Path)
     out.add_argument("--reference", action="store_true", help="the jsonschema package instead")
-    parser.add_argument("--draft", choices=["2020-12", "7"], default="2020-12")
+    parser.add_argument("--draft", choices=["2020-12", "7", "6", "4"], default="2020-12")
     args = parser.parse_args(argv)
     if args.reference:
         print(reference())
         return 0
-    study = measure(args.draft)
+    study = measure(cast("Draft", args.draft))
     print(table(study))
     if args.json:
         args.json.write_text(dumps(study, SUITE), encoding="utf-8")

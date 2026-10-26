@@ -26,11 +26,11 @@ class Outcome:
     reasons: Counter[str] = field(default_factory=Counter)
 
 
-def run_file(path: Path, *, draft7: bool = False) -> Outcome:
-    """Run every case of one suite file; a draft-07 file's schemas are upgraded first."""
+def run_file(path: Path, *, draft: int | None = None) -> Outcome:
+    """Run every case of one suite file; an older draft's schemas are upgraded first."""
     out = Outcome()
     for group in json.loads(path.read_text(encoding="utf-8")):
-        schema = upgrade(group["schema"]) if draft7 else group["schema"]
+        schema = group["schema"] if draft is None else upgrade(group["schema"], draft)
         compiler = Compiler(schema)
         try:
             compiled = compiler.compile(schema)
@@ -49,9 +49,9 @@ def run_file(path: Path, *, draft7: bool = False) -> Outcome:
     return out
 
 
-def run_draft7(directory: Path) -> dict[str, Outcome]:
-    """Run every draft-07 suite file in ``directory`` through `upgrade`, by stem."""
-    return {p.stem: run_file(p, draft7=True) for p in sorted(directory.glob("*.json"))}
+def run_older(directory: Path, draft: int) -> dict[str, Outcome]:
+    """Run every suite file of an older draft in ``directory`` through `upgrade`, by stem."""
+    return {p.stem: run_file(p, draft=draft) for p in sorted(directory.glob("*.json"))}
 
 
 def run(directory: Path) -> dict[str, Outcome]:

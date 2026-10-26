@@ -1,6 +1,6 @@
 # The compiler
 
-`valplan/schema.py` compiles JSON Schema draft 2020-12, and draft-07 through `upgrade`,
+`valplan/schema.py` compiles JSON Schema draft 2020-12, and drafts 07, 06 and 04 through `upgrade`,
 into valgebra sets. [`03-conformance.md`](03-conformance.md) holds the keyword inventory
 and the ledger of differences. The universe is
 what `json.loads` returns — `None`, `bool`, `int`, `float`, `str`, `list`, and `dict` with
@@ -37,18 +37,21 @@ Annotations assert nothing and are skipped: `title`, `description`, `default`, `
 `deprecated`, `readOnly`, `writeOnly`, `format` (the format-annotation vocabulary is the
 default), the `content*` keywords, `$comment`, `$defs`. A root `$id` is skipped.
 
-## Draft-07
+## Older drafts
 
 A schema whose `$schema` names draft-07, as schemas generated from TypeScript types often
-do, is rewritten by `upgrade` into the draft 2020-12 schema with the same meaning before
-it is compiled: an `items` array becomes `prefixItems` and `additionalItems` becomes
-`items`; `dependencies` splits into `dependentRequired` and `dependentSchemas`; a `$ref`
-drops its siblings, which draft-07 ignores, but for `definitions` and `$defs`; and a
-keyword a later draft added -- `prefixItems`, `minContains` or `dependentRequired` written
-into a draft-07 schema -- is dropped, since draft-07 reads it as an annotation. Only
-keywords that hold subschemas are
-descended into, so a property named `items` stays a name. `valplan.contracts` upgrades a
-tool's schemas the same way.
+do, or draft-06 or draft-04, as most published ones do, is rewritten by `upgrade` into the
+draft 2020-12 schema with the same meaning before it is compiled: an `items` array becomes
+`prefixItems` and `additionalItems` becomes `items`; `dependencies` splits into
+`dependentRequired` and `dependentSchemas`; a `$ref` drops its siblings, which those
+drafts ignore, but for `definitions` and `$defs`; and a keyword the draft does not know is
+dropped, since it reads it as an annotation: `prefixItems`, `minContains` or
+`dependentRequired` written into any of them, `if`, `then` and `else` in draft-06, and
+`const`, `contains` and `propertyNames` in draft-04 too. Draft-04 also writes
+`exclusiveMinimum` and `exclusiveMaximum` as flags on `minimum` and `maximum`, and `$id`
+as `id`; both are rewritten. Only keywords that hold subschemas are descended into, so a
+property named `items` stays a name. `valplan.contracts` upgrades a tool's schemas the
+same way.
 
 ## Opaque keywords
 
@@ -88,6 +91,15 @@ uv run python tools/suite.py --draft 7 --check docs/studies/json-schema-test-sui
 ```
 
 870 cases run, 870 passed, 0 failed; 59 skipped (remote references and `$id` scopes).
+Draft-06 and draft-04, through `upgrade`:
+
+```bash
+uv run python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
+uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
+```
+
+Draft-06, 790 cases run, 790 passed, 0 failed; 51 skipped. Draft-04, 587 cases run, 587
+passed, 0 failed; 31 skipped. Both skip remote references, `$id` scopes and anchors.
 
 ```bash
 uv run python tools/suite.py --reference

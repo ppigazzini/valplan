@@ -22,11 +22,11 @@ from typing import Any
 from valplan._valgebra import Validator
 from valplan.schema import (
     ANNOTATIONS,
-    DRAFT7,
     JSON,
     Compiler,
     Unsupported,
     compile_schema,
+    older,
     upgrade,
 )
 
@@ -104,17 +104,17 @@ def inhabited(found: tuple[Slot, ...], where: str) -> tuple[Slot, ...]:
 
 
 def _current(schema: Any) -> Any:
-    """Return ``schema`` in draft 2020-12, upgrading it when it declares draft-07."""
-    if isinstance(schema, dict) and schema.get("$schema") in DRAFT7:
-        return upgrade(schema)
+    """Return ``schema`` in draft 2020-12, upgrading it when it declares an older draft."""
+    if (draft := older(schema)) is not None:
+        return upgrade(schema, draft)
     return schema
 
 
 def tool(spec: Mapping[str, Any]) -> Tool:
     """Read one entry of an MCP ``tools/list`` result.
 
-    A schema that declares draft-07, as schemas generated from TypeScript types often do,
-    is upgraded first.
+    A schema that declares draft-07, as schemas generated from TypeScript types often do, or
+    draft-06 or draft-04, is upgraded first.
     """
     name = spec["name"]
     spec = {

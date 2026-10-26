@@ -116,6 +116,15 @@ DRAFT7 = frozenset(
         "https://json-schema.org/draft-07/schema",
     }
 )
+#: The older drafts `upgrade` rewrites, by the ``$schema`` URIs that name them.
+OLDER = {uri.replace("07", draft): int(draft) for draft in ("07", "06", "04") for uri in DRAFT7}
+
+
+def older(schema: object) -> int | None:
+    """Return the older draft -- 7, 6 or 4 -- a document's ``$schema`` names, or None."""
+    uri = schema.get("$schema") if isinstance(schema, dict) else None
+    return OLDER.get(uri) if isinstance(uri, str) else None
+
 
 #: Draft 2020-12 keywords translated to sets: exactly, or as an opaque predicate
 #: (`Compiler.opaque` records which), or read as part of a sibling's group.
@@ -301,13 +310,13 @@ class Compiler:
         if not isinstance(schema, dict):
             msg = f"a schema is an object or a boolean, got {type(schema).__name__}"
             raise Unsupported(msg)
-        if schema is self.root and schema.get("$schema", DRAFT) in DRAFT7:
-            # Read as 2020-12, a draft-07 document asserts what draft-07 ignores: the
+        if schema is self.root and (draft := older(schema)) is not None:
+            # Read as 2020-12, an older document asserts what its draft ignores: the
             # siblings of a `$ref`, the keywords later drafts added.
-            msg = "a draft-07 document compiles through `upgrade` (`compile_schema` does it)"
+            msg = f"a draft-0{draft} document compiles through `upgrade` (`compile_schema` does it)"
             raise Unsupported(msg)
         if schema is self.root and schema.get("$schema", DRAFT) != DRAFT:
-            msg = f"$schema {schema['$schema']!r}: drafts 2020-12 and 07 are supported"
+            msg = f"$schema {schema['$schema']!r}: drafts 2020-12, 07, 06 and 04 are supported"
             raise Unsupported(msg)
         try:
             return self._compile_object(schema)
@@ -464,7 +473,7 @@ class Compiler:
             if isinstance(node, dict) and part in node:
                 node = node[part]
             elif isinstance(node, dict) and part == "items" and "prefixItems" in node:
-                # A draft-07 pointer into an `items` array that `upgrade` renamed.
+                # An older draft's pointer into an `items` array that `upgrade` renamed.
                 node = node["prefixItems"]
             elif isinstance(node, list) and part.isdigit() and int(part) < len(node):
                 node = node[int(part)]
@@ -1066,7 +1075,7 @@ def _same(a: object, b: object) -> bool:
 _ONE = frozenset({"not", "if", "then", "else", "additionalProperties", "contains", "propertyNames"})
 _MANY = frozenset({"allOf", "anyOf", "oneOf"})
 _MAP = frozenset({"properties", "patternProperties", "definitions", "$defs"})
-#: Keywords later drafts added. Draft-07 does not know them, so in a draft-07 schema they
+#: Keywords drafts after 07 added. No older draft knows them, so in an older schema they
 #: are annotations, and `upgrade` drops them rather than let draft 2020-12 assert them.
 #: ``$defs`` stays: it asserts nothing in either draft, and a pointer may name it.
 _LATER = frozenset(
@@ -1088,69 +1097,101 @@ _LATER = frozenset(
 )
 
 
-def upgrade(schema: object) -> object:
-    """Rewrite a draft-07 schema into the draft 2020-12 one with the same meaning.
+#: The keywords each older draft does not know, so reads as annotations: `upgrade` drops
+#: them rather than let draft 2020-12 assert them. Draft-06 added `const`, `contains` and
+#: `propertyNames`; draft-07 added `if`, `then` and `else`.
+_UNKNOWN = {
+    7: _LATER,
+    6: _LATER | {"if", "then", "else"},
+    4: _LATER | {"if", "then", "else", "const", "contains", "propertyNames"},
+}
+
+
+def upgrade(schema: object, draft: int = 7) -> object:
+    """Rewrite a draft-07, -06 or -04 schema into the draft 2020-12 one with the same meaning.
 
     The keywords whose meaning changed: an ``items`` array is ``prefixItems``, with
     ``additionalItems`` as ``items``; ``dependencies`` splits into ``dependentRequired``
     and ``dependentSchemas``; and a ``$ref`` overrides its siblings, so they are dropped,
     but for ``definitions`` and ``$defs``, which a pointer may name. ``definitions`` keeps
-    its name, so every JSON pointer into the document still resolves. A keyword a later
-    draft added is an annotation in draft-07 and is dropped (`_LATER`).
-    Only the keywords that hold subschemas are descended into: a property named ``items``
-    is a name, not a keyword.
+    its name, so every JSON pointer into the document still resolves. A keyword the draft
+    does not know is an annotation there and is dropped (`_UNKNOWN`). Draft-04 also writes
+    ``exclusiveMinimum`` and ``exclusiveMaximum`` as flags on ``minimum`` and ``maximum``,
+    and ``$id`` as ``id``. Only the keywords that hold subschemas are descended into: a
+    property named ``items`` is a name, not a keyword.
     """
     if not isinstance(schema, dict):
         return schema
     if "$ref" in schema:
-        out: dict[str, Any] = {"$ref": schema["$ref"]}
-        for key in ("definitions", "$defs"):
-            if isinstance(schema.get(key), dict):
-                out[key] = {k: upgrade(v) for k, v in schema[key].items()}
-        return out
-    out = {}
-    for key, value in ((k, v) for k, v in schema.items() if k not in _LATER):
+        return _upgrade_ref(schema, draft)
+    if draft == 4:  # noqa: PLR2004
+        schema = _upgrade_draft4(schema)
+    out: dict[str, Any] = {}
+    for key, value in ((k, v) for k, v in schema.items() if k not in _UNKNOWN[draft]):
         if key == "$schema":
             out[key] = DRAFT
         elif key in {"items", "additionalItems"}:
-            out |= _upgrade_items(schema) if key == "items" or "items" not in schema else {}
+            out |= _upgrade_items(schema, draft) if key == "items" or "items" not in schema else {}
         elif key == "dependencies":
-            out |= _upgrade_dependencies(value)
+            out |= _upgrade_dependencies(value, draft)
         elif key in _ONE:
-            out[key] = upgrade(value)
+            out[key] = upgrade(value, draft)
         elif key in _MANY:
-            out[key] = [upgrade(v) for v in value]
+            out[key] = [upgrade(v, draft) for v in value]
         elif key in _MAP:
-            out[key] = {k: upgrade(v) for k, v in value.items()}
+            out[key] = {k: upgrade(v, draft) for k, v in value.items()}
         else:
             out[key] = value
     return out
 
 
-def _upgrade_items(schema: dict[str, Any]) -> dict[str, Any]:
-    """Map draft-07 ``items``/``additionalItems`` to 2020-12 ``prefixItems``/``items``."""
-    items = schema.get("items", True)
-    if not isinstance(items, list):
-        return {"items": upgrade(items)} if "items" in schema else {}
-    out: dict[str, Any] = {"prefixItems": [upgrade(v) for v in items]}
-    if "additionalItems" in schema:
-        out["items"] = upgrade(schema["additionalItems"])
+def _upgrade_ref(schema: dict[str, Any], draft: int) -> dict[str, Any]:
+    """Return a ``$ref`` without the siblings an older draft ignores, but the definitions."""
+    out: dict[str, Any] = {"$ref": schema["$ref"]}
+    for key in ("definitions", "$defs"):
+        if isinstance(schema.get(key), dict):
+            out[key] = {k: upgrade(v, draft) for k, v in schema[key].items()}
     return out
 
 
-def _upgrade_dependencies(value: dict[str, Any]) -> dict[str, Any]:
-    """Split draft-07 ``dependencies`` into ``dependentRequired`` and ``dependentSchemas``."""
+def _upgrade_draft4(schema: dict[str, Any]) -> dict[str, Any]:
+    """Return a draft-04 schema object with its exclusive flags and ``id`` as 2020-12's."""
+    out = dict(schema)
+    for bound, exclusive in (("minimum", "exclusiveMinimum"), ("maximum", "exclusiveMaximum")):
+        flag = out.get(exclusive)
+        if isinstance(flag, bool):
+            del out[exclusive]
+            if flag and bound in out:
+                out[exclusive] = out.pop(bound)
+    if isinstance(out.get("id"), str):
+        out["$id"] = out.pop("id")
+    return out
+
+
+def _upgrade_items(schema: dict[str, Any], draft: int) -> dict[str, Any]:
+    """Map an older ``items``/``additionalItems`` to 2020-12 ``prefixItems``/``items``."""
+    items = schema.get("items", True)
+    if not isinstance(items, list):
+        return {"items": upgrade(items, draft)} if "items" in schema else {}
+    out: dict[str, Any] = {"prefixItems": [upgrade(v, draft) for v in items]}
+    if "additionalItems" in schema:
+        out["items"] = upgrade(schema["additionalItems"], draft)
+    return out
+
+
+def _upgrade_dependencies(value: dict[str, Any], draft: int) -> dict[str, Any]:
+    """Split an older ``dependencies`` into ``dependentRequired`` and ``dependentSchemas``."""
     out: dict[str, dict[str, Any]] = {}
     for name, dep in value.items():
         if isinstance(dep, list):
             out.setdefault("dependentRequired", {})[name] = dep
         else:
-            out.setdefault("dependentSchemas", {})[name] = upgrade(dep)
+            out.setdefault("dependentSchemas", {})[name] = upgrade(dep, draft)
     return out
 
 
 def compile_schema(schema: object) -> Validator[Any]:
-    """Compile a root schema document, upgrading a draft-07 one first."""
-    if isinstance(schema, dict) and schema.get("$schema") in DRAFT7:
-        schema = upgrade(schema)
+    """Compile a root schema document, upgrading a draft-07, -06 or -04 one first."""
+    if (draft := older(schema)) is not None:
+        schema = upgrade(schema, draft)
     return Compiler(schema).compile(schema)

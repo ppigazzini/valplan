@@ -32,7 +32,7 @@ class SuiteStudy(TypedDict, closed=True):
     """The compiler against the official suite for one draft, per file."""
 
     format: Literal[1]
-    draft: Literal["2020-12", "7"]
+    draft: Literal["2020-12", "7", "6", "4"]
     suite_commit: str
     files: list[SuiteFile]
 

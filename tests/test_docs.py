@@ -5,6 +5,8 @@ import itertools
 import json
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -47,10 +49,11 @@ class TestCompiler:
         ) in _page("docs/02-compiler.md")
         assert f"{t['opaque']} of the run cases" in _page("docs/02-compiler.md")
 
-    def test_the_pages_quote_the_draft_07_totals(self):
-        t = _suite("json-schema-test-suite-draft7.json")
+    @pytest.mark.parametrize("draft", ["7", "6", "4"])
+    def test_the_pages_quote_the_older_drafts_totals(self, draft):
+        t = _suite(f"json-schema-test-suite-draft{draft}.json")
         run = t["passed"] + t["failed"]
-        assert f"draft-07, {t['passed']} of {run}" in _page("README.md")
+        assert f"draft-0{draft}, {t['passed']} of {run}" in _page("README.md")
         assert f"{t['passed']} of the {run} cases run pass" in _page("docs/04-results.md")
         assert (
             f"{run} cases run, {t['passed']} passed, {t['failed']} failed; {t['skipped']} skipped"

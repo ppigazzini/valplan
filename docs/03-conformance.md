@@ -13,11 +13,13 @@ gives the verdict the specification gives. A keyword it cannot translate raises
 
 - **The specification**, as the official JSON-Schema-Test-Suite encodes it, vendored at
   commit `89e83a740146` with its MIT licence: draft 2020-12 with the optional files on
-  regular expressions and on large numbers, and draft-07 through `upgrade`.
+  regular expressions and on large numbers, and drafts 07, 06 and 04 through `upgrade`.
 
   ```bash
   uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
   uv run python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
+  uv run python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
+  uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
   ```
 
 - **The `jsonschema` package**, pinned in the development group, as a second
@@ -55,6 +57,7 @@ draft-07 schema `upgrade` translates them.
 | fractional `multipleOf` | the decimal numbers written | binary floats: `0.0075` is not a multiple of `0.0001` | exact rationals: a value's shortest decimal, an integral value its integer | the specification; an integral value read as its integer agrees with an integral step's reading, as it must, since a multiple of 3 is one of 1.5 |
 | a number written with a fraction or an exponent: a bound, a constant | the decimal number written | the double `json.loads` returns | the double `json.loads` returns | the universe is what `json.loads` returns: `{"maximum": 1e23}` refuses `10**23`, since `1e23` parses to 99999999999999991611392 |
 | a string holding a lone surrogate, which `json.loads` returns for `"\udc00"` | a pattern searches its code units | Python's `re` searches its code points | no pattern matches it, and a property name holding one is refused | valgebra's engine reads Unicode text, and such a string is none; RFC 8259 calls its behaviour unpredictable |
+| `integer` in a draft-04 schema | a number written without a fraction or an exponent: `1.0` and `1e300` are none | the same | an integral number, as draft 2020-12 reads `integer`: `1.0` and `1e300` are integers | `upgrade` reads a draft-04 schema as the draft 2020-12 one, whose `integer` is a number's value; no 2020-12 keyword says "an int, not a float" |
 | integral constants above 2**53 | one number each | one number each | one number each, its float spelling only when the float is the same number | `9007199254740993` and `9007199254740992.0` are two numbers |
 | `additionalItems`, `dependencies` in a 2020-12 schema | not keywords: annotations | annotations | refused | see the inventory |
 

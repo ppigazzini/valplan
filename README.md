@@ -16,7 +16,7 @@ the values left uncovered.
 
 | step | how | where |
 |---|---|---|
-| Compile | JSON Schema draft 2020-12, and draft-07 through an upgrade, to valgebra sets over the JSON values `json.loads` returns, keyword by keyword; every valgebra name and recipe in one boundary module | `valplan/schema.py`, `valplan/_valgebra.py` |
+| Compile | JSON Schema draft 2020-12, and drafts 07, 06 and 04 through an upgrade, to valgebra sets over the JSON values `json.loads` returns, keyword by keyword; every valgebra name and recipe in one boundary module | `valplan/schema.py`, `valplan/_valgebra.py` |
 | Read Python | the second door: a tool is a Python function, its annotated parameters the arguments and a `TypedDict` return the results, in valgebra's own schema language; every annotation proven to admit JSON values only | `valplan/native.py` |
 | Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty by valgebra, by enumeration of listed values or by interval arithmetic, inhabited cells proven by a member value | `valplan/abstraction.py`, `valplan/ranges.py` |
 | Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a runtime type test; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
@@ -33,7 +33,8 @@ uv run python tools/bench.py --check docs/studies/bench.json
 
 - **Compiler against the official JSON-Schema-Test-Suite** (commit `89e83a740146`):
   draft 2020-12 with the four optional files on regular expressions and large numbers,
-  1071 of the 1071 cases it runs; draft-07, 870 of 870. Skipped: `unevaluated*`, dynamic,
+  1071 of the 1071 cases it runs; draft-07, 870 of 870; draft-06, 790 of 790; draft-04, 587
+  of 587. Skipped: `unevaluated*`, dynamic,
   anchor and remote references. Patterns follow ECMA-262, as the specification requires:
   on `optional/ecmascript-regex` the compiler passes 74 of 74, the `jsonschema` package
   4.26.0 42 of 74 (`tools/suite.py --reference`). Against that package on 400 random

@@ -8,13 +8,16 @@ Every number below is printed by a committed command and recorded as counts in
 ```bash
 uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
 uv run python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
+uv run python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
+uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
 ```
 
 Draft 2020-12, with the four optional files on regular expressions and large numbers: 1071
 of the 1071 cases run pass; 327 are skipped: the `unevaluatedItems` and
 `unevaluatedProperties` files (200 cases), dynamic, anchor and remote references, and a
-custom metaschema. Draft-07, through `upgrade`: 870 of the 870 cases run pass; 59 are
-skipped. See [`02-compiler.md`](02-compiler.md#measured).
+custom metaschema. Through `upgrade`: draft-07, 870 of the 870 cases run pass, 59
+skipped; draft-06, 790 of the 790 cases run pass, 51 skipped; draft-04, 587 of the 587
+cases run pass, 31 skipped. See [`02-compiler.md`](02-compiler.md#measured).
 
 ## The helpdesk library
 

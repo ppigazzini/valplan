@@ -85,9 +85,9 @@ class TestRefusals:
         with pytest.raises(Unsupported):
             compile_schema(schema)
 
-    def test_it_refuses_a_draft_other_than_2020_12_and_07(self):
-        with pytest.raises(Unsupported, match="2020-12 and 07"):
-            compile_schema({"$schema": "http://json-schema.org/draft-04/schema#"})
+    def test_it_refuses_a_draft_it_does_not_read(self):
+        with pytest.raises(Unsupported, match="2020-12, 07, 06 and 04"):
+            compile_schema({"$schema": "https://json-schema.org/draft/2019-09/schema"})
 
 
 def test_json_key_equates_one_and_one_point_zero_but_not_true():
@@ -293,6 +293,36 @@ class TestDraft7:
         )
         assert s.is_valid(1)
         assert not s.is_valid("a")
+
+
+class TestOlderDrafts:
+    D4 = "http://json-schema.org/draft-04/schema#"
+    D6 = "http://json-schema.org/draft-06/schema#"
+
+    def test_draft_04_exclusive_flags_move_onto_their_bound(self):
+        s = compile_schema({"$schema": self.D4, "minimum": 1, "exclusiveMinimum": True})
+        assert not s.is_valid(1)
+        assert s.is_valid(2)
+        assert compile_schema(
+            {"$schema": self.D4, "maximum": 1, "exclusiveMaximum": False}
+        ).is_valid(1)
+
+    def test_draft_04_names_its_root_id_without_a_dollar(self):
+        assert compile_schema(
+            {"$schema": self.D4, "id": "http://x.example/s", "type": "string"}
+        ).is_valid("a")
+
+    @pytest.mark.parametrize(
+        ("draft", "keywords", "value"),
+        [
+            (D4, {"const": 1}, 2),
+            (D4, {"contains": {"const": 1}}, [2]),
+            (D4, {"propertyNames": {"maxLength": 1}}, {"long": 1}),
+            (D6, {"if": {"const": 1}, "then": False}, 1),
+        ],
+    )
+    def test_a_keyword_the_draft_does_not_know_asserts_nothing(self, draft, keywords, value):
+        assert compile_schema({"$schema": draft, **keywords}).is_valid(value)
 
 
 def test_an_unknown_keyword_is_an_annotation_and_recorded():

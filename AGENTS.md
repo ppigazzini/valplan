@@ -27,6 +27,8 @@ uv run --no-sync pytest                     # the suite
 uv run --no-sync python tools/check_markdown.py
 uv run --no-sync python tools/suite.py --check docs/studies/json-schema-test-suite.json
 uv run --no-sync python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
+uv run --no-sync python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
+uv run --no-sync python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
 uv run --no-sync python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run --no-sync python tools/bench.py --check docs/studies/bench.json   # 2.5 minutes on 48 cores, 10 on 4
 ```
