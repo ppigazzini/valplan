@@ -9,13 +9,18 @@ The generator covers the keywords it can construct values for directly and falls
 rejection elsewhere: ``not``, ``if`` and an unsatisfiable mix simply yield nothing.
 """
 
+import math
 import random
 import string
 from typing import Any
 
-from valplan.schema import Compiler
+from valplan.schema import Compiler, Unsupported
 
 _ALPHABET = string.ascii_letters + string.digits + "_-@."
+#: The longest string and list a draw builds. Generated schemas bound lengths by 2**31 - 1,
+#: and a draw that long costs gigabytes; deciding a cell needs no such value.
+_LONGEST_STRING = 4096
+_LONGEST_LIST = 16
 
 
 class Sampler:
@@ -45,14 +50,15 @@ class Sampler:
         if schema is True or not isinstance(schema, dict):
             return rng.choice([None, True, 0, 1.5, "a", [], {}])
         if "$ref" in schema and schema["$ref"].startswith("#/"):
-            node: Any = self.root
-            for part in schema["$ref"][2:].split("/"):
-                node = node[part.replace("~1", "/").replace("~0", "~")]
+            try:
+                node = self.compiler.resolve(schema["$ref"])
+            except Unsupported:
+                return None
             return self._value(node, depth - 1) if depth > 0 else None
         if "const" in schema:
             return schema["const"]
         if "enum" in schema:
-            return rng.choice(schema["enum"])
+            return rng.choice(schema["enum"]) if schema["enum"] else None
         for key in ("anyOf", "oneOf"):
             if key in schema:
                 return self._value(rng.choice(schema[key]), depth)
@@ -79,8 +85,8 @@ class Sampler:
         return None
 
     def _number(self, schema: dict[str, Any], *, integer: bool) -> int | float:
-        low = schema.get("minimum", schema.get("exclusiveMinimum", -1000))
-        high = schema.get("maximum", schema.get("exclusiveMaximum", 1000))
+        low = _finite(schema.get("minimum", schema.get("exclusiveMinimum")), -1000)
+        high = _finite(schema.get("maximum", schema.get("exclusiveMaximum")), 1000)
         if "exclusiveMinimum" in schema:
             low += 1
         if "exclusiveMaximum" in schema:
@@ -90,11 +96,16 @@ class Sampler:
         step = schema.get("multipleOf")
         if isinstance(step, int) and step > 0:
             value -= value % step
-        return value if integer or self.rng.random() < 0.5 else value + 0.5  # noqa: PLR2004
+        if integer or self.rng.random() < 0.5:  # noqa: PLR2004
+            return value
+        # Past the float range an integer has no non-integral neighbour to draw.
+        return value + 0.5 if abs(value) < 2**1023 else value
 
     def _string(self, schema: dict[str, Any]) -> str:
-        low = schema.get("minLength", 0)
-        high = max(low, schema.get("maxLength", low + 8))
+        low = int(schema.get("minLength", 0))
+        if low > _LONGEST_STRING:
+            return ""
+        high = min(max(low, int(schema.get("maxLength", low + 8))), low + _LONGEST_STRING)
         n = self.rng.randint(low, high)
         text = "".join(self.rng.choice(_ALPHABET) for _ in range(n))
         if "pattern" in schema:
@@ -103,8 +114,10 @@ class Sampler:
 
     def _array(self, schema: dict[str, Any], depth: int) -> list[Any]:
         prefix = schema.get("prefixItems", [])
-        low = schema.get("minItems", 0)
-        high = max(low, schema.get("maxItems", low + 3))
+        low = int(schema.get("minItems", 0))
+        if low > _LONGEST_LIST:
+            return []
+        high = min(max(low, int(schema.get("maxItems", low + 3))), low + _LONGEST_LIST)
         n = self.rng.randint(low, high) if depth > 0 else low
         items = schema.get("items", True)
         return [self._value(prefix[i] if i < len(prefix) else items, depth - 1) for i in range(n)]
@@ -117,6 +130,15 @@ class Sampler:
             if key in required or (depth > 0 and self.rng.random() < 0.5):  # noqa: PLR2004
                 out[key] = self._value(sub, depth - 1)
         return out
+
+
+def _finite(bound: object, default: int) -> float:
+    """Return a numeric bound, or ``default`` for none or one past the float range."""
+    if isinstance(bound, bool) or not isinstance(bound, (int, float)):
+        return default
+    if isinstance(bound, float) and not math.isfinite(bound):
+        return default
+    return bound
 
 
 def _from_pattern(pattern: str, rng: random.Random) -> str | None:

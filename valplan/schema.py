@@ -357,7 +357,7 @@ class Compiler:
             return self._done[pointer]
         if pointer in self._open:
             return self._open[pointer]
-        target = self._resolve(pointer)
+        target = self.resolve(pointer)
 
         def body(this: Validator[Any]) -> Validator[Any]:
             self._open[pointer] = this
@@ -376,7 +376,8 @@ class Compiler:
         self._done[pointer] = built
         return built
 
-    def _resolve(self, pointer: str) -> object:
+    def resolve(self, pointer: str) -> object:
+        """Return the node a local JSON pointer names, or raise `Unsupported`."""
         if not pointer.startswith("#"):
             msg = f"$ref {pointer!r} is not local to the document"
             raise Unsupported(msg)

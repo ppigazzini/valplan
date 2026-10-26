@@ -115,3 +115,26 @@ class TestUnions:
         inside_union = [c for c in a.cells if 2 in c.inside]
         assert {c.kind for c in inside_union} == {"string"}
         assert all(c.inside & {0, 1} for c in inside_union)
+
+
+class TestSamplerEdges:
+    def _draw(self, schema, root=None):
+        return Sampler(schema if root is None else root, random.Random(0)).draw(schema, 20)
+
+    def test_an_empty_enum_draws_nothing(self):
+        assert self._draw({"enum": []}) == []
+
+    def test_a_pointer_with_a_list_index_or_an_escape_is_followed(self):
+        root = {"allOf": [{"const": 3}], "$defs": {"a b": {"const": "x"}}}
+        assert self._draw({"$ref": "#/allOf/0"}, root) == [3]
+        assert self._draw({"$ref": "#/$defs/a%20b"}, root) == ["x"]
+
+    def test_bounds_past_the_float_range_draw_without_overflow(self):
+        assert all(v >= 10**400 for v in self._draw({"type": "number", "minimum": 10**400}))
+        assert self._draw({"type": "number", "maximum": float("inf")})
+
+    def test_a_huge_length_bound_draws_short_values(self):
+        drawn = self._draw({"type": "string", "maxLength": 2**31 - 1})
+        drawn += self._draw({"type": "array", "maxItems": 2**31 - 1})
+        assert drawn
+        assert all(len(v) <= 4096 for v in drawn)
