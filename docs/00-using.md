@@ -14,7 +14,8 @@ typing-extensions.
 A library directory holds two files, as `examples/helpdesk/` does.
 
 - `tools.json` is an MCP `tools/list` result: `{"tools": [...]}`, each tool with a `name`,
-  an `inputSchema` and an optional `outputSchema`, both object schemas. A tool without
+  an `inputSchema` and an optional `outputSchema`, both object schemas or a `$ref` to one.
+  A tool without
   `properties` takes no arguments. A result field is available to later calls only when
   the output schema requires it.
 - `tasks.json` is `{"tasks": [...]}`, each task with a `name`, an `inputs` object schema

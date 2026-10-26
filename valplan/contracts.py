@@ -72,20 +72,38 @@ class Tool:
         raise KeyError(msg)
 
 
+def _object(schema: object, root: object) -> Mapping[str, Any] | None:
+    """Return the object schema ``schema`` denotes, following bare references, or None.
+
+    A contract root that is a bare ``$ref`` -- zod's named schemas are -- names its object
+    schema, and ``"type": ["object"]`` is ``"type": "object"``.
+    """
+    for _ in range(8):
+        if not (isinstance(schema, dict) and "$ref" in schema):
+            break
+        if set(schema) - ANNOTATIONS - {"$ref", "$id"}:
+            return None
+        schema = Compiler(root).resolve(schema["$ref"])
+    if isinstance(schema, dict) and schema.get("type") in ("object", ["object"]):
+        return schema
+    return None
+
+
 def slots(schema: Mapping[str, Any], *, required_only: bool) -> tuple[Slot, ...]:
     """Return the property slots of an object schema, in declaration order.
 
     A ``$ref`` inside a property resolves against ``schema``, the document it sits in. An
     object schema without ``properties`` -- a tool that takes no arguments -- has no slots.
     """
-    if schema.get("type") != "object":
+    found = _object(schema, schema)
+    if found is None:
         msg = "a contract schema is an object schema"
         raise Unsupported(msg)
     compiler = Compiler(schema)
-    required = set(schema.get("required", []))
+    required = set(found.get("required", []))
     return tuple(
         Slot(name, compiler.compile(sub), sub, name in required, schema)
-        for name, sub in schema.get("properties", {}).items()
+        for name, sub in found.get("properties", {}).items()
         if name in required or not required_only
     )
 

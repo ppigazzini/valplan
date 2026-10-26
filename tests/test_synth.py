@@ -372,3 +372,22 @@ def test_a_then_branch_makes_the_call_only_it_needs_within_the_depth():
     assert program is not None
     assert not planner.weak
     assert isinstance(program[0], Test)
+
+
+_ID = {"type": "string", "pattern": "^cus_[a-z]{4}$"}
+_NAME = {"type": "string", "pattern": "^N[a-z]+$"}
+_QUERY = {"type": "object", "properties": {"q": {"type": "string"}}, "required": ["q"]}
+
+
+class TestContractRoots:
+    def test_a_contract_rooted_in_a_reference_is_read_through_it(self):
+        args = {"$ref": "#/definitions/Args", "definitions": {"Args": _QUERY}}
+        out = {
+            "$ref": "#/definitions/Out",
+            "definitions": {
+                "Out": {"type": "object", "properties": {"name": _NAME}, "required": ["name"]}
+            },
+        }
+        lib = read_tools({"tools": [{"name": "f", "inputSchema": args, "outputSchema": out}]})
+        assert [s.name for s in lib[0].args] == ["q"]
+        assert [r.name for r in lib[0].results] == ["name"]
