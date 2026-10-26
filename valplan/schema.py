@@ -264,6 +264,9 @@ class Compiler:
         self._done: dict[str, Validator[Any]] = {}
         self._open: dict[str, Validator[Any]] = {}
         self._typed: list[frozenset[str] | None] = []
+        #: Whether a keyword of each schema being compiled has guarded itself past the
+        #: universe (`guard`): only then does the schema need its meet with ``JSON``.
+        self._escaped: list[bool] = []
 
     def guard(self, family: str, refined: object) -> Validator[Any]:
         """Return the values outside the family's kind, or ``refined`` ones.
@@ -276,6 +279,8 @@ class Compiler:
         typed = self._typed[-1] if self._typed else None
         if typed is not None and typed <= names:
             return Validator(refined)
+        if self._escaped:
+            self._escaped[-1] = True
         return guard(kind, refined)
 
     def compile(self, schema: object) -> Validator[Any]:
@@ -292,14 +297,22 @@ class Compiler:
             raise Unsupported(msg)
         named = schema.get("type")
         typed = frozenset(named if isinstance(named, list) else [named]) if named else None
-        # A schema confined by `type`, `enum` or `const` admits only JSON values already;
-        # the universe is met only where no keyword pins the kind.
-        parts: list[object] = [] if typed or "enum" in schema or "const" in schema else [JSON]
+        parts: list[object] = []
         self._typed.append(typed)
+        self._escaped.append(False)
         try:
             self._keywords(schema, parts)
         finally:
             self._typed.pop()
+            escaped = self._escaped.pop()
+        # Every compiled subschema lies inside the universe, and so do the meets, unions and
+        # differences of them that `allOf`, `anyOf`, `oneOf`, `not`, `if` and `$ref` build;
+        # only a keyword's guard, `~kind | refined`, reaches past it. The universe is met
+        # there alone, and only where no `type`, `enum` or `const` pins the kind. The
+        # redundant meet is not harmless: valgebra 0.0.20 proves
+        # `(None | number) & JSON` disjoint from the non-integral numbers, which it holds.
+        if escaped and not (typed or "enum" in schema or "const" in schema):
+            parts.append(JSON)
         return intersection(*parts) if parts else JSON
 
     def _keywords(self, schema: dict[str, Any], parts: list[object]) -> None:

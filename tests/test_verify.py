@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from valplan.contracts import task, tools
 from valplan.program import Call, Return, ShapeError, from_json
 from valplan.verify import verify
 
@@ -46,3 +47,48 @@ def test_a_malformed_program_is_refused_by_the_reader_and_by_the_verifier(librar
     checks = verify(library, tasks["ticket"], program)
     assert checks[0].claim.startswith("well-formed program")
     assert checks[0].relation == "not_subset"
+
+
+def test_a_number_bound_to_a_string_is_not_proven_through_a_nullable_type():
+    out = {"type": "object", "properties": {"r": {"type": "string"}}, "required": ["r"]}
+
+    def takes(name, arg):
+        properties = {"x": arg}
+        return {
+            "name": name,
+            "inputSchema": {"type": "object", "properties": properties, "required": ["x"]},
+            "outputSchema": out,
+        }
+
+    nullable = {"anyOf": [{"type": "null"}, {"type": "number"}]}
+    lib = tools(
+        {
+            "tools": [
+                {
+                    "name": "get",
+                    "inputSchema": {"type": "object"},
+                    "outputSchema": {
+                        "type": "object",
+                        "properties": {"v": nullable},
+                        "required": ["v"],
+                    },
+                },
+                takes("pos", {"type": "number", "minimum": 0}),
+                takes("shout", {"type": "string"}),
+            ]
+        }
+    )
+    t = task({"name": "t", "inputs": {"type": "object", "properties": {}}, "goal": True})
+    program = from_json(
+        [
+            {"call": "get", "as": "c1", "args": {}},
+            {
+                "if": "c1.v",
+                "in": "pos.x",
+                "then": [{"call": "shout", "as": "c2", "args": {"x": "c1.v"}}, {"return": "c2.r"}],
+                "else": [{"return": "c1.v"}],
+            },
+        ]
+    )
+    checks = {c.claim: c for c in verify(lib, t, program)}
+    assert not checks["c1.v <= shout.x"].holds
