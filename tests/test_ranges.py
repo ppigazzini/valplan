@@ -135,6 +135,7 @@ class TestFractions:
         ({"type": "integer", "multipleOf": 2}, _i(None, None, step=2)),
         ({"type": "number", "minimum": 0, "multipleOf": 5.0}, _i(0, None, integer=False, step=5)),
         ({"type": "number", "multipleOf": 0.5}, None),
+        ({"type": ["integer", "null"], "minimum": 1}, None),
         ({"type": "string"}, None),
     ],
 )

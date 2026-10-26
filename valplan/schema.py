@@ -810,7 +810,8 @@ def interval(schema: object) -> Interval | None:
     carrying one is not a range. Nor is one with a non-finite bound, which ``json.loads``
     returns for ``1e400``: no exact rational denotes it.
     """
-    if not isinstance(schema, dict) or schema.get("type") not in {"integer", "number"}:
+    # A tuple, not a set: `type` may be a list, which a set lookup would try to hash.
+    if not isinstance(schema, dict) or schema.get("type") not in ("integer", "number"):
         return None
     if set(schema) - _RANGE_KEYS - ANNOTATIONS:
         return None
