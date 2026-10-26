@@ -6,8 +6,8 @@
 uv sync
 ```
 
-Python 3.14 or later, as `requires-python` in `pyproject.toml` says. Runtime dependencies: valgebra, annotated-types,
-typing-extensions.
+Python 3.15 or later, as `requires-python` in `pyproject.toml` says. Runtime dependencies:
+valgebra and annotated-types.
 
 ## Describe a library and its tasks
 
@@ -32,8 +32,7 @@ annotation, a `TypedDict`, gives its results. The annotations are valgebra's own
 language; no JSON Schema is written.
 
 ```python
-from typing import Annotated, Literal
-from typing_extensions import TypedDict
+from typing import Annotated, Literal, TypedDict
 from valgebra import Regex
 from valplan.native import python_impl, python_task, python_tool
 

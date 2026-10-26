@@ -8,10 +8,9 @@ failure is reported at once with its path.
 """
 
 import json
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypedDict
 
 from annotated_types import Ge
-from typing_extensions import TypedDict
 
 from valplan._valgebra import NOT_BOOL, ValidationError, Validator
 

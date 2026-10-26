@@ -16,7 +16,7 @@
 
 Everything runs through `uv`; the environment is already synced, so prefer
 `uv run --no-sync`. If it is not, `uv sync` (the `dev` group is a default
-group). Any Python 3.14 or later will do: `requires-python` in
+group). Any Python 3.15 or later will do: `requires-python` in
 `pyproject.toml` is the only pin.
 
 ```bash

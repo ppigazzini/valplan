@@ -6,13 +6,11 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Pasquale Pigazzini" }]
-requires-python = ">=3.14"
+requires-python = ">=3.15"
 dependencies = [
     # The range, length and step markers the compiled schemas carry. valgebra reads them
     # structurally and does not depend on the package, so this is a direct dependency.
     "annotated-types>=0.8.0",
-    # `TypedDict(closed=True)` (PEP 728) for the study files is in `typing` from 3.15.
-    "typing-extensions>=4.16.0",
     # The decision procedure every abstraction, plan and verdict here rests on. Pre-alpha,
     # so pinned below 0.1, and a 0.0.x minor is a breaking release: the floor moves with
     # each release.
@@ -47,11 +45,11 @@ faulthandler_timeout = 600
 faulthandler_exit_on_timeout = true
 
 [tool.ty.environment]
-python-version = "3.14"
+python-version = "3.15"
 
 [tool.ruff]
 line-length = 100
-target-version = "py314"
+target-version = "py315"
 extend-exclude = ["tests/data"]
 
 [tool.ruff.lint]

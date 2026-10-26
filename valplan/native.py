@@ -25,9 +25,7 @@ import inspect
 import typing
 from collections.abc import Callable, Mapping
 from types import NoneType, UnionType
-from typing import Any, Literal, get_args, get_origin, get_type_hints
-
-from typing_extensions import is_typeddict
+from typing import Any, Literal, get_args, get_origin, get_type_hints, is_typeddict
 
 from valplan._valgebra import Validator
 from valplan.contracts import RESULT_NAME, Slot, Task, Tool, inhabited

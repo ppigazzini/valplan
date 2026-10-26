@@ -1,11 +1,10 @@
 import runpy
 from enum import IntEnum, StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypedDict
 
 import pytest
 from annotated_types import Ge, Le
-from typing_extensions import TypedDict
 from valgebra import Regex
 
 from valplan.native import native_values, python_impl, python_task, python_tool

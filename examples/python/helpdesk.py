@@ -6,10 +6,9 @@ The contracts are the functions' own annotations; the program the planner return
 on the functions themselves, every argument and result checked against them.
 """
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypedDict
 
 from annotated_types import MaxLen, MinLen
-from typing_extensions import TypedDict
 from valgebra import Regex
 
 from valplan.native import python_impl, python_task, python_tool
