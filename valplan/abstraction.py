@@ -237,12 +237,17 @@ class Abstraction:
         outside = [complement(b) for q in kept for b in self._parts(q)]
         inside = [self.predicates[p] for p in sorted(pos) if p not in self._branches]
         choices = [self._parts(p) for p in sorted(pos) if p in self._branches]
-        if math.prod(len(c) for c in choices) > MAX_BRANCHES:
-            return self._set(kind, pos, neg).is_empty()
-        return all(
-            intersection(kind, *inside, *choice, *outside).is_empty()
-            for choice in itertools.product(*choices)
-        )
+        try:
+            if math.prod(len(c) for c in choices) > MAX_BRANCHES:
+                return self._set(kind, pos, neg).is_empty()
+            return all(
+                intersection(kind, *inside, *choice, *outside).is_empty()
+                for choice in itertools.product(*choices)
+            )
+        except ValueError:
+            # valgebra builds no set past 128 recursive definitions -- a cell outside 129
+            # recursive schemas meets 129 -- and a question not asked proves nothing.
+            return False
 
     def _range_form(self, q: int, name: str) -> list[Interval] | None:
         """Return the ranges whose union predicate ``q`` is within kind ``name``, or None.
@@ -346,7 +351,16 @@ class Abstraction:
                     if not self._empty(kinds[name], pos, neg | {i}):
                         out.append((pos, neg | {i}, name))
             cells = out
-        return [Cell(pos, name, self._set(kinds[name], pos, neg)) for pos, neg, name in cells]
+        return [Cell(pos, name, self._cell_set(kinds[name], pos, neg)) for pos, neg, name in cells]
+
+    def _cell_set(
+        self, kind: Validator[Any], pos: frozenset[int], neg: frozenset[int]
+    ) -> Validator[Any]:
+        """Return a cell's set, or its kind where valgebra builds no set that large."""
+        try:
+            return self._set(kind, pos, neg)
+        except ValueError:
+            return kind
 
     def _classify(self, witnesses: Iterable[Any]) -> None:
         index = {(c.kind, c.inside): n for n, c in enumerate(self.cells)}

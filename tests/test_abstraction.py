@@ -138,3 +138,20 @@ class TestSamplerEdges:
         drawn += self._draw({"type": "array", "maxItems": 2**31 - 1})
         assert drawn
         assert all(len(v) <= 4096 for v in drawn)
+
+
+def test_cells_past_valgebras_definition_limit_are_kept_not_raised():
+    # A cell outside 130 recursive schemas meets 130 definitions; valgebra builds 128.
+    def tree(i):
+        kids = {"type": "array", "items": {"$ref": "#/$defs/node"}}
+        node = {
+            "type": "object",
+            "properties": {"tag": {"const": f"t{i}"}, "kids": kids},
+            "required": ["tag"],
+        }
+        return {"$defs": {"node": node}, "$ref": "#/$defs/node"}
+
+    a = Abstraction([compile_schema(tree(i)) for i in range(130)])
+    outside = [c for c in a.cells if c.kind == "object" and not c.inside]
+    assert len(outside) == 1
+    assert outside[0].status == "inhabited"
