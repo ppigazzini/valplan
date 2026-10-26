@@ -379,7 +379,39 @@ _NAME = {"type": "string", "pattern": "^N[a-z]+$"}
 _QUERY = {"type": "object", "properties": {"q": {"type": "string"}}, "required": ["q"]}
 
 
-class TestContractRoots:
+class TestResultShapes:
+    def _plan_and_run(self, specs, impls):
+        lib = read_tools({"tools": specs})
+        task = read_task({"name": "t", "inputs": _QUERY, "goal": _NAME})
+        planner = Planner(lib, task, witnesses(lib, task))
+        program = planner.plan()
+        assert program is not None
+        assert not planner.weak
+        assert run(lib, task, program, {"q": "x"}, impls) == "Nada"
+        return render(program)
+
+    def _get(self):
+        args = {"type": "object", "properties": {"id": _ID}, "required": ["id"]}
+        out = {"type": "object", "properties": {"name": _NAME}, "required": ["name"]}
+        return {"name": "get", "inputSchema": args, "outputSchema": out}
+
+    def test_a_result_that_is_no_object_is_bound_whole(self):
+        find = {"name": "find", "inputSchema": _QUERY, "outputSchema": _ID}
+        shown = self._plan_and_run(
+            [find, self._get()], {"find": lambda _a: "cus_abcd", "get": lambda _a: {"name": "Nada"}}
+        )
+        assert "get(id=c1.$)" in shown
+
+    def test_a_nested_required_field_is_a_slot_of_its_own(self):
+        customer = {"type": "object", "properties": {"id": _ID}, "required": ["id"]}
+        out = {"type": "object", "properties": {"customer": customer}, "required": ["customer"]}
+        find = {"name": "find", "inputSchema": _QUERY, "outputSchema": out}
+        impls = {
+            "find": lambda _a: {"customer": {"id": "cus_abcd"}},
+            "get": lambda _a: {"name": "Nada"},
+        }
+        assert "get(id=c1.customer.id)" in self._plan_and_run([find, self._get()], impls)
+
     def test_a_contract_rooted_in_a_reference_is_read_through_it(self):
         args = {"$ref": "#/definitions/Args", "definitions": {"Args": _QUERY}}
         out = {
@@ -391,3 +423,10 @@ class TestContractRoots:
         lib = read_tools({"tools": [{"name": "f", "inputSchema": args, "outputSchema": out}]})
         assert [s.name for s in lib[0].args] == ["q"]
         assert [r.name for r in lib[0].results] == ["name"]
+
+    def test_two_result_paths_read_alike_are_refused(self):
+        inner = {"type": "object", "properties": {"id": _ID}, "required": ["id"]}
+        props = {"customer": inner, "customer.id": _ID}
+        out = {"type": "object", "properties": props, "required": ["customer", "customer.id"]}
+        with pytest.raises(Unsupported, match="read alike"):
+            read_tools({"tools": [{"name": "f", "inputSchema": _QUERY, "outputSchema": out}]})

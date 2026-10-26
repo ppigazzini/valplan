@@ -4,8 +4,10 @@
 
 An agent does not pass one tool's result to the next whole; it fills each argument from a
 value it holds. A tool is read from its MCP JSON Schema, or from a Python function's
-annotations (`valplan/native.py`); both give the same slots. `valplan/contracts.py` reads each tool as slots: one per argument, one per
-result field the output schema requires. Each slot's set is its property's subschema,
+annotations (`valplan/native.py`); both give the same slots. `valplan/contracts.py` reads
+each tool as slots: one per argument, one per result field the output schema requires,
+nested required fields included by their path to three levels, or one for a whole result
+that is no object. Each slot's set is its property's subschema,
 compiled by `valplan/schema.py`. A constraint the whole input object carries is kept: a
 binding is accepted only if the assembled argument record is proven inside the tool's
 whole input schema.
@@ -110,8 +112,9 @@ verifier reports `undecided` for it.
   Distinct schemas — patterns, enums, ranges — are what make a plan mean what it should.
 - **What is not modelled.** Side effects beyond "a call happens", tool errors (an MCP
   result with `isError`, a missing `structuredContent`), constants written into a call, and
-  access to nested fields of a result. "Whatever the tools return" means whatever values
-  inside their output schemas.
+  a result field the output schema does not guarantee: an optional one, one inside an
+  optional object, or one past three levels. "Whatever the tools return" means whatever
+  values inside their output schemas.
 - **Search bounds.** The planner searches to a depth bound (6 calls and tests per path by
   default) over the cells it could decide. A guarded call's other arguments must be held
   when its test is made, so a call only the *then* branch needs counts on the *else* path

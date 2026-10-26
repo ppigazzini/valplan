@@ -53,6 +53,14 @@ class TestReading:
         assert t.input.is_valid({"a": 1})
         assert not t.input.is_valid({"a": 1, "c": 2})
 
+    def test_a_function_returning_no_typeddict_has_its_whole_result_as_one_slot(self):
+        def double(x: int) -> int:
+            return 2 * x
+
+        t = python_tool(double)
+        assert [(r.name, r.path) for r in t.results] == [("$", ())]
+        assert t.output.is_valid(4)
+
     def test_a_function_returning_nothing_has_no_results(self):
         def ping(host: str) -> None:
             del host
@@ -66,7 +74,6 @@ class TestReading:
             ("tuple", "not JSON values"),
             ("open", "not JSON values"),
             ("star", "by keyword"),
-            ("plain_return", "TypedDict"),
             ("strenum", "no JSON value is a Tier"),
             ("intenum", "no JSON value is a Level"),
             ("enum_literal", "is a Tier, no JSON value"),
@@ -82,9 +89,6 @@ class TestReading:
         def star(*xs: int) -> None:
             del xs
 
-        def plain_return(x: int) -> int:
-            return x
-
         def strenum(x: Tier) -> None:
             del x
 
@@ -98,7 +102,6 @@ class TestReading:
             "tuple": takes_tuple,
             "open": takes_open,
             "star": star,
-            "plain_return": plain_return,
             "strenum": strenum,
             "intenum": intenum,
             "enum_literal": enum_literal,

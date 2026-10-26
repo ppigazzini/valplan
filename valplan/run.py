@@ -13,7 +13,7 @@ from valplan.contracts import Task, Tool
 from valplan.program import Call, Program, Return, Stop, Test
 from valplan.synth import slot_named
 
-type Impl = Callable[[dict[str, Any]], dict[str, Any]]
+type Impl = Callable[[dict[str, Any]], Any]
 
 
 class ContractError(RuntimeError):
@@ -42,8 +42,8 @@ def run(
         step = steps.pop(0)
         match step:
             case Call(label, name, args):
-                result = _call(by_name[name], {a: env[v] for a, v in args}, impls[name])
-                env |= {f"{label}.{r.name}": result[r.name] for r in by_name[name].results}
+                fields = _call(by_name[name], {a: env[v] for a, v in args}, impls[name])
+                env |= {f"{label}.{n}": value for n, value in fields.items()}
             case Test(var, against, then, other):
                 target = task.goal if against == "goal" else slot_named(tools, against).schema
                 steps = list(then if target.is_valid(env[var]) else other)
@@ -60,7 +60,7 @@ def run(
 
 
 def _call(tool: Tool, arguments: dict[str, Any], impl: Impl) -> dict[str, Any]:
-    """Call ``impl`` and return its result, each side checked against the contract."""
+    """Call ``impl`` and return its result slots' values, each checked against the contract."""
     if not tool.input.is_valid(arguments):
         msg = f"{tool.name} called with {arguments!r}, outside its input schema"
         raise ContractError(msg)
@@ -68,8 +68,16 @@ def _call(tool: Tool, arguments: dict[str, Any], impl: Impl) -> dict[str, Any]:
     if not tool.output.is_valid(result):
         msg = f"{tool.name} returned {result!r}, outside its output schema"
         raise ContractError(msg)
+    fields: dict[str, Any] = {}
     for r in tool.results:
-        if r.name not in result or not r.schema.is_valid(result[r.name]):
+        value = result
+        for key in (r.name,) if r.path is None else r.path:
+            if not isinstance(value, dict) or key not in value:
+                msg = f"{tool.name} returned {result!r}, lacking its field {r.name}"
+                raise ContractError(msg)
+            value = value[key]
+        if not r.schema.is_valid(value):
             msg = f"{tool.name} returned {result!r}, breaking its field {r.name}"
             raise ContractError(msg)
-    return result
+        fields[r.name] = value
+    return fields

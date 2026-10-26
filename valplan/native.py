@@ -1,10 +1,11 @@
 """The second door: tools and tasks written as Python functions and types.
 
 A tool is a function. Its annotated parameters are its arguments -- required unless they
-have a default -- and its return annotation, a `TypedDict`, gives its results: the keys
-that `TypedDict` requires. The annotations are valgebra's own schema language (a class, a
-`Literal`, an `Annotated` bound or `Regex`, a union, a `TypedDict`, a list), so no JSON
-Schema is written and none is translated.
+have a default -- and its return annotation gives its results: the keys a `TypedDict`
+requires, or, for any other annotation, the whole value as one result, ``$``. The
+annotations are valgebra's own schema language (a class, a `Literal`, an `Annotated` bound
+or `Regex`, a union, a `TypedDict`, a list), so no JSON Schema is written and none is
+translated.
 
 One rule keeps the planner's universe what it is: every annotation must denote JSON
 values only, because a tool call and its result travel as JSON whatever language wrote
@@ -129,8 +130,9 @@ def _results(tool_name: str, annotation: object) -> tuple[Slot, ...]:
     if annotation is None or annotation is NoneType:
         return ()
     if not is_typeddict(annotation):
-        msg = f"{tool_name}: the return annotation is a TypedDict, got {annotation!r}"
-        raise Unsupported(msg)
+        # A result that is no object is one slot, the whole result, as an MCP tool's is.
+        whole = _json_only(annotation, f"{tool_name} -> $")
+        return inhabited((Slot("$", whole, annotation, path=()),), f"{tool_name}: result")
     hints = _hints(annotation)
     required = getattr(annotation, "__required_keys__", frozenset(hints))
     found = tuple(
@@ -141,12 +143,12 @@ def _results(tool_name: str, annotation: object) -> tuple[Slot, ...]:
     return inhabited(found, f"{tool_name}: result")
 
 
-def python_impl(fn: Callable[..., Any]) -> Callable[[dict[str, Any]], dict[str, Any]]:
+def python_impl(fn: Callable[..., Any]) -> Callable[[dict[str, Any]], Any]:
     """Return ``fn`` as the runner calls a tool: one arguments object in, a result out."""
 
-    def call(arguments: dict[str, Any]) -> dict[str, Any]:
+    def call(arguments: dict[str, Any]) -> Any:
         result = fn(**arguments)
-        return {} if result is None else dict(result)
+        return {} if result is None else result
 
     return call
 

@@ -14,10 +14,11 @@ typing-extensions.
 A library directory holds two files, as `examples/helpdesk/` does.
 
 - `tools.json` is an MCP `tools/list` result: `{"tools": [...]}`, each tool with a `name`,
-  an `inputSchema` and an optional `outputSchema`, both object schemas or a `$ref` to one.
-  A tool without
-  `properties` takes no arguments. A result field is available to later calls only when
-  the output schema requires it.
+  an `inputSchema`, an object schema or a `$ref` to one, and an optional `outputSchema`. A
+  tool without `properties` takes no arguments. An object output schema gives later calls
+  each field it requires, and each required field of a required object field, to three
+  levels, named by its path: `c1.customer.id`. Any other output schema -- MCP's revision
+  2026-07-28 lets a result be any JSON value -- gives one result, the whole value: `c1.$`.
 - `tasks.json` is `{"tasks": [...]}`, each task with a `name`, an `inputs` object schema
   (what the agent holds at the start; required properties only, none named like a call's
   result, `c1.id`) and a `goal` schema (the

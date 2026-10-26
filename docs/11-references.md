@@ -39,5 +39,7 @@
 
 - [valgebra](https://github.com/ppigazzini/valgebra) (MIT or Apache-2.0): the decision
   procedure.
-- [Model Context Protocol](https://modelcontextprotocol.io/), revision 2025-06-18: tool
-  `inputSchema` and `outputSchema`.
+- [Model Context Protocol](https://modelcontextprotocol.io/), revisions 2025-06-18 (a tool's
+  `inputSchema` and `outputSchema`), 2025-11-25 (JSON Schema 2020-12 the default dialect, a
+  `$schema` choosing another) and 2026-07-28 (`outputSchema` any schema and
+  `structuredContent` any JSON value; a network `$ref` never dereferenced).

@@ -2,12 +2,15 @@
 
 An MCP server lists each tool with an ``inputSchema`` (the arguments object) and, since
 the 2025-06-18 revision of the protocol, an optional ``outputSchema`` (the structured
-result). An agent does not pass one tool's result to the next whole; it fills each
-argument from a value it already holds. So a contract is read as named slots: one per
-argument, one per guaranteed result field.
+result), which the 2026-07-28 revision lets be any schema and the result any JSON value.
+An agent does not pass one tool's result to the next whole; it fills each argument from a
+value it already holds. So a contract is read as named slots: one per argument, one per
+guaranteed result field -- nested fields too, named by their path, ``customer.id`` -- and
+one, ``$``, for a result that is no object.
 
-A result field is guaranteed only when the output schema requires it. An optional field
-may be absent, and binding it would be a call the contract does not license.
+A result field is guaranteed only when the output schema requires it, and every object
+on its path too. An optional field may be absent, and binding it would be a call the
+contract does not license.
 
 The per-slot schema is the property's own subschema. A constraint the whole object
 carries (``allOf``, ``if``/``then``, ``dependentRequired``) is not lost: the verifier
@@ -41,6 +44,9 @@ class Slot:
     required: bool = True
     #: The document ``source`` sits in, against which its ``$ref`` resolve.
     root: object = field(compare=False, repr=False, default=None)
+    #: For a result, the keys from the tool's result to this slot's value; ``()`` is the
+    #: whole result, and None the one key ``name``.
+    path: tuple[str, ...] | None = field(compare=False, repr=False, default=None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +76,10 @@ class Tool:
                 return slot
         msg = f"{self.name} has no argument {name!r}"
         raise KeyError(msg)
+
+
+#: How many levels of required object properties a result's slots reach into.
+NESTING = 3
 
 
 def _object(schema: object, root: object) -> Mapping[str, Any] | None:
@@ -106,6 +116,39 @@ def slots(schema: Mapping[str, Any], *, required_only: bool) -> tuple[Slot, ...]
         for name, sub in found.get("properties", {}).items()
         if name in required or not required_only
     )
+
+
+def results(schema: object) -> tuple[Slot, ...]:
+    """Return a tool's result slots: its guaranteed fields, nested ones, or its whole result.
+
+    An output schema that is no object schema is one slot, ``$``, the whole result. An
+    object one gives each required property a slot, and each required property of a
+    required object property one more, to `NESTING` levels, named by its path. Two paths
+    named alike -- a property called ``customer.id`` beside a nested ``id`` -- are refused.
+    """
+    compiler = Compiler(schema)
+    found = _object(schema, schema)
+    if found is None:
+        return (Slot("$", compiler.compile(schema), schema, root=schema, path=()),)
+    out: list[Slot] = []
+
+    def walk(node: Mapping[str, Any], path: tuple[str, ...]) -> None:
+        required = set(node.get("required", []))
+        for name, sub in node.get("properties", {}).items():
+            if name in required:
+                here = (*path, name)
+                slot = Slot(".".join(here), compiler.compile(sub), sub, root=schema, path=here)
+                out.append(slot)
+                inner = _object(sub, schema) if len(here) < NESTING else None
+                if inner is not None:
+                    walk(inner, here)
+
+    walk(found, ())
+    names = [s.name for s in out]
+    if len(set(names)) != len(names):
+        msg = f"two result paths read alike among {names}"
+        raise Unsupported(msg)
+    return tuple(out)
 
 
 def inhabited(found: tuple[Slot, ...], where: str) -> tuple[Slot, ...]:
@@ -145,7 +188,7 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         whole = compiler.compile(spec["inputSchema"])
         args = slots(spec["inputSchema"], required_only=False)
         out = spec.get("outputSchema")
-        results = inhabited(slots(out, required_only=True), "result") if out is not None else ()
+        fields = inhabited(results(out), "result") if out is not None else ()
         output = Compiler(out).compile(out) if out is not None else JSON
     except Unsupported as exc:
         msg = f"tool {name!r}: {exc}"
@@ -153,7 +196,7 @@ def tool(spec: Mapping[str, Any]) -> Tool:
     return Tool(
         name,
         args,
-        results,
+        fields,
         whole,
         spec.get("description", ""),
         frozenset(compiler.opaque),
