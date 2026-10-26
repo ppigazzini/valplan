@@ -86,7 +86,8 @@ some; `valplan.synth.gaps(planner, program)` describes each stop.
 
 A program written by hand or proposed by a language model is JSON, read with
 `valplan.program.from_json`, which refuses a block that ends in a call or has a step after
-a test or a return:
+a test or a return, and a step that is not one of the four shapes below with a string
+wherever a name belongs:
 
 ```json
 [

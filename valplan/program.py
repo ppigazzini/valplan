@@ -87,10 +87,11 @@ def check_shape(program: Program) -> None:
 
     A step after a test would never run, and a block that ends in a call never answers; a
     reader that skipped either would report a program correct that does not mean what it
-    says.
+    says. Every name a step holds must be a string, so a reader can look it up.
     """
     for i, step in enumerate(program):
         last = i == len(program) - 1
+        _check_names(step, i)
         match step:
             case Test(_, _, then, other):
                 if not last:
@@ -111,31 +112,67 @@ def check_shape(program: Program) -> None:
         raise ShapeError(msg)
 
 
+def _check_names(step: object, i: int) -> None:
+    match step:
+        case Call(label, tool, args):
+            names = [label, tool, *(n for pair in args for n in pair)]
+            pairs = all(isinstance(pair, tuple) and len(pair) == 2 for pair in args)  # noqa: PLR2004
+            ok = pairs and all(isinstance(n, str) for n in names)
+        case Test(var, against, then, other):
+            ok = isinstance(var, str) and isinstance(against, str)
+            ok = ok and isinstance(then, tuple) and isinstance(other, tuple)
+        case Return(var) | Stop(var):
+            ok = isinstance(var, str)
+        case _:
+            ok = False
+    if not ok:
+        msg = f"step {i + 1} is no call, test, return or stop of names: {step!r}"
+        raise ShapeError(msg)
+
+
 def from_json(steps: list[dict[str, Any]]) -> Program:
     """Read a program serialised by `to_json`, or written by hand or by a model.
 
-    The structure is checked (`check_shape`); the types are the verifier's to check.
+    The structure is checked (`check_shape`); the types are the verifier's to check. A step
+    that is not one of the four JSON shapes, or holds anything but a string where a name
+    belongs, raises `ShapeError`.
     """
     program = _read(steps)
     check_shape(program)
     return program
 
 
-def _read(steps: list[dict[str, Any]]) -> Program:
+#: The keys each step shape carries, by the key that names the shape.
+_KEYS = {
+    "call": {"call", "as", "args"},
+    "if": {"if", "in", "then", "else"},
+    "return": {"return"},
+    "stop": {"stop"},
+}
+
+
+def _read(steps: object) -> Program:
+    if not isinstance(steps, list):
+        msg = f"a block is a list of steps, got {json.dumps(steps)}"
+        raise ShapeError(msg)
     out: list[Step] = []
     for step in steps:
-        if "call" in step:
+        shape = next((k for k in _KEYS if isinstance(step, dict) and k in step), None)
+        if shape is None or set(step) != _KEYS[shape]:
+            msg = f"unknown step {json.dumps(step)}"
+            raise ShapeError(msg)
+        if shape == "call":
+            if not isinstance(step["args"], dict):
+                msg = f"the arguments of {json.dumps(step)} are no object"
+                raise ShapeError(msg)
             out.append(Call(step["as"], step["call"], tuple(step["args"].items())))
-        elif "if" in step:
+        elif shape == "if":
             then, other = _read(step["then"]), _read(step["else"])
             out.append(Test(step["if"], step["in"], then, other))
-        elif "return" in step:
+        elif shape == "return":
             out.append(Return(step["return"]))
-        elif "stop" in step:
-            out.append(Stop(step["stop"]))
         else:
-            msg = f"unknown step {json.dumps(step)}"
-            raise ValueError(msg)
+            out.append(Stop(step["stop"]))
     return tuple(out)
 
 

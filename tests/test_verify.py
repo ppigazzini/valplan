@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from valplan.contracts import task, tools
-from valplan.program import Call, Return, ShapeError, from_json
+from valplan.program import Call, Return, ShapeError, Stop, Test, from_json
 from valplan.verify import verify
 
 NAIVE = Path(__file__).parent.parent / "examples" / "helpdesk" / "naive-escalate.json"
@@ -92,3 +92,35 @@ def test_a_number_bound_to_a_string_is_not_proven_through_a_nullable_type():
     )
     checks = {c.claim: c for c in verify(lib, t, program)}
     assert not checks["c1.v <= shout.x"].holds
+
+
+@pytest.mark.parametrize(
+    "steps",
+    [
+        [{"call": "find_customer", "as": "c1", "args": {"email": ["email"]}}, {"return": "c1"}],
+        [{"call": "find_customer", "as": "c1", "args": None}, {"return": "c1"}],
+        [{"call": ["find_customer"], "as": "c1", "args": {}}, {"return": "c1"}],
+        [{"if": "email", "in": 3, "then": [{"return": "email"}], "else": [{"stop": "email"}]}],
+        [{"if": ["email"], "in": "goal", "then": [{"return": "email"}], "else": []}],
+        [{"return": "email", "note": "extra"}],
+        ["return email"],
+        {"return": "email"},
+    ],
+)
+def test_the_reader_refuses_a_step_that_is_no_shape_of_names(steps):
+    with pytest.raises(ShapeError):
+        from_json(steps)
+
+
+@pytest.mark.parametrize(
+    "program",
+    [
+        (Call("c1", "find_customer", (("email", ["email"]),)), Return("c1.customer_id")),  # ty: ignore[invalid-argument-type]
+        (Test("email", 3, (Return("email"),), (Stop("email"),)),),  # ty: ignore[invalid-argument-type]
+        (Return(["email"]),),  # ty: ignore[invalid-argument-type]
+    ],
+)
+def test_the_verifier_reports_an_ill_typed_program_instead_of_raising(library, tasks, program):
+    checks = verify(library, tasks["ticket"], program)
+    assert checks[0].claim.startswith("well-formed program")
+    assert checks[0].relation == "not_subset"
