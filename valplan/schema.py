@@ -347,9 +347,9 @@ class Compiler:
         # Every compiled subschema lies inside the universe, and so do the meets, unions and
         # differences of them that `allOf`, `anyOf`, `oneOf`, `not`, `if` and `$ref` build;
         # only a keyword's guard, `~kind | refined`, reaches past it. The universe is met
-        # there alone, and only where no `type`, `enum` or `const` pins the kind. The
-        # redundant meet is not harmless: valgebra 0.0.20 proves
-        # `(None | number) & JSON` disjoint from the non-integral numbers, which it holds.
+        # there alone, and only where no `type`, `enum` or `const` pins the kind: anywhere
+        # else the meet is the same set, with a recursive term every question about it
+        # would carry.
         if escaped and not (typed or "enum" in schema or "const" in schema):
             parts.append(JSON)
         return intersection(*parts) if parts else JSON

@@ -14,7 +14,7 @@ dependencies = [
     # The decision procedure every abstraction, plan and verdict here rests on. Pre-alpha,
     # so pinned below 0.1, and a 0.0.x minor is a breaking release: the floor moves with
     # each release.
-    "valgebra>=0.0.20,<0.1",
+    "valgebra>=0.0.21,<0.1",
 ]
 
 [dependency-groups]

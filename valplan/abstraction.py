@@ -170,7 +170,7 @@ class Abstraction:
 
         A union is decided a branch at a time. The identities are exact -- a meet with a
         union is the union of the meets, a complement of one the meet of the complements --
-        and valgebra 0.0.20 proves a meet with a bare union of patterns empty only branch
+        and valgebra 0.0.21 proves a meet with a bare union of patterns empty only branch
         by branch: ``integer & (ga | gb)`` stays open while ``integer & ga`` is proven.
         """
         return self._branches.get(i, [self.predicates[i]])

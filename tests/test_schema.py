@@ -1,7 +1,7 @@
 import pytest
 from valgebra import complement, intersection, nothing
 
-from valplan.schema import Compiler, Unsupported, compile_schema, json_key
+from valplan.schema import JSON, Compiler, Unsupported, compile_schema, json_key
 
 
 class TestSemantics:
@@ -358,10 +358,10 @@ def test_an_unknown_keyword_is_an_annotation_and_recorded():
 
 
 def test_a_nullable_number_keeps_its_non_integral_part():
-    # valgebra 0.0.20 proves `fractions & (None | number) & JSON` empty although it holds
-    # 0.5; the compiler meets the universe only where a keyword's guard escapes it.
+    # The non-integral numbers inside `null | number` hold 0.5, met with the universe or not.
     nullable = compile_schema({"anyOf": [{"type": "null"}, {"type": "number"}]})
     number, integer = compile_schema({"type": "number"}), compile_schema({"type": "integer"})
     meet = intersection(number, complement(integer), nullable)
     assert meet.is_valid(0.5)
     assert not meet.is_empty()
+    assert not intersection(meet, JSON).is_empty()
