@@ -179,6 +179,26 @@ class TestRecursionThroughCallbacks:
         assert c.compile(_PATTERNED).is_valid({"k": 1})
 
 
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"required": "ab"},
+        {"enum": "ab"},
+        {"exclusiveMinimum": True},
+        {"type": []},
+        {"type": ["string", "string"]},
+        {"multipleOf": 0},
+        {"pattern": 5},
+        {"properties": {"a": 3}},
+        {"allOf": []},
+        {"dependentRequired": {"a": "b"}},
+    ],
+)
+def test_a_keyword_holding_what_the_meta_schema_refuses_is_refused(schema):
+    with pytest.raises(Unsupported):
+        compile_schema(schema)
+
+
 def test_a_pointer_through_an_embedded_resource_is_refused():
     schema = {
         "$defs": {

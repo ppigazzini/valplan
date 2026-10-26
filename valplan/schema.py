@@ -356,9 +356,15 @@ class Compiler:
 
     def _keywords(self, schema: dict[str, Any], parts: list[object]) -> None:
         seen: set[str] = set()
-        for keyword in schema:
+        for keyword, value in schema.items():
             if keyword in ANNOTATIONS or (keyword == "$id" and schema is self.root):
                 continue
+            shape = _SHAPES.get(keyword)
+            if shape is not None and not shape(value):
+                # The meta-schema refuses it, and any reading of it would be invented:
+                # `{"required": "ab"}` read as the keys `a` and `b`.
+                msg = f"keyword {keyword!r} holds {value!r:.60}, as no schema may"
+                raise Unsupported(msg)
             group = _GROUPS.get(keyword, keyword)
             if group in seen:
                 continue
@@ -910,6 +916,65 @@ def _schema_id(_c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     msg = "keyword '$id' changes the base URI; only local references are supported"
     raise Unsupported(msg)
 
+
+def _is_number(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _is_schema(value: object) -> bool:
+    return isinstance(value, (dict, bool))
+
+
+def _are_schemas(value: object) -> bool:
+    return isinstance(value, list) and len(value) > 0 and all(_is_schema(v) for v in value)
+
+
+def _are_names(value: object) -> bool:
+    return isinstance(value, list) and all(isinstance(v, str) for v in value)
+
+
+def _is_type(value: object) -> bool:
+    if isinstance(value, str):
+        return value in KINDS
+    return (
+        isinstance(value, list)
+        and len(value) > 0
+        and all(isinstance(v, str) and v in KINDS for v in value)
+        and len(set(value)) == len(value)
+    )
+
+
+#: What each keyword's value must be for the draft 2020-12 meta-schema to admit it. A count
+#: is checked where it is read (`_count`), a subschema where it is compiled.
+_SHAPES: Mapping[str, Callable[[object], bool]] = {
+    "type": _is_type,
+    "enum": lambda v: isinstance(v, list),
+    "required": lambda v: _are_names(v) and len(set(v)) == len(v),  # ty: ignore[invalid-argument-type]
+    "multipleOf": lambda v: _is_number(v) and v > 0,  # ty: ignore[unsupported-operator]
+    "minimum": _is_number,
+    "maximum": _is_number,
+    "exclusiveMinimum": _is_number,
+    "exclusiveMaximum": _is_number,
+    "pattern": lambda v: isinstance(v, str),
+    "$ref": lambda v: isinstance(v, str),
+    "uniqueItems": lambda v: isinstance(v, bool),
+    "items": _is_schema,
+    "contains": _is_schema,
+    "not": _is_schema,
+    "if": _is_schema,
+    "then": _is_schema,
+    "else": _is_schema,
+    "additionalProperties": _is_schema,
+    "propertyNames": _is_schema,
+    "prefixItems": _are_schemas,
+    "allOf": _are_schemas,
+    "anyOf": _are_schemas,
+    "oneOf": _are_schemas,
+    "properties": lambda v: isinstance(v, dict) and all(_is_schema(s) for s in v.values()),
+    "patternProperties": lambda v: isinstance(v, dict) and all(_is_schema(s) for s in v.values()),
+    "dependentSchemas": lambda v: isinstance(v, dict) and all(_is_schema(s) for s in v.values()),
+    "dependentRequired": lambda v: isinstance(v, dict) and all(_are_names(s) for s in v.values()),
+}
 
 #: Keywords draft 2020-12 couples: each group compiles once, from all its members.
 _GROUPS: Mapping[str, str] = {

@@ -114,15 +114,15 @@
    "schemas": 5
   },
   {
+   "reason": "a keyword holding what the meta-schema refuses",
+   "schemas": 1
+  },
+  {
    "reason": "a pattern outside valgebra's regex dialect",
    "schemas": 21
   },
   {
    "reason": "a property name valgebra cannot hold",
-   "schemas": 1
-  },
-  {
-   "reason": "a schema is an object or a boolean, got list",
    "schemas": 1
   },
   {

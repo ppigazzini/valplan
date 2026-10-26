@@ -81,6 +81,7 @@ REASONS = (
     ("$ref", "a $ref outside the document, to an anchor, or through an embedded $id"),
     ("valgebra refuses", "a set valgebra refuses to build"),
     ("property name", "a property name valgebra cannot hold"),
+    ("a schema is an object or a boolean", "a value where a schema belongs"),
 )
 
 
@@ -89,8 +90,12 @@ def reason(message: str) -> str:
     for start, category in REASONS:
         if message.startswith(start):
             return category
+    if message.startswith("keyword '") and " holds " in message:
+        return "a keyword holding what the meta-schema refuses"
     if message.startswith("keyword '"):
         return f"the keyword {message.split(chr(39))[1]}"
+    if "is not a non-negative integer" in message:
+        return "a keyword holding what the meta-schema refuses"
     return message.partition(":")[0][:60]
 
 
