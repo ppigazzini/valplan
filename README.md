@@ -87,6 +87,13 @@ uv run python tools/check_markdown.py
 See [`docs/`](docs/README.md) for the method, the compiler's semantics, the results and
 their limits.
 
+## Citing
+
+[doi:10.5281/zenodo.23686600](https://doi.org/10.5281/zenodo.23686600) cites every
+version; version 0.0.1 is
+[doi:10.5281/zenodo.23686601](https://doi.org/10.5281/zenodo.23686601).
+[`CITATION.cff`](CITATION.cff) holds the record.
+
 ## Licence
 
 Apache-2.0. See [`LICENSE`](LICENSE). The vendored test suite in

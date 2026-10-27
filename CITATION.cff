@@ -9,6 +9,14 @@ authors:
 license: Apache-2.0
 version: 0.0.1
 date-released: "2026-10-27"
+doi: 10.5281/zenodo.23686600
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23686600
+    description: "Every version"
+  - type: doi
+    value: 10.5281/zenodo.23686601
+    description: "Version 0.0.1"
 abstract: >-
   Plans tool-using agents in which every call is proven well-typed. MCP tool contracts in
   JSON Schema, draft 2020-12 and drafts 07, 06 and 04 through an upgrade, are compiled into
