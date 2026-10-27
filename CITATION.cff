@@ -8,6 +8,19 @@ authors:
     orcid: "https://orcid.org/0009-0004-6977-7317"
 license: Apache-2.0
 version: 0.0.1
+date-released: "2026-10-27"
+abstract: >-
+  Plans tool-using agents in which every call is proven well-typed. MCP tool contracts in
+  JSON Schema, draft 2020-12 and drafts 07, 06 and 04 through an upgrade, are compiled into
+  sets that valgebra decides inclusion and emptiness over; the Boolean algebra those sets
+  generate is cut into finitely many cells, and a planner searches the cells for a program
+  of tool calls and static type tests on values that reaches the goal whatever values inside
+  their output schemas the tools return. A verifier asks valgebra alone, without the cells
+  or the search, about every link of a program, one written elsewhere included: each is
+  proven, refuted with a value outside it, or left undecided. The compiler passes every case
+  it runs of the official JSON-Schema-Test-Suite for drafts 2020-12, 07, 06 and 04, and
+  compiles 9301 of the 9558 real-world schemas of JSONSchemaBench with none crashing. Every
+  published count is reproduced by a committed command.
 repository-code: "https://github.com/ppigazzini/valplan"
 keywords:
   - semantic subtyping
