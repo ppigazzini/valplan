@@ -5,7 +5,7 @@ A call is enabled when each required argument can be bound to a variable whose c
 lie inside the argument's schema, and the assembled argument object is proven inside the
 tool's whole input schema. A call adds its guaranteed result fields as new variables.
 
-Where a variable only overlaps an argument's schema, the program can test it at run time:
+Where a variable only overlaps an argument's schema, the program tests it, a static type test:
 the *then* branch continues with the variable narrowed to the overlap, the *else* branch
 with the rest, and the program is accepted only if both branches reach the goal. That is
 strong planning under the nondeterminism of tool outputs (Cimatti, Pistore, Roveri and

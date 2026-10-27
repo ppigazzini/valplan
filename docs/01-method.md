@@ -19,7 +19,7 @@ each predicate taken positively or negatively — partition the JSON values into
 each predicate is exactly a union of cells (`valplan/abstraction.py`). Inclusion between
 the cells of two predicates implies inclusion between the predicates; the converse fails
 only through an undecided cell inside one and outside the other. Narrowing a value by a
-runtime test is set difference. This is predicate abstraction (Graf and Saidi 1997) over a
+static type test is set difference. This is predicate abstraction (Graf and Saidi 1997) over a
 Boolean algebra of semantic types (Frisch, Castagna and Benzaken 2008).
 
 Building the cells is where the decision procedure works, and three rules keep it exact
@@ -93,8 +93,8 @@ of undecided cells otherwise (`valplan.synth.gaps`).
 Each binding is accepted only on a proof: cell inclusion, which implies inclusion of the
 predicates, plus the whole input record. The proofs come from valgebra and from three
 exact rules in this package — pairwise relations proven by valgebra, enumeration of listed
-values, interval arithmetic — each tested on its own. A runtime test narrows by set
-difference over a partition, so the two branches together cover every value and overlap in
+values, interval arithmetic — each tested on its own. A static type test on a value
+narrows by set difference over a partition, so the two branches together cover every value and overlap in
 none. An undecided cell is kept and covered.
 
 The verifier (`valplan/verify.py`) checks every program again with valgebra alone, without

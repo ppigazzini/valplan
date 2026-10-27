@@ -4,8 +4,8 @@ Plans for tool-using agents in which every call is proven well-typed. MCP tool c
 (JSON Schema) are compiled into sets that [valgebra](https://github.com/ppigazzini/valgebra)
 decides inclusion and emptiness over; the Boolean algebra those sets generate is cut into
 finitely many cells; and a planner searches the cells for a program of tool calls and
-runtime type tests that reaches the goal whatever values inside their output schemas the
-tools return.
+static type tests on values that reaches the goal whatever values inside their output
+schemas the tools return.
 
 Every link of a program is an inclusion between two sets, proven by a decision procedure
 or refuted. A program proposed elsewhere -- by hand or by a language model -- is checked
@@ -19,7 +19,7 @@ the values left uncovered.
 | Compile | JSON Schema draft 2020-12, and drafts 07, 06 and 04 through an upgrade, to valgebra sets over the JSON values `json.loads` returns, keyword by keyword; every valgebra name and recipe in one boundary module | `valplan/schema.py`, `valplan/_valgebra.py` |
 | Read Python | the second door: a tool is a Python function, its annotated parameters the arguments and its return annotation the results, in valgebra's own schema language; every annotation proven to admit JSON values only | `valplan/native.py` |
 | Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty by valgebra, by enumeration of listed values or by interval arithmetic, inhabited cells proven by a member value | `valplan/abstraction.py`, `valplan/ranges.py` |
-| Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a runtime type test; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
+| Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a static type test of a value; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
 | Verify | every inclusion a program depends on, asked of valgebra alone, without the cells or the search; a refuted link comes with a value outside it | `valplan/verify.py` |
 | Run | the program on concrete values, each argument and result checked against its contract | `valplan/run.py` |
 

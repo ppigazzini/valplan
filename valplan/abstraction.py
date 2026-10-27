@@ -4,7 +4,7 @@ Every slot schema of every tool, every task input and the goal is a predicate on
 values. The minterms of those predicates -- each predicate taken positively or
 negatively -- partition the JSON universe into finitely many *cells*, and every predicate
 is exactly a union of cells. Inclusion between the cells of two predicates implies
-inclusion between the predicates, and narrowing a value by a runtime test is set
+inclusion between the predicates, and narrowing a value by a static type test is set
 difference (Graf and Saidi 1997, over a Boolean algebra of semantic types rather than of
 program states). The converse holds whenever no undecided cell lies in one predicate and
 outside the other.

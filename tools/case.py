@@ -24,7 +24,7 @@ from valplan.verify import verify
 
 
 def tests_in(program: Program) -> int:
-    """Return the number of runtime tests in ``program``."""
+    """Return the number of static type tests in ``program``."""
     return sum(1 + tests_in(s.then) + tests_in(s.other) for s in program if isinstance(s, Test))
 
 

@@ -1,4 +1,4 @@
-"""Tool programs: straight-line calls, runtime type tests that branch, and a returned value.
+"""Tool programs: calls, static type tests on values that branch, and a returned value.
 
 A program is what the planner emits and what the verifier and the runner read. A call
 binds each argument to a variable already held; its guaranteed result fields become
