@@ -99,7 +99,7 @@ class Sampler:
             value -= value % step
         if integer or self.rng.random() < 0.5:  # noqa: PLR2004
             return value
-        # Past the float range an integer has no non-integral neighbour to draw.
+        # Past the float range an integer has no non-integral neighbor to draw.
         return value + 0.5 if abs(value) < 2**1023 else value
 
     def _string(self, schema: dict[str, Any]) -> str:

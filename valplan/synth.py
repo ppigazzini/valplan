@@ -1,4 +1,4 @@
-"""Synthesise tool programs that are well-typed on every path, by search over cells.
+"""Synthesize tool programs that are well-typed on every path, by search over cells.
 
 The state is the set of variables the agent holds, each typed by the cells it may lie in.
 A call is enabled when each required argument can be bound to a variable whose cells all

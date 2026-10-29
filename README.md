@@ -94,7 +94,7 @@ version; version 0.0.1 is
 [doi:10.5281/zenodo.23686601](https://doi.org/10.5281/zenodo.23686601).
 [`CITATION.cff`](CITATION.cff) holds the record.
 
-## Licence
+## License
 
 Apache-2.0. See [`LICENSE`](LICENSE). The vendored test suite in
-`tests/data/json-schema-test-suite/` is MIT, with its licence beside it.
+`tests/data/json-schema-test-suite/` is MIT, with its license beside it.

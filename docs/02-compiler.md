@@ -82,7 +82,7 @@ uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
 ```
 
 The official JSON-Schema-Test-Suite at commit `89e83a740146`, vendored with its MIT
-licence. Draft 2020-12, with the four optional files on regular expressions and large
+license. Draft 2020-12, with the four optional files on regular expressions and large
 numbers: 1071 cases run, 1071 passed, 0 failed; 327 skipped by the refusals above; 176 of
 the run cases go through an opaque predicate. Draft-07, through `upgrade`:
 

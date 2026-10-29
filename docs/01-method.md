@@ -110,7 +110,7 @@ verifier reports `undecided` for it.
 - **Types are the specification.** Two slots with the same schema cannot be told apart: a
   task's `subject` string and a customer `name` string are interchangeable to the planner.
   Distinct schemas — patterns, enums, ranges — are what make a plan mean what it should.
-- **What is not modelled.** Side effects beyond "a call happens", tool errors (an MCP
+- **What is not modeled.** Side effects beyond "a call happens", tool errors (an MCP
   result with `isError`, a missing `structuredContent`), constants written into a call, and
   a result field the output schema does not guarantee: an optional one, one inside an
   optional object, or one past three levels. "Whatever the tools return" means whatever

@@ -51,6 +51,6 @@ count moved.
 - `valplan/_valgebra.py` is the only module that imports valgebra; derived forms
   are recipes written there once.
 - Tests are named as sentences and grouped in `Test...` classes by the
-  behaviour they pin down.
+  behavior they pin down.
 - `__DEV/` holds internal notes and is never committed. Read
   `__DEV/00-CONTRACT.md` before a change of scope.

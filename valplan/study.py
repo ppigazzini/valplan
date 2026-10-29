@@ -182,7 +182,7 @@ def load_corpus(text: str) -> CorpusStudy:
 
 
 def dumps[T](study: T, schema: Validator[T]) -> str:
-    """Serialise a study, refusing one this code should never have built."""
+    """Serialize a study, refusing one this code should never have built."""
     try:
         schema.validate(study)
     except ValidationError as exc:

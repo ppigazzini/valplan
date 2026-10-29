@@ -61,7 +61,7 @@ type Program = tuple[Step, ...]
 
 
 def to_json(program: Program) -> list[dict[str, Any]]:
-    """Serialise a program."""
+    """Serialize a program."""
     out: list[dict[str, Any]] = []
     for step in program:
         match step:
@@ -131,7 +131,7 @@ def _check_names(step: object, i: int) -> None:
 
 
 def from_json(steps: list[dict[str, Any]]) -> Program:
-    """Read a program serialised by `to_json`, or written by hand or by a model.
+    """Read a program serialized by `to_json`, or written by hand or by a model.
 
     The structure is checked (`check_shape`); the types are the verifier's to check. A step
     that is not one of the four JSON shapes, or holds anything but a string where a name
