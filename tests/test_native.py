@@ -1,12 +1,14 @@
+import math
 import runpy
 from enum import IntEnum, StrEnum
 from pathlib import Path
 from typing import Annotated, Literal, NotRequired, TypedDict
 
 import pytest
-from annotated_types import Ge, Le
-from valgebra import Regex
+from annotated_types import Ge, Le, Predicate
+from valgebra import Regex, Validator
 
+from valplan.abstraction import Abstraction
 from valplan.native import native_values, python_impl, python_task, python_tool
 from valplan.program import stops
 from valplan.run import run
@@ -181,12 +183,29 @@ class TestGenericRecords:
         ]
 
 
+#: PEP 586 admits no float in a `Literal`; valgebra reads one, and so does `native_values`.
+FLOAT_ZERO = Literal[0.0]  # ty: ignore[invalid-type-form]
+
+
 class TestFiniteValues:
     def test_python_equality_is_kept(self):
         assert native_values(Literal[1, "a"]) == [1, "a"]
         assert native_values(bool) == [True, False]
         assert native_values(Literal["a"] | None) == ["a", None]
         assert native_values(int) is None
+
+    def test_a_float_zero_lists_both_signed_zeros(self):
+        listed = native_values(FLOAT_ZERO)
+        assert listed is not None
+        assert [math.copysign(1.0, v) for v in listed] == [1.0, -1.0]
+
+    def test_a_cell_only_negative_zero_lies_in_is_kept(self):
+        zero = Validator(FLOAT_ZERO)
+        negative = Validator(Annotated[float, Predicate(lambda x: math.copysign(1.0, x) < 0)])
+        listed = native_values(FLOAT_ZERO)
+        assert listed is not None
+        a = Abstraction([zero, negative], finite={zero: listed})
+        assert a.cells_of(zero) & a.cells_of(negative)
 
     def test_an_annotated_literal_keeps_the_values_its_markers_admit(self):
         assert native_values(Annotated[Literal[1, 5, 9], Ge(4)]) == [5, 9]

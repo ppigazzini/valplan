@@ -223,7 +223,9 @@ def native_values(annotation: object) -> list[Any] | None:
 
     A `Literal`, `bool` and `None` list their values; a union of finite annotations lists
     them all; an `Annotated` form lists its base's values that meet its markers. Python's
-    equality is the annotation's own, so `Literal[1]` lists the integer 1 alone.
+    equality is the annotation's own, so `Literal[1]` lists the integer 1 alone, and a
+    float zero lists both signed zeros, which that equality admits and a predicate can
+    still tell apart.
     """
     if annotation is None or annotation is NoneType:
         return [None]
@@ -231,7 +233,8 @@ def native_values(annotation: object) -> list[Any] | None:
         return [True, False]
     origin = get_origin(annotation)
     if origin is Literal:
-        return list(get_args(annotation))
+        values = list(get_args(annotation))
+        return values + [-v for v in values if type(v) is float and v == 0]
     if origin is UnionType or origin is typing.Union:
         parts = [native_values(a) for a in get_args(annotation)]
         if any(p is None for p in parts):
