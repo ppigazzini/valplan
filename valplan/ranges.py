@@ -54,10 +54,21 @@ def _span(r: Interval) -> tuple[End, End]:
     return first, last
 
 
-def _remove(piece: tuple[End, End], hole: tuple[End, End]) -> list[tuple[End, End]]:
-    """Return the integers of ``piece`` outside ``hole``, as at most two pieces."""
-    low, high = piece
-    out = [(low, min(high, hole[0] - 1)), (max(low, hole[1] + 1), high)]
+def _outside(first: End, last: End, holes: Sequence[tuple[End, End]]) -> list[tuple[End, End]]:
+    """Return the integers of ``[first, last]`` outside every hole, as ascending pieces.
+
+    One sweep over the holes by their start: each piece is a run between two holes, so the
+    pieces are the maximal ones, in the order removing the holes one at a time gives.
+    """
+    out: list[tuple[End, End]] = []
+    at = first
+    for low, high in sorted(holes):
+        if low > at:
+            out.append((at, min(low - 1, last)))
+        at = max(at, high + 1)
+        if at > last:
+            break
+    out.append((at, last))
     # A hole reaching an infinity leaves (-inf, -inf) or (inf, inf) on that side: no integer.
     return [(a, b) for a, b in out if a <= b and a < math.inf and b > -math.inf]
 
@@ -100,10 +111,7 @@ def integer_member(pos: Sequence[Interval], neg: Sequence[Interval]) -> int | No
     if first > last:
         return None
     step = math.lcm(*(r.step for r in pos if r.step is not None))
-    pieces = [(first, last)]
-    for r in neg:
-        if r.step is None:
-            pieces = [p for piece in pieces for p in _remove(piece, _span(r))]
+    pieces = _outside(first, last, [_span(r) for r in neg if r.step is None])
     lattices = [(_span(r), r.step) for r in neg if r.step is not None]
     for low, high in pieces:
         cuts = sorted(
