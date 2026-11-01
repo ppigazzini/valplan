@@ -241,14 +241,59 @@ class TestEcmaDialect:
             (r"^[a~~b]$", "~", True),
             (r"^[a[]$", "[", True),
             (r"^a\0b$", "a\x00b", True),
+            # A range from `-`, and a `^` after a negated shorthand: valgebra's class syntax
+            # reads both apart from ECMA-262, so every class atom is written as a code point.
+            (r"^[--a]$", ".", True),
+            (r"^[^--z]$", ".", False),
+            (r"^[\D^_]$", "0", False),
+            (r"^[\D^_]$", "^", True),
+            (r"^[^a\S]$", " ", True),
+            (r"^[^a\S]$", "x", False),
+            (r"^\uD83D\uDE00$", "\U0001f600", True),
+            (r"^\u{1F600}$", "\U0001f600", True),
+            (r"^\p{digit}+$", "\u0663", True),
+            (r"^\p{sc=Grek}$", "\u03b1", True),
+            # Annex B's literals, read as the character as every dialect reads them.
+            (r"^a\:b$", "a:b", True),
+            (r"^PUBMED:\{d}$", "PUBMED:{d}", True),
+            (r"^x]$", "x]", True),
+            (r"^a{b$", "a{b", True),
         ],
     )
     def test_a_pattern_means_what_ecma_262_says(self, pattern, text, admitted):
         assert compile_schema({"pattern": pattern}).is_valid(text) is admitted
 
-    def test_a_negated_class_holding_a_negated_shorthand_is_refused(self):
-        with pytest.raises(Unsupported, match="negated shorthand"):
-            compile_schema({"pattern": r"[^a\S]"})
+    @pytest.mark.parametrize(
+        "pattern",
+        [
+            r"\A",
+            r"\z",
+            r"\a",
+            r"\x{41}",
+            r"\U00000041",
+            r"\pL",
+            r"\p{Greek}",
+            r"\p{lu}",
+            r"(?i)a",
+            r"(?P<n>a)",
+            r"a**",
+            r"a{1}{2}",
+            r"^*",
+            r"a{,3}",
+            r"x{2,1}",
+            r"[\d-z]",
+            r"[z-a]",
+            r"a)|(b",
+            r"(a",
+            "a\\",
+        ],
+    )
+    def test_a_pattern_ecma_262_refuses_under_u_is_refused(self, pattern):
+        # Each reads differently in valgebra's engine, Annex B or Python's `re`: `\A` is an
+        # anchor to one and the letter to another, and `a)|(b` would close the group the
+        # search wraps the pattern in.
+        with pytest.raises(Unsupported, match="ECMA-262 refuses"):
+            compile_schema({"pattern": pattern})
 
 
 class TestDraft7:

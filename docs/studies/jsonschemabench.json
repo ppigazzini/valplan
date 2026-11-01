@@ -16,21 +16,21 @@
   {
    "subset": "Github_hard",
    "schemas": 1240,
-   "compiled": 1166,
-   "refused": 74,
+   "compiled": 1167,
+   "refused": 73,
    "crashed": 0,
    "timed_out": 0,
-   "values": 45562,
+   "values": 45592,
    "disagreed": 0
   },
   {
    "subset": "Github_medium",
    "schemas": 1976,
-   "compiled": 1908,
-   "refused": 68,
+   "compiled": 1909,
+   "refused": 67,
    "crashed": 0,
    "timed_out": 0,
-   "values": 81155,
+   "values": 81184,
    "disagreed": 0
   },
   {
@@ -119,7 +119,7 @@
   },
   {
    "reason": "a pattern outside valgebra's regex dialect",
-   "schemas": 20
+   "schemas": 18
   },
   {
    "reason": "a property name valgebra cannot hold",

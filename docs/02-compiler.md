@@ -22,7 +22,7 @@ keyword's kind, the guard's other half is empty after the meet and is left out.
 | `minimum`, `maximum`, `exclusive*` | bound refinements on `int` and `float` |
 | `multipleOf` | an integral step is valgebra's `MultipleOf`; a fractional step is opaque, checked in exact rational arithmetic |
 | `minLength`, `maxLength` | length refinements, in code points |
-| `pattern` | `p` becomes `(?s:.*)(?:p')(?s:.*)`, where `p'` rewrites `\d`, `\w`, `\s`, their negations, `.`, `\b`, `\B` and `\cX` to what ECMA-262 gives them, and a class holding a negated shorthand, `[\s\S]`, to an alternation: ECMA-262 searches, valgebra's `Regex` matches the whole string, and the two dialects read those constructs differently; a negated class holding a negated shorthand is refused |
+| `pattern` | `p` becomes `(?s:.*)(?:p')(?s:.*)`, where `p'` is `p` read by ECMA-262's grammar under the `u` flag and written back with every literal a code point, every class a list of code point ranges and General_Category or Script property escapes, `\d`, `\w`, `\s` and their negations the ASCII and ECMA-262 ranges they denote, `.` every code point but the four line terminators, and `\b`, `\B` boundaries of ASCII word characters: ECMA-262 searches, valgebra's `Regex` matches the whole string, and the two dialects read those constructs differently. An escape of punctuation, a lone `]` or `}` and a `{` that opens no count are the character; any other construct invalid under `u` is refused |
 | `prefixItems`, `items` | the union of the shorter fixed prefixes and the prefix followed by a repeated tail |
 | `minItems`, `maxItems`, `min/maxProperties` | length refinements |
 | `contains` | arrays not all of whose elements lie outside the subschema |

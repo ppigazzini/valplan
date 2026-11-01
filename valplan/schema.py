@@ -20,8 +20,8 @@ Two places where JSON Schema's model is not Python's are handled rather than inh
   integral constant.
 - **``pattern`` searches, in ECMA-262's dialect.** ECMA-262 ``test`` is unanchored and
   valgebra's ``Regex`` matches the whole string, so ``p`` compiles to
-  ``(?s:.*)(?:p)(?s:.*)``, after `ecma` rewrites the classes the two dialects read
-  differently: ``\\d``, ``\\w``, ``\\s``, ``\\b``, ``.`` and ``\\cX``.
+  ``(?s:.*)(?:p)(?s:.*)``, after `ecma` reads ``p`` by ECMA-262's grammar under the
+  ``u`` flag and writes it back with nothing valgebra's engine reads otherwise.
 
 Five keywords have no counterpart in valgebra's set language -- ``patternProperties`` and
 ``propertyNames`` need map keys narrowed by a pattern, ``uniqueItems`` and
@@ -36,6 +36,7 @@ every inclusion decided from it would be wrong.
 """
 
 import math
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from fractions import Fraction
@@ -671,61 +672,248 @@ def _object(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     return c.guard("object", record)
 
 
-#: ECMA-262 ``WhiteSpace`` and ``LineTerminator``: what ``\s`` matches there. Unicode's
-#: White_Space, which valgebra's engine uses, adds U+0085 and lacks U+FEFF.
-_ECMA_SPACE = (
-    r"\t\n\x0B\x0C\r \u{A0}\u{1680}\u{2000}-\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}"
-    r"\u{FEFF}"
+#: ECMA-262's ``\d``, ``\w`` and ``\s`` as code point ranges: ASCII digits, ASCII word
+#: characters, and ``WhiteSpace`` with ``LineTerminator``. Unicode's White_Space, which
+#: valgebra's engine reads ``\s`` as, adds U+0085 and lacks U+FEFF.
+_SHORTHANDS: Mapping[str, tuple[tuple[int, int], ...]] = {
+    "d": ((0x30, 0x39),),
+    "w": ((0x30, 0x39), (0x41, 0x5A), (0x5F, 0x5F), (0x61, 0x7A)),
+    "s": (
+        (0x09, 0x0D),
+        (0x20, 0x20),
+        (0xA0, 0xA0),
+        (0x1680, 0x1680),
+        (0x2000, 0x200A),
+        (0x2028, 0x2029),
+        (0x202F, 0x202F),
+        (0x205F, 0x205F),
+        (0x3000, 0x3000),
+        (0xFEFF, 0xFEFF),
+    ),
+}
+#: The last code point, and the scalar values: the code points a string valgebra's engine
+#: reads can hold.
+_LAST = 0x10FFFF
+_SCALARS = ((0, 0xD7FF), (0xE000, _LAST))
+#: UTF-16's lead and trail surrogates, which ``\uHHHH\uHHHH`` pairs into one code point.
+_LEADS, _TRAILS = range(0xD800, 0xDC00), range(0xDC00, 0xE000)
+#: ECMA-262's ``.``: every code point but its four line terminators.
+_DOT = r"[^\x{A}\x{D}\x{2028}\x{2029}]"
+#: The control escapes; inside a class ``\b`` is a backspace and ``\-`` a hyphen too.
+_CONTROL = {"f": 0x0C, "n": 0x0A, "r": 0x0D, "t": 0x09, "v": 0x0B}
+_IN_CLASS = {"b": 0x08, "-": 0x2D}
+#: What an escape makes literal under the ``u`` flag: ``SyntaxCharacter`` and ``/``.
+_SYNTAX = frozenset("^$\\.*+?()[]{}|/")
+#: The General_Category values ECMA-262 names, short, long and alias, which valgebra's
+#: engine reads alike. A binary property or a Script value without ``sc=`` is refused
+#: rather than read through the engine's looser matching.
+_CATEGORIES = frozenset(
+    {
+        *("L", "Lu", "Ll", "Lt", "LC", "Lm", "Lo", "M", "Mn", "Mc", "Me", "N", "Nd", "Nl"),
+        *("No", "P", "Pc", "Pd", "Ps", "Pe", "Pi", "Pf", "Po", "S", "Sm", "Sc", "Sk", "So"),
+        *("Z", "Zs", "Zl", "Zp", "C", "Cc", "Cf", "Cs", "Co", "Cn", "Letter", "Cased_Letter"),
+        *("Uppercase_Letter", "Lowercase_Letter", "Titlecase_Letter", "Modifier_Letter"),
+        *("Other_Letter", "Mark", "Nonspacing_Mark", "Spacing_Mark", "Enclosing_Mark"),
+        *("Number", "Decimal_Number", "Letter_Number", "Other_Number", "Punctuation"),
+        *("Connector_Punctuation", "Dash_Punctuation", "Open_Punctuation"),
+        *("Close_Punctuation", "Initial_Punctuation", "Final_Punctuation"),
+        *("Other_Punctuation", "Symbol", "Math_Symbol", "Currency_Symbol", "Modifier_Symbol"),
+        *("Other_Symbol", "Separator", "Space_Separator", "Line_Separator"),
+        *("Paragraph_Separator", "Other", "Control", "Format", "Surrogate", "Private_Use"),
+        *("Unassigned", "digit", "punct", "cntrl", "Combining_Mark"),
+    }
 )
-_DIGIT = "0-9"
-_WORD = "A-Za-z0-9_"
-_CLASSES = {"d": _DIGIT, "w": _WORD, "s": _ECMA_SPACE}
+_SCRIPT = re.compile(r"(?:Script|sc|Script_Extensions|scx)=[A-Z][a-z]+(?:_[A-Z][a-z]+)*")
+_HEX = frozenset("0123456789abcdefABCDEF")
+_QUANTIFIER = re.compile(r"\{([0-9]+)(,([0-9]*))?\}")
+_GROUP = re.compile(r"\(\?(?::|=|!|<=|<!|<[A-Za-z_$][A-Za-z0-9_$]*>)")
+
+#: A pattern atom: a code point, a set of code point ranges, or a property escape.
+type _Atom = int | tuple[tuple[int, int], ...] | str
+
+
+def _refuse(pattern: str, what: str) -> Unsupported:
+    return Unsupported(f"pattern {pattern!r} holds {what}, which ECMA-262 refuses under `u`")
+
+
+def _point(cp: int) -> str:
+    return f"\\x{{{cp:X}}}"
+
+
+def _ranges(ranges: tuple[tuple[int, int], ...]) -> str:
+    return "".join(_point(a) if a == b else f"{_point(a)}-{_point(b)}" for a, b in ranges)
+
+
+def _complement(ranges: tuple[tuple[int, int], ...]) -> tuple[tuple[int, int], ...]:
+    """Return the scalar values outside ``ranges``, which are sorted and disjoint."""
+    out: list[tuple[int, int]] = []
+    for low, high in _SCALARS:
+        at = low
+        for a, b in ranges:
+            if b < at or a > high:
+                continue
+            if a > at:
+                out.append((at, a - 1))
+            at = max(at, b + 1)
+        if at <= high:
+            out.append((at, high))
+    return tuple(out)
+
+
+def _hex(pattern: str, at: int, digits: int) -> int | None:
+    text = pattern[at : at + digits]
+    return int(text, 16) if len(text) == digits and set(text) <= _HEX else None
+
+
+def _unicode_escape(pattern: str, i: int) -> tuple[int, int]:
+    r"""Read ``\uHHHH``, a surrogate pair of two, or ``\u{H...}`` at ``i``."""
+    if pattern.startswith("{", i + 2):
+        close = pattern.find("}", i + 3)
+        text = pattern[i + 3 : close] if close > 0 else ""
+        if not text or not set(text) <= _HEX or int(text, 16) > _LAST:
+            raise _refuse(pattern, r"a malformed \u{...} escape")
+        return int(text, 16), close + 1
+    lead = _hex(pattern, i + 2, 4)
+    if lead is None:
+        raise _refuse(pattern, r"a \u escape without four hex digits")
+    trail = _hex(pattern, i + 8, 4) if pattern.startswith("\\u", i + 6) else None
+    if lead in _LEADS and trail is not None and trail in _TRAILS:
+        return 0x10000 + ((lead - _LEADS.start) << 10) + (trail - _TRAILS.start), i + 12
+    return lead, i + 6
+
+
+def _property(pattern: str, i: int) -> tuple[str, int]:
+    r"""Read ``\p{...}`` or ``\P{...}`` at ``i``, refusing a name ECMA-262 does not define."""
+    close = pattern.find("}", i + 3) if pattern.startswith("{", i + 2) else -1
+    name = pattern[i + 3 : close] if close > 0 else ""
+    category = name.removeprefix("General_Category=").removeprefix("gc=")
+    if category not in _CATEGORIES and not _SCRIPT.fullmatch(name):
+        raise _refuse(pattern, f"the property escape {pattern[i : max(close + 1, i + 2)]!r}")
+    return pattern[i : close + 1], close + 1
+
+
+def _escape(pattern: str, i: int, *, in_class: bool) -> tuple[_Atom, int]:
+    r"""Read the escape at ``i``: a code point, a set of ranges, or a property escape.
+
+    Every escape ECMA-262 defines under ``u`` is read as it says. An escape of any other
+    punctuation is read as the character, as Annex B and Python's ``re`` read it; any
+    other letter or digit is refused, since the dialects read it apart: ``\A`` is an anchor
+    to valgebra's engine and the letter ``A`` to Annex B.
+    """
+    if i + 1 >= len(pattern):
+        raise _refuse(pattern, "a trailing backslash")
+    nxt = pattern[i + 1]
+    if nxt.lower() in _SHORTHANDS:
+        ranges = _SHORTHANDS[nxt.lower()]
+        return (_complement(ranges) if nxt.isupper() else ranges), i + 2
+    if nxt in "pP":
+        return _property(pattern, i)
+    if nxt == "u":
+        return _unicode_escape(pattern, i)
+    if nxt in "123456789" or pattern.startswith("k<", i + 1):
+        msg = f"pattern {pattern!r} holds a backreference, which valgebra's engine does not read"
+        raise Unsupported(msg)
+    code = _code(pattern, i, in_class=in_class)
+    if code is None:
+        raise _refuse(pattern, f"the escape \\{nxt}")
+    return code
+
+
+def _code(pattern: str, i: int, *, in_class: bool) -> tuple[int, int] | None:
+    """Return the code point a one-character escape at ``i`` spells and the index after it."""
+    nxt, after = pattern[i + 1], pattern[i + 2 : i + 3]
+    if nxt == "x" and (code := _hex(pattern, i + 2, 2)) is not None:
+        return code, i + 4
+    if nxt == "c" and after.isascii() and after.isalpha():
+        return ord(after) % 32, i + 3
+    if nxt == "0" and not after.isdigit():
+        return 0, i + 2
+    simple = _CONTROL | (_IN_CLASS if in_class else {})
+    if nxt in simple:
+        return simple[nxt], i + 2
+    if nxt in _SYNTAX or not nxt.isalnum():
+        return ord(nxt), i + 2
+    return None
 
 
 def ecma(pattern: str) -> str:
     r"""Rewrite an ECMA-262 pattern into valgebra's regex dialect, with ECMA-262's meaning.
 
-    ``\d``, ``\w`` and ``\s`` become the ASCII and ECMA-262 classes they denote there, and
-    ``\D``, ``\W`` and ``\S`` their complements; ``.`` stops at ECMA-262's four line
-    terminators; ``\b`` and ``\B`` are boundaries of ECMA-262's ASCII word characters, and
-    inside a class ``\b`` is a backspace; ``\cX`` becomes the control character it names,
-    and ``\0`` the NUL; a ``[``, ``&`` or ``~`` inside a class is the character itself.
-    A class holding a negated shorthand, ``[\s\S]`` or ``[a\D]``, becomes the alternation
-    of its parts, since valgebra's engine refuses a set nested in a set; a negated class
-    holding one denotes an intersection the alternation cannot spell, and is refused.
-    Everything else passes through; a construct valgebra's engine refuses is refused when
-    the set is built.
+    The pattern is read as ECMA-262 reads it under the ``u`` flag and written back with
+    nothing valgebra's engine could read otherwise: every literal is a ``\x{...}`` code
+    point, every class a list of code point ranges and General_Category or Script
+    property escapes, ``\d``, ``\w``, ``\s`` and their complements the ASCII and ECMA-262
+    ranges they denote there, ``.`` every code point but ECMA-262's four line terminators,
+    and ``\b``, ``\B`` boundaries of its ASCII word characters. Annex B's literals, which
+    every dialect reads as the character -- an escape of punctuation, a lone ``]`` or
+    ``}``, a ``{`` that opens no count -- are read so. Every other construct ECMA-262
+    refuses under ``u`` is refused: an escape it does not define, a quantifier with
+    nothing to repeat, a group form other than ``(?:``, a lookaround or a named group, a
+    class range with a class escape at an end. A construct valgebra's engine refuses -- a
+    lookaround, a backreference -- is refused when the set is built.
     """
     out: list[str] = []
-    i = 0
+    repeatable = False
+    depth = i = 0
     while i < len(pattern):
-        ch = pattern[i]
-        if ch == "\\" and i + 1 < len(pattern):
-            nxt = pattern[i + 1]
-            if nxt.lower() in _CLASSES:
-                body = _CLASSES[nxt.lower()]
-                out.append(f"[^{body}]" if nxt.isupper() else f"[{body}]")
-            elif nxt in "bB":
-                out.append(f"(?-u:\\{nxt})")
-            elif nxt == "c" and i + 2 < len(pattern) and pattern[i + 2].isalpha():
-                out.append(f"\\x{{{ord(pattern[i + 2]) % 32:02X}}}")
-                i += 1
-            elif nxt == "0" and not pattern[i + 2 : i + 3].isdigit():
-                out.append("\\x00")
-            else:
-                out.append(pattern[i : i + 2])
-            i += 2
-        elif ch == "[":
-            close = _class_end(pattern, i)
-            out.append(_class(pattern[i + 1 : close]))
-            i = close + 1
-        elif ch == ".":
-            out.append(r"[^\n\r\u{2028}\u{2029}]")
-            i += 1
-        else:
-            out.append(ch)
-            i += 1
+        # The pattern sits inside `(?:...)` in `_search`, so an unmatched `)` would close
+        # that group and pair with a later `(`: `a)|(b` would read as `(.*a)|(b.*)`.
+        depth += {"(": 1, ")": -1}.get(pattern[i], 0)
+        if depth < 0:
+            raise _refuse(pattern, "an unmatched )")
+        part, i, repeatable = _token(pattern, i, repeatable=repeatable)
+        out.append(part)
+    if depth:
+        raise _refuse(pattern, "an unclosed group")
     return "".join(out)
+
+
+def _token(pattern: str, i: int, *, repeatable: bool) -> tuple[str, int, bool]:
+    """Return the rewrite of the token at ``i``, the index after it, and whether it repeats."""
+    ch = pattern[i]
+    if ch == "\\":
+        if pattern[i + 1 : i + 2] in ("b", "B"):
+            return f"(?-u:\\{pattern[i + 1]})", i + 2, False
+        atom, end = _escape(pattern, i, in_class=False)
+        return _atom(atom), end, True
+    if ch == "[":
+        close = _class_end(pattern, i)
+        return _class(pattern, i + 1, close), close + 1, True
+    if ch in "*+?" or (ch == "{" and _QUANTIFIER.match(pattern, i)):
+        if not repeatable:
+            raise _refuse(pattern, "a quantifier with nothing to repeat")
+        end = _quantifier_end(pattern, i)
+        return pattern[i:end], end, False
+    if ch == "{" and pattern.startswith(",", i + 1):
+        raise _refuse(pattern, "a count with no lower bound")
+    if ch in ".{}]":
+        return (_DOT if ch == "." else _point(ord(ch))), i + 1, True
+    if ch == "(" and pattern.startswith("?", i + 1):
+        group = _GROUP.match(pattern, i)
+        if group is None:
+            raise _refuse(pattern, "a group form other than (?:, a lookaround or a name")
+        return group[0], group.end(), False
+    return ch, i + 1, ch not in "(|^$"
+
+
+def _quantifier_end(pattern: str, i: int) -> int:
+    """Return the index after the quantifier at ``i`` and its lazy ``?``."""
+    count = _QUANTIFIER.match(pattern, i)
+    if count is None:
+        end = i + 1
+    elif count[3] and int(count[1]) > int(count[3]):
+        raise _refuse(pattern, f"the count {count[0]} out of order")
+    else:
+        end = count.end()
+    return end + pattern.startswith("?", end)
+
+
+def _atom(atom: _Atom) -> str:
+    if isinstance(atom, int):
+        return _point(atom)
+    if isinstance(atom, str):
+        return atom
+    return f"[{_ranges(atom)}]"
 
 
 def _class_end(pattern: str, start: int) -> int:
@@ -748,49 +936,48 @@ def _class_end(pattern: str, start: int) -> int:
     raise Unsupported(msg)
 
 
-def _class(body: str) -> str:
-    r"""Rewrite one class body, between ``[`` and ``]``, with ECMA-262's meaning."""
-    negated = body.startswith("^")
-    if negated:
-        body = body[1:]
-    if not body:
-        return "(?s:.)" if negated else "[^\\s\\S]"
-    kept: list[str] = []
-    complements: list[str] = []
-    i = 0
-    while i < len(body):
-        if body[i] == "\\" and i + 1 < len(body):
-            nxt = body[i + 1]
-            if nxt.lower() in _CLASSES:
-                (complements if nxt.isupper() else kept).append(_CLASSES[nxt.lower()])
-            elif nxt == "b":
-                kept.append("\\x08")
-            elif nxt == "c" and i + 2 < len(body) and body[i + 2].isalpha():
-                kept.append(f"\\x{{{ord(body[i + 2]) % 32:02X}}}")
-                i += 1
-            elif nxt == "0" and not body[i + 2 : i + 3].isdigit():
-                kept.append("\\x00")
-            else:
-                kept.append(body[i : i + 2])
-            i += 2
+def _class(pattern: str, start: int, close: int) -> str:
+    """Rewrite the class between ``start`` and ``close`` as code point ranges.
+
+    ECMA-262's grammar: an atom followed by ``-`` and another atom is a range; a ``-``
+    first, last or right after a range is the character. A range with a class escape at
+    an end is refused, as ECMA-262 refuses it under ``u``. A negated shorthand is its
+    complement's ranges, so a class holding one, negated or not, is one class.
+    """
+    negated = pattern.startswith("^", start)
+    i = start + negated
+    if i == close:
+        return "(?s:.)" if negated else r"[^\s\S]"
+    ranges: list[tuple[int, int]] = []
+    properties: list[str] = []
+    while i < close:
+        atom, i = _class_atom(pattern, i)
+        if pattern[i] == "-" and i + 1 < close:
+            high, i = _class_atom(pattern, i + 1)
+            if not isinstance(atom, int) or not isinstance(high, int):
+                raise _refuse(pattern, "a class range with a class escape at an end")
+            if atom > high:
+                raise _refuse(pattern, "a class range whose ends are out of order")
+            ranges.append((atom, high))
+        elif isinstance(atom, int):
+            ranges.append((atom, atom))
+        elif isinstance(atom, str):
+            properties.append(atom)
         else:
-            # Literal in an ECMA-262 class; a nested set, an intersection and a symmetric
-            # difference to valgebra's engine.
-            kept.append(f"\\{body[i]}" if body[i] in "[&~" else body[i])
-            i += 1
-    inner = "".join(kept)
-    if not complements:
-        return f"[{'^' if negated else ''}{inner}]"
-    if negated:
-        msg = f"negated class [^{body}] holds a negated shorthand: an intersection"
-        raise Unsupported(msg)
-    parts = ([f"[{inner}]"] if inner else []) + [f"[^{c}]" for c in complements]
-    return f"(?:{'|'.join(parts)})"
+            ranges += atom
+    return f"[{'^' if negated else ''}{_ranges(tuple(ranges))}{''.join(properties)}]"
+
+
+def _class_atom(pattern: str, i: int) -> tuple[_Atom, int]:
+    if pattern[i] == "\\":
+        return _escape(pattern, i, in_class=True)
+    return ord(pattern[i]), i + 1
 
 
 def _search(pattern: str) -> Validator[Any]:
+    body = ecma(pattern)
     try:
-        return Validator(Annotated[str, Regex(f"(?s:.*)(?:{ecma(pattern)})(?s:.*)")])
+        return Validator(Annotated[str, Regex(f"(?s:.*)(?:{body})(?s:.*)")])
     except Exception as exc:
         msg = f"pattern {pattern!r} is outside valgebra's regex dialect: {exc}"
         raise Unsupported(msg) from exc

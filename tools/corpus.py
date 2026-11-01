@@ -87,6 +87,8 @@ REASONS = (
 
 def reason(message: str) -> str:
     """Return the category of a refusal message: what the compiler does not read."""
+    if message.startswith("pattern ") and "which ECMA-262 refuses" in message:
+        return "a pattern ECMA-262 refuses under the u flag"
     for start, category in REASONS:
         if message.startswith(start):
             return category
