@@ -190,7 +190,8 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         out = spec.get("outputSchema")
         # Compiled whole first, so a malformed keyword is refused by name before the
         # result paths are read from it.
-        output = Compiler(out).compile(out) if out is not None else JSON
+        reader = Compiler(out)
+        output = reader.compile(out) if out is not None else JSON
         fields = inhabited(results(out), "result") if out is not None else ()
     except Unsupported as exc:
         msg = f"tool {name!r}: {exc}"
@@ -201,8 +202,8 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         fields,
         whole,
         spec.get("description", ""),
-        frozenset(compiler.opaque),
-        frozenset(compiler.ignored),
+        frozenset(compiler.opaque | reader.opaque),
+        frozenset(compiler.ignored | reader.ignored),
         plain=plain(spec["inputSchema"]),
         output=output,
     )

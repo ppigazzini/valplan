@@ -319,6 +319,26 @@ class TestNames:
             read_task({"name": "t", "inputs": inputs, "goal": True})
 
 
+def test_a_tool_records_the_opaque_and_ignored_keywords_of_both_schemas():
+    (t,) = read_tools(
+        {
+            "tools": [
+                {
+                    "name": "t",
+                    "inputSchema": {"type": "object", "properties": {"x": {"x-label": 1}}},
+                    "outputSchema": {
+                        "type": "object",
+                        "properties": {"r": {"type": "array", "uniqueItems": True}},
+                        "x-note": 1,
+                    },
+                }
+            ]
+        }
+    )
+    assert t.opaque == {"uniqueItems"}
+    assert t.ignored == {"x-label", "x-note"}
+
+
 class TestDegenerateContracts:
     @staticmethod
     def _tool(name, args, out):
