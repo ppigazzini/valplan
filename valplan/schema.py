@@ -506,7 +506,7 @@ class Compiler:
             elif isinstance(node, dict) and part == "items" and "prefixItems" in node:
                 # An older draft's pointer into an `items` array that `upgrade` renamed.
                 node = node["prefixItems"]
-            elif isinstance(node, list) and part.isdigit() and int(part) < len(node):
+            elif isinstance(node, list) and _INDEX.fullmatch(part) and int(part) < len(node):
                 node = node[int(part)]
             else:
                 msg = f"$ref {pointer!r} names nothing in the document"
@@ -1169,6 +1169,9 @@ _SHAPES: Mapping[str, Callable[[object], bool]] = {
     "dependentSchemas": lambda v: isinstance(v, dict) and all(_is_schema(s) for s in v.values()),
     "dependentRequired": lambda v: isinstance(v, dict) and all(_are_names(s) for s in v.values()),
 }
+
+#: An array index in a JSON pointer, as RFC 6901 writes one: no sign, no leading zero.
+_INDEX = re.compile(r"0|[1-9][0-9]*", re.ASCII)
 
 #: Keywords draft 2020-12 couples: each group compiles once, from all its members.
 _GROUPS: Mapping[str, str] = {

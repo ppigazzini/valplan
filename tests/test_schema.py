@@ -90,6 +90,14 @@ class TestRefusals:
             compile_schema({"$schema": "https://json-schema.org/draft/2019-09/schema"})
 
 
+def test_a_pointer_index_is_written_as_rfc_6901_writes_it():
+    listed = {"$defs": {"l": [{"type": "string"}, {"type": "integer"}]}}
+    assert compile_schema({**listed, "$ref": "#/$defs/l/1"}).is_valid(1)
+    for index in ("01", "+1", "\u0661", "\u00b2"):
+        with pytest.raises(Unsupported, match="names nothing"):
+            compile_schema({**listed, "$ref": f"#/$defs/l/{index}"})
+
+
 def test_json_key_equates_one_and_one_point_zero_but_not_true():
     assert json_key([1, {"a": 2.0}]) == json_key([1.0, {"a": 2}])
     assert json_key(1) != json_key(True)
