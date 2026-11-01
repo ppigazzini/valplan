@@ -39,7 +39,16 @@ _JSON_CLASSES = (NoneType, bool, int, float, str, list, dict)
 
 
 def _json_classes_only(annotation: object, where: str) -> None:
-    """Refuse ``annotation`` where it names a class, or lists a value, outside JSON's own."""
+    """Refuse ``annotation`` where it names a class, or lists a value, outside JSON's own.
+
+    A ``type`` alias and a `NewType` are read through, as valgebra reads them.
+    """
+    if isinstance(annotation, typing.TypeAliasType):
+        _json_classes_only(annotation.__value__, where)
+        return
+    if isinstance(annotation, typing.NewType):
+        _json_classes_only(annotation.__supertype__, where)
+        return
     origin = get_origin(annotation)
     if origin is typing.Annotated:
         _json_classes_only(get_args(annotation)[0], where)

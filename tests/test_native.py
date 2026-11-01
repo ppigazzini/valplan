@@ -2,7 +2,7 @@ import math
 import runpy
 from enum import IntEnum, StrEnum
 from pathlib import Path
-from typing import Annotated, Literal, NotRequired, TypedDict
+from typing import Annotated, Literal, NewType, NotRequired, TypedDict
 
 import pytest
 from annotated_types import Ge, Le, Predicate
@@ -34,6 +34,10 @@ class Tier(StrEnum):
 
 class Level(IntEnum):
     ONE = 1
+
+
+type LevelAlias = Level
+LevelId = NewType("LevelId", Level)
 
 
 class Page[T](TypedDict, closed=True):
@@ -105,6 +109,8 @@ class TestReading:
             ("strenum", "no JSON value is a Tier"),
             ("intenum", "no JSON value is a Level"),
             ("enum_literal", "is a Tier, no JSON value"),
+            ("alias", "no JSON value is a Level"),
+            ("newtype", "no JSON value is a Level"),
         ],
     )
     def test_it_refuses_what_is_not_a_json_contract(self, fn, reason):
@@ -126,6 +132,12 @@ class TestReading:
         def enum_literal(x: Literal[Tier.PRO]) -> None:
             del x
 
+        def alias(x: LevelAlias) -> None:
+            del x
+
+        def newtype(x: LevelId) -> None:
+            del x
+
         named = {
             "tuple": takes_tuple,
             "open": takes_open,
@@ -133,6 +145,8 @@ class TestReading:
             "strenum": strenum,
             "intenum": intenum,
             "enum_literal": enum_literal,
+            "alias": alias,
+            "newtype": newtype,
         }
         with pytest.raises(Unsupported, match=reason):
             python_tool(named.get(fn, fn) if isinstance(fn, str) else fn, name="t")
