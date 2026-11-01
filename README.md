@@ -7,10 +7,11 @@ finitely many cells; and a planner searches the cells for a program of tool call
 static type tests on values that reaches the goal whatever values inside their output
 schemas the tools return.
 
-Every link of a program is an inclusion between two sets, proven by a decision procedure
-or refuted. A program proposed elsewhere -- by hand or by a language model -- is checked
-link by link the same way. A task no program covers gets a weak program whose stops name
-the values left uncovered.
+Every link of a program is an inclusion between two sets. The planner takes one only on a
+proof; the verifier checks each link of a program again, by valgebra alone, and reports it
+proven, refuted or undecided. A program proposed elsewhere -- by hand or by a language
+model -- is checked link by link the same way. A task no program covers gets a weak program
+whose stops name the values left uncovered.
 
 ## What it does
 
