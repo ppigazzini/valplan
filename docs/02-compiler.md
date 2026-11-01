@@ -35,7 +35,9 @@ keyword's kind, the guard's other half is empty after the meet and is left out.
 
 Annotations assert nothing and are skipped: `title`, `description`, `default`, `examples`,
 `deprecated`, `readOnly`, `writeOnly`, `format` (the format-annotation vocabulary is the
-default), the `content*` keywords, `$comment`, `$defs`. A root `$id` is skipped.
+default), the `content*` keywords, `$comment`, `$defs`. A root `$id` is skipped, and so is
+an embedded one whose resource holds no reference or anchor and declares no other `$schema`:
+the base URI it sets is one nothing inside resolves against.
 
 ## Older drafts
 
@@ -71,7 +73,8 @@ predicates: membership is exact, and a relation that has to look inside one answ
 
 `Unsupported` names the keyword: `unevaluatedProperties`, `unevaluatedItems`,
 `$dynamicRef`, `$dynamicAnchor`, `$anchor` references, references outside the document, an
-embedded `$id` and a pointer through one, a draft other than 2020-12 and 07, and a property name ending in `?`
+embedded `$id` whose resource holds a reference or an anchor or declares another `$schema`,
+a pointer through any embedded `$id`, a draft other than 2020-12 and 07, and a property name ending in `?`
 (valgebra reads that suffix as "optional"). A keyword outside the vocabularies is an
 annotation, as draft 2020-12 says, and `Compiler.ignored` records it.
 

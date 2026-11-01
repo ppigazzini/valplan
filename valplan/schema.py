@@ -368,7 +368,7 @@ class Compiler:
     def _keywords(self, schema: dict[str, Any], parts: list[object]) -> None:
         seen: set[str] = set()
         for keyword in schema:
-            if keyword in ANNOTATIONS or (keyword == "$id" and schema is self.root):
+            if keyword in ANNOTATIONS or (keyword == "$id" and self._inert(schema)):
                 continue
             group = _GROUPS.get(keyword, keyword)
             if group in seen:
@@ -460,6 +460,28 @@ class Compiler:
 
         return get
 
+    def _inert(self, resource: dict[str, Any]) -> bool:
+        """Return whether a schema's ``$id`` changes nothing its set depends on.
+
+        A root's ``$id`` names the document. An embedded one starts a resource whose base
+        URI the references inside it resolve against, and which may declare a dialect of its
+        own (draft 2020-12, section 8.1.1); with no reference or anchor inside and no other
+        ``$schema``, the resource means what its keywords mean wherever it sits.
+        """
+        if resource is self.root:
+            return True
+        dialect = self.root.get("$schema", DRAFT) if isinstance(self.root, dict) else DRAFT
+        stack: list[object] = [resource]
+        while stack:
+            here = stack.pop()
+            if isinstance(here, dict):
+                if _RESOLVING & here.keys() or here.get("$schema", dialect) != dialect:
+                    return False
+                stack.extend(here.values())
+            elif isinstance(here, list):
+                stack.extend(here)
+        return True
+
     def _reaches_itself(self, target: object) -> bool:
         """Return whether a reference inside ``target`` leads back to it, through any others.
 
@@ -519,6 +541,12 @@ class Compiler:
                 msg = f"$ref {pointer!r} names nothing in the document"
                 raise Unsupported(msg)
         return node
+
+
+#: The keywords a base URI bears on: references and the anchors they may name.
+_RESOLVING = frozenset(
+    {"$ref", "$dynamicRef", "$anchor", "$dynamicAnchor", "$recursiveRef", "$recursiveAnchor"}
+)
 
 
 def _references(node: object) -> list[str]:
@@ -1115,7 +1143,10 @@ def _ref(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
 
 def _schema_id(_c: Compiler, s: dict[str, Any]) -> Validator[Any]:
     del s
-    msg = "keyword '$id' changes the base URI; only local references are supported"
+    msg = (
+        "keyword '$id' changes the base URI of a resource holding a reference or another "
+        "dialect; only local references are supported"
+    )
     raise Unsupported(msg)
 
 

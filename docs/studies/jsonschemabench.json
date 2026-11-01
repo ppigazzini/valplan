@@ -6,51 +6,51 @@
   {
    "subset": "Github_easy",
    "schemas": 1943,
-   "compiled": 1914,
-   "refused": 29,
+   "compiled": 1932,
+   "refused": 11,
    "crashed": 0,
    "timed_out": 0,
-   "values": 83335,
+   "values": 84129,
    "disagreed": 2
   },
   {
    "subset": "Github_hard",
    "schemas": 1240,
-   "compiled": 1167,
-   "refused": 73,
+   "compiled": 1214,
+   "refused": 26,
    "crashed": 0,
    "timed_out": 0,
-   "values": 45592,
+   "values": 47759,
    "disagreed": 0
   },
   {
    "subset": "Github_medium",
    "schemas": 1976,
-   "compiled": 1909,
-   "refused": 67,
+   "compiled": 1960,
+   "refused": 16,
    "crashed": 0,
    "timed_out": 0,
-   "values": 81184,
+   "values": 83396,
    "disagreed": 0
   },
   {
    "subset": "Github_trivial",
    "schemas": 444,
-   "compiled": 439,
-   "refused": 5,
+   "compiled": 442,
+   "refused": 2,
    "crashed": 0,
    "timed_out": 0,
-   "values": 16872,
+   "values": 17002,
    "disagreed": 10
   },
   {
    "subset": "Github_ultra",
    "schemas": 164,
-   "compiled": 149,
-   "refused": 15,
+   "compiled": 154,
+   "refused": 10,
    "crashed": 0,
    "timed_out": 0,
-   "values": 5152,
+   "values": 5392,
    "disagreed": 0
   },
   {
@@ -66,11 +66,11 @@
   {
    "subset": "JsonSchemaStore",
    "schemas": 492,
-   "compiled": 448,
-   "refused": 44,
+   "compiled": 450,
+   "refused": 42,
    "crashed": 0,
    "timed_out": 0,
-   "values": 17583,
+   "values": 17679,
    "disagreed": 0
   },
   {
@@ -107,7 +107,7 @@
  "refusals": [
   {
    "reason": "a $ref outside the document, to an anchor, or through an embedded $id",
-   "schemas": 4
+   "schemas": 5
   },
   {
    "reason": "a $schema it does not read",
@@ -131,7 +131,7 @@
   },
   {
    "reason": "an embedded $id",
-   "schemas": 138
+   "schemas": 11
   },
   {
    "reason": "the keyword additionalItems",

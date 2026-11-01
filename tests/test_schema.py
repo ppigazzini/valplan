@@ -63,6 +63,38 @@ class TestSemantics:
         assert not s.is_valid({"kids": [1]})
 
 
+class TestEmbeddedResources:
+    def test_an_embedded_id_with_nothing_resolving_inside_is_an_annotation(self):
+        # A base URI matters to the references inside its resource; with none, the resource
+        # means what its keywords mean.
+        schema = {"properties": {"a": {"$id": "#/properties/a", "type": "string", "minLength": 2}}}
+        compiled = compile_schema(schema)
+        assert compiled.is_valid({"a": "ab"})
+        assert not compiled.is_valid({"a": "a"})
+
+    @pytest.mark.parametrize(
+        "resource",
+        [
+            {"$id": "http://example.com/a", "$ref": "#/$defs/b", "$defs": {"b": {}}},
+            {"$id": "http://example.com/a", "items": {"$anchor": "x"}},
+            {"$id": "http://example.com/a", "$schema": "http://json-schema.org/draft-07/schema#"},
+        ],
+    )
+    def test_an_embedded_id_over_a_reference_or_another_dialect_is_refused(self, resource):
+        with pytest.raises(Unsupported, match="'\\$id' changes the base URI"):
+            compile_schema({"properties": {"a": resource}})
+
+    def test_a_pointer_through_an_embedded_id_is_refused(self):
+        schema = {
+            "$defs": {
+                "s": {"$id": "http://example.com/s", "properties": {"n": {"type": "integer"}}}
+            },
+            "$ref": "#/$defs/s/properties/n",
+        }
+        with pytest.raises(Unsupported, match="passes through an embedded"):
+            compile_schema(schema)
+
+
 class TestUniverse:
     def test_a_type_list_keeps_the_guard_of_each_other_kind(self):
         # The guard is left out only where `type` confines the value to the keyword's kind.
@@ -106,7 +138,7 @@ class TestRefusals:
             {"unevaluatedProperties": False},
             {"$ref": "http://example.com/x.json"},
             {"$ref": "#anchor"},
-            {"properties": {"a": {"$id": "x", "type": "string"}}},
+            {"properties": {"a": {"$id": "x", "$ref": "#/$defs/b"}}, "$defs": {"b": {}}},
             {"properties": {"opt?": {"type": "string"}}},
         ],
     )
