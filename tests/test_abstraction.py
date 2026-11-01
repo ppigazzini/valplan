@@ -1,6 +1,9 @@
+import math
 import random
+from typing import Annotated
 
-from valgebra import intersection
+from annotated_types import Predicate
+from valgebra import Validator, intersection
 
 from valplan.abstraction import Abstraction
 from valplan.contracts import tool
@@ -68,6 +71,25 @@ class TestFiniteSets:
         assert finite({"enum": [1, "a"]}) == [1, 1.0, "a"]
         assert finite({"type": "boolean"}) == [True, False]
         assert finite({"type": "string"}) is None
+
+    def test_finite_lists_negative_zero_beside_zero(self):
+        listed = finite({"const": 0})
+        assert listed is not None
+        assert [(type(v), math.copysign(1.0, v)) for v in listed] == [
+            (int, 1.0),
+            (float, 1.0),
+            (float, -1.0),
+        ]
+
+    def test_a_cell_only_negative_zero_lies_in_is_kept(self):
+        # Membership compares a float by value, so -0.0 lies in {"const": 0}; a predicate
+        # written in Python tells it from 0.0, and the cell the two meet in holds it alone.
+        zero = compile_schema({"const": 0})
+        negative = Validator(Annotated[float, Predicate(lambda x: math.copysign(1.0, x) < 0)])
+        listed = finite({"const": 0})
+        assert listed is not None
+        a = Abstraction([zero, negative], finite={zero: listed})
+        assert a.cells_of(zero) & a.cells_of(negative)
 
     def test_finite_filters_by_the_rest_of_the_schema(self):
         assert finite({"enum": ["ab", "abcd"], "minLength": 3}) == ["abcd"]

@@ -1034,8 +1034,10 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
     A schema with ``enum`` or ``const``, a ``boolean`` or ``null`` type, or an ``allOf``
     holding one of these admits only the values listed there, filtered by the rest of the
     schema. Each integral number is listed in both spellings, ``1`` and ``1.0``, which are
-    one JSON number and two Python values. The list is what lets a cell inside such a
-    schema be decided by checking each value rather than by asking about the cell's set.
+    one JSON number and two Python values, and a zero also as ``-0.0``: membership compares
+    a float by value, so ``-0.0`` lies wherever ``0.0`` does, and a predicate written in
+    Python can still tell the two apart. The list is what lets a cell inside such a schema
+    be decided by checking each value rather than by asking about the cell's set.
 
     A listed array or object is not enumerated: each number inside it has its spellings
     too, and a list missing one of the combinations would let a cell holding it be called
@@ -1059,18 +1061,22 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
         listed = known[0]
     if any(isinstance(value, (list, dict)) for value in listed):
         return None
-    spelled: list[Any] = []
-    for value in listed:
-        if isinstance(value, float) and not math.isfinite(value):
-            continue
-        number = isinstance(value, (int, float)) and not isinstance(value, bool)
-        spelled += spellings(value) if number else [value]
+    spelled = [v for value in listed for v in _spelled(value)]
     compiled = Compiler(root if root is not None else schema).compile(schema)
     out: list[Any] = []
     for value in spelled:
         if compiled.is_valid(value) and not any(_same(value, v) for v in out):
             out.append(value)
     return out
+
+
+def _spelled(value: object) -> list[Any]:
+    """Return the Python values membership can admit for one listed JSON value."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return []
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return [value]
+    return [*spellings(value), -0.0] if value == 0 else spellings(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1165,6 +1171,9 @@ def branches(schema: object) -> list[object] | None:
 
 
 def _same(a: object, b: object) -> bool:
+    """Return whether two listed values are one Python value: ``0.0`` and ``-0.0`` are two."""
+    if isinstance(a, float) and isinstance(b, float):
+        return a == b and math.copysign(1.0, a) == math.copysign(1.0, b)
     return type(a) is type(b) and json_key(a) == json_key(b)
 
 
