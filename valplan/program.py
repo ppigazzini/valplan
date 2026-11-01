@@ -82,13 +82,22 @@ class ShapeError(ValueError):
     """A program whose structure no path can be read from: a step after a branch or an end."""
 
 
-def check_shape(program: Program) -> None:
+#: How deep tests may nest in a program read or checked here. The planner nests them no
+#: deeper than its search depth; every reader of a program walks it recursively, and one
+#: nested past this is refused rather than walked past Python's recursion limit.
+MAX_NESTING = 128
+
+
+def check_shape(program: Program, depth: int = 0) -> None:
     """Raise unless every block ends in exactly one test, return or stop, and nothing follows.
 
     A step after a test would never run, and a block that ends in a call never answers; a
     reader that skipped either would report a program correct that does not mean what it
     says. Every name a step holds must be a string, so a reader can look it up.
     """
+    if depth > MAX_NESTING:
+        msg = f"tests nest past {MAX_NESTING} levels"
+        raise ShapeError(msg)
     for i, step in enumerate(program):
         last = i == len(program) - 1
         _check_names(step, i)
@@ -97,8 +106,8 @@ def check_shape(program: Program) -> None:
                 if not last:
                     msg = f"step {i + 1} follows a test"
                     raise ShapeError(msg)
-                check_shape(then)
-                check_shape(other)
+                check_shape(then, depth + 1)
+                check_shape(other, depth + 1)
             case Return() | Stop():
                 if not last:
                     msg = f"step {i + 1} follows an end"
@@ -151,7 +160,10 @@ _KEYS = {
 }
 
 
-def _read(steps: object) -> Program:
+def _read(steps: object, depth: int = 0) -> Program:
+    if depth > MAX_NESTING:
+        msg = f"tests nest past {MAX_NESTING} levels"
+        raise ShapeError(msg)
     if not isinstance(steps, list):
         msg = f"a block is a list of steps, got {json.dumps(steps)}"
         raise ShapeError(msg)
@@ -167,7 +179,7 @@ def _read(steps: object) -> Program:
                 raise ShapeError(msg)
             out.append(Call(step["as"], step["call"], tuple(step["args"].items())))
         elif shape == "if":
-            then, other = _read(step["then"]), _read(step["else"])
+            then, other = _read(step["then"], depth + 1), _read(step["else"], depth + 1)
             out.append(Test(step["if"], step["in"], then, other))
         elif shape == "return":
             out.append(Return(step["return"]))

@@ -1,6 +1,9 @@
+import pytest
+
 from valplan.program import (
     Call,
     Return,
+    ShapeError,
     Stop,
     Test,
     from_json,
@@ -77,3 +80,11 @@ def test_sink_moves_a_call_into_the_only_branch_that_reads_it():
         "else:\n"
         "    stop  # c1.tier is not covered by this program"
     )
+
+
+def test_a_program_nested_past_the_bound_is_refused_not_walked():
+    steps: list[dict[str, object]] = [{"return": "x"}]
+    for _ in range(3000):
+        steps = [{"if": "x", "in": "goal", "then": steps, "else": [{"stop": "x"}]}]
+    with pytest.raises(ShapeError, match="nest past"):
+        from_json(steps)
