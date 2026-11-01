@@ -18,7 +18,7 @@ checks the assembled argument object against the whole compiled input schema as 
 """
 
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -232,7 +232,31 @@ def plain(schema: Mapping[str, Any]) -> bool:
 
 def tools(listing: Mapping[str, Any]) -> tuple[Tool, ...]:
     """Read an MCP ``tools/list`` result: ``{"tools": [...]}``."""
-    return tuple(tool(spec) for spec in listing["tools"])
+    library = tuple(tool(spec) for spec in listing["tools"])
+    distinct(library)
+    return library
+
+
+def distinct(library: Sequence[Tool]) -> None:
+    """Refuse a library a program could not name its tools and arguments in.
+
+    A program calls a tool by name and tests against ``"<tool>.<arg>"``. MCP keeps a name
+    unique within one server only, and a library joined from two can hold one twice; and
+    a dot may sit in a tool name and in an argument name alike, so tool ``a`` with argument
+    ``b.c`` and tool ``a.b`` with argument ``c`` spell one test two ways.
+    """
+    names = [t.name for t in library]
+    if twice := sorted({n for n in names if names.count(n) > 1}):
+        msg = f"two tools are named {twice[0]!r}"
+        raise Unsupported(msg)
+    seen: dict[str, str] = {}
+    for t in library:
+        for slot in t.args:
+            spelled = f"{t.name}.{slot.name}"
+            if spelled in seen:
+                msg = f"{spelled!r} names an argument of {seen[spelled]!r} and of {t.name!r}"
+                raise Unsupported(msg)
+            seen[spelled] = t.name
 
 
 @dataclass(frozen=True, slots=True)

@@ -26,7 +26,7 @@ from typing import Any
 
 from valplan._valgebra import Validator, complement, intersection
 from valplan.abstraction import Abstraction, Cells, SoundnessError
-from valplan.contracts import Slot, Task, Tool
+from valplan.contracts import Slot, Task, Tool, distinct
 from valplan.native import is_native, native_values
 from valplan.program import (
     Call,
@@ -62,6 +62,7 @@ class Planner:
     """Plan for one task over one tool library."""
 
     def __init__(self, tools: Sequence[Tool], task: Task, witnesses: Iterable[Any] = ()) -> None:
+        distinct(tools)
         self.tools = sorted(tools, key=lambda t: t.name)
         self.task = task
         named = list(task.inputs) + [s for t in self.tools for s in t.args + t.results]

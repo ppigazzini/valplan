@@ -309,6 +309,30 @@ class TestNames:
         assert not planner.weak
         assert not [c for c in verify(lib, task, program) if c.relation == "not_subset"]
 
+    def test_two_tools_of_one_name_are_refused(self):
+        def named(arg):
+            schema = {"type": "object", "properties": {"x": arg}, "required": ["x"]}
+            return {"name": "f", "inputSchema": schema}
+
+        with pytest.raises(Unsupported, match="two tools are named 'f'"):
+            read_tools({"tools": [named({"type": "string"}), named({"type": "integer"})]})
+        # A library joined from two servers' listings can hold the name twice too.
+        joined = [
+            *read_tools({"tools": [named({"type": "string"})]}),
+            *read_tools({"tools": [named({"type": "integer"})]}),
+        ]
+        task = read_task({"name": "t", "inputs": {"type": "object"}, "goal": True})
+        with pytest.raises(Unsupported, match="two tools are named 'f'"):
+            Planner(joined, task)
+
+    def test_two_arguments_spelled_alike_are_refused(self):
+        def takes(name, arg):
+            schema = {"type": "object", "properties": {arg: {"type": "string"}}}
+            return {"name": name, "inputSchema": schema}
+
+        with pytest.raises(Unsupported, match=r"'a\.b\.c' names an argument of 'a' and of 'a\.b'"):
+            read_tools({"tools": [takes("a", "b.c"), takes("a.b", "c")]})
+
     def test_an_input_named_like_a_result_is_refused(self):
         inputs = {
             "type": "object",
