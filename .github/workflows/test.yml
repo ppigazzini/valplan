@@ -6,6 +6,11 @@ on: [push, pull_request]
 permissions:
   contents: read
 
+# A newer push to the same ref supersedes a run still going.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: lint, types, tests, published studies
