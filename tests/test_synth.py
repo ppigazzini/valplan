@@ -2,6 +2,7 @@ import random
 
 import pytest
 
+from valplan.abstraction import SoundnessError
 from valplan.bench import library
 from valplan.contracts import task as read_task
 from valplan.contracts import tools as read_tools
@@ -247,6 +248,15 @@ def test_a_required_key_outside_properties_makes_the_tool_uncallable():
     task = read_task({"name": "t", "inputs": inputs, "goal": {"const": "r"}})
     assert not lib[0].plain
     assert Planner(lib, task, witnesses(lib, task)).plan() is None
+
+
+def test_the_recheck_refuses_a_binding_outside_its_argument(library, tasks):
+    # The search binds only what the cells prove; pruning and sinking do not, so the
+    # program is checked again, and a binding outside its argument is a soundness failure.
+    planner = Planner(library, tasks["ticket"], witnesses(library, tasks["ticket"]))
+    program = (Call("c1", "find_customer", (("email", "subject"),)), Return("c1.customer_id"))
+    with pytest.raises(SoundnessError, match=r"find_customer\.email bound to subject outside it"):
+        planner._recheck(program, {v.name: v.cells for v in planner.initial()})
 
 
 class TestRunnerContracts:

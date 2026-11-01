@@ -152,3 +152,28 @@ def test_a_test_against_the_goal_narrows_the_then_branch_to_it(library, tasks):
         ("0.then.0", "subset"),
         ("0.else.0", "uncovered"),
     ]
+
+
+def test_a_constraint_across_arguments_is_checked_on_the_whole_record():
+    inputs = {
+        "type": "object",
+        "properties": {"a": {"type": "string"}, "b": {"type": "string"}},
+        "required": ["a"],
+        "dependentRequired": {"a": ["b"]},
+    }
+    lib = tools({"tools": [{"name": "t", "inputSchema": inputs}]})
+    goal_task = task({"name": "g", "inputs": inputs, "goal": True})
+    checks = {
+        c.claim: c.relation
+        for c in verify(lib, goal_task, (Call("c1", "t", (("a", "a"),)), Return("a")))
+    }
+    assert checks["a <= t.a"] == "subset"
+    assert checks["arguments <= t input"] == "not_subset"
+
+
+def test_a_program_built_past_the_nesting_bound_is_reported_ill_formed(library, tasks):
+    program: tuple = (Return("email"),)
+    for _ in range(300):
+        program = (Test("email", "goal", program, (Stop("email"),)),)
+    checks = verify(library, tasks["ticket"], program)
+    assert checks[0].claim.startswith("well-formed program: tests nest past")

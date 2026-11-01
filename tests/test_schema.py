@@ -63,6 +63,21 @@ class TestSemantics:
         assert not s.is_valid({"kids": [1]})
 
 
+class TestUniverse:
+    def test_a_type_list_keeps_the_guard_of_each_other_kind(self):
+        # The guard is left out only where `type` confines the value to the keyword's kind.
+        compiled = compile_schema({"type": ["integer", "string"], "minimum": 3})
+        assert compiled.is_valid("a")
+        assert compiled.is_valid(3)
+        assert not compiled.is_valid(2)
+
+    @pytest.mark.parametrize("schema", [{"minimum": 3}, {"maxLength": 2}, {"required": ["a"]}])
+    def test_a_schema_without_a_type_lies_inside_the_universe(self, schema):
+        # A keyword's guard admits every value outside its kind, a tuple included; the meet
+        # with the universe keeps the set inside JSON, so `true` is proven to contain it.
+        assert compile_schema(schema).is_subtype_of(JSON)
+
+
 class TestDecisions:
     def test_disjoint_patterns_are_proven_disjoint(self):
         a = compile_schema({"type": "string", "pattern": "^cus_[a-z0-9]{8}$"})
@@ -175,6 +190,15 @@ class TestDeepSchemas:
             compile_schema(schema)
         with pytest.raises(Unsupported, match="nests past"):
             upgrade({"$schema": _DRAFTS["7"], **schema})
+
+    def test_a_chain_of_references_compiled_in_place_past_the_limit_is_refused(self):
+        # The document is three levels deep; the compiled set nests 300 deep.
+        defs: dict[str, object] = {
+            f"d{i}": {"allOf": [{"$ref": f"#/$defs/d{i + 1}"}]} for i in range(300)
+        }
+        defs["d300"] = {"type": "string"}
+        with pytest.raises(Unsupported, match="nests past"):
+            compile_schema({"$defs": defs, "$ref": "#/$defs/d0"})
 
     def test_a_constant_nested_past_the_bound_is_refused(self):
         value: object = 1
