@@ -2,13 +2,15 @@ import math
 import random
 from typing import Annotated
 
+import pytest
 from annotated_types import Predicate
 from valgebra import Validator, intersection
 
-from valplan.abstraction import Abstraction
+import valplan.abstraction
+from valplan.abstraction import Abstraction, SoundnessError
 from valplan.contracts import tool
 from valplan.sample import Sampler
-from valplan.schema import compile_schema, finite
+from valplan.schema import compile_schema, finite, interval
 from valplan.synth import Planner, witnesses
 
 
@@ -181,3 +183,49 @@ def test_cells_past_valgebras_definition_limit_are_kept_not_raised():
     outside = [c for c in a.cells if c.kind == "object" and not c.inside]
     assert len(outside) == 1
     assert outside[0].status == "inhabited"
+
+
+class TestSelfCheck:
+    def test_a_false_emptiness_raises_where_a_witness_lands(self, monkeypatch):
+        # Both halves of every split called empty: the string a witness is holds no cell.
+        monkeypatch.setattr(Abstraction, "_empty", lambda *_: True)
+        with pytest.raises(SoundnessError, match="lies in a minterm proven empty"):
+            Abstraction([compile_schema({"type": "string", "minLength": 2})], ["ab"])
+
+    def test_a_false_disjointness_raises_where_a_witness_lands(self, monkeypatch):
+        monkeypatch.setattr(Abstraction, "_disjoint", lambda *_: True)
+        preds = [compile_schema({"type": "string"}), compile_schema({"minLength": 1})]
+        with pytest.raises(SoundnessError, match="lies in a minterm proven empty"):
+            Abstraction(preds, ["ab"])
+
+
+class TestFallbacks:
+    def test_asking_unions_whole_keeps_every_cell_asking_them_a_branch_at_a_time_keeps(
+        self, monkeypatch, library, tasks
+    ):
+        # Past `MAX_BRANCHES` a cell is asked about whole: valgebra proves less there, so
+        # the cells kept can only grow, and every witness still lands in one.
+        def cells():
+            planner = Planner(
+                library, tasks["vat-for-customer"], witnesses(library, tasks["vat-for-customer"])
+            )
+            return {(c.kind, c.inside) for c in planner.abstraction.cells}
+
+        branchwise = cells()
+        monkeypatch.setattr(valplan.abstraction, "MAX_BRANCHES", 0)
+        assert cells() >= branchwise
+
+    def test_a_union_with_a_branch_that_is_no_range_is_left_to_valgebra(self):
+        union = {
+            "anyOf": [{"type": "integer", "minimum": 0}, {"type": "number", "multipleOf": 0.5}]
+        }
+        below = {"type": "integer", "maximum": -1}
+        u, r = compile_schema(union), compile_schema(below)
+        parts = [compile_schema(b) for b in union["anyOf"]]
+        ranges = {
+            p: i for p, i in ((r, interval(below)), (parts[0], interval(union["anyOf"][0]))) if i
+        }
+        a = Abstraction([u, r], [-1], ranges=ranges, unions={u: parts})
+        meet = a.cells_of(u) & a.cells_of(r)
+        assert meet
+        assert all(a.cells[i].status == "inhabited" for i in meet)
