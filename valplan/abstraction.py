@@ -179,12 +179,12 @@ class Abstraction:
         return self._branches.get(i, [self.predicates[i]])
 
     def _disjoint(self, i: int, j: int) -> bool:
-        key = (min(i, j), max(i, j))
-        if key not in self._apart:
-            self._apart[key] = all(
+        row = self._apart[i]
+        if j not in row:
+            row[j] = self._apart[j][i] = all(
                 intersection(a, b).is_empty() for a in self._parts(i) for b in self._parts(j)
             )
-        return self._apart[key]
+        return row[j]
 
     def _below(self, i: int, j: int) -> bool:
         """Return whether predicate ``i`` is proven to lie below predicate ``j``.
@@ -193,13 +193,14 @@ class Abstraction:
         ``i`` is empty, and a predicate a split reaches is not proven empty in the kind it
         splits. Not asking proves nothing, and the split asks about the cell instead.
         """
-        if (i, j) not in self._under:
-            if self._apart.get((min(i, j), max(i, j))):
-                self._under[i, j] = False
+        row = self._under[i]
+        if j not in row:
+            if self._apart[i].get(j):
+                row[j] = False
             else:
                 target = self.predicates[j]
-                self._under[i, j] = all(a.is_subtype_of(target) for a in self._parts(i))
-        return self._under[i, j]
+                row[j] = all(a.is_subtype_of(target) for a in self._parts(i))
+        return row[j]
 
     def _set(
         self, kind: Validator[Any], pos: frozenset[int], neg: frozenset[int]
@@ -338,8 +339,10 @@ class Abstraction:
         whole set. A pairwise proof is a proof about every cell it covers, so the shortcut
         is exact, and it keeps the questions valgebra is asked as small as the contracts.
         """
-        self._apart: dict[tuple[int, int], bool] = {}
-        self._under: dict[tuple[int, int], bool] = {}
+        # One row per predicate, so a pair is looked up without building a key; the
+        # disjointness row is filled both ways, as the relation is symmetric.
+        self._apart: list[dict[int, bool]] = [{} for _ in self.predicates]
+        self._under: list[dict[int, bool]] = [{} for _ in self.predicates]
         kinds = dict(KINDS)
         cells = [(frozenset[int](), frozenset[int](), name) for name in kinds]
         for i in range(len(self.predicates)):
