@@ -128,3 +128,19 @@ def test_the_pages_quote_the_corpus_totals():
     assert f"{total['disagreed']} of {total['values']} values" in readme
     assert f"{total['compiled']} of the {total['schemas']} schemas compile, none crashes" in page
     assert f"on {total['disagreed']} of the {total['values']} values" in page
+
+
+def test_the_pages_quote_the_containment_totals():
+    rows = _study("containment.json")["rows"]
+    keys = ("questions", "refused", "proven", "refuted", "undecided")
+    keys += ("proven_against", "refuted_against")
+    page, readme = _page("docs/04-results.md"), _page("README.md")
+    for draft in ("2020-12", "7", "6", "4"):
+        total = [sum(r[k] for r in rows if r["draft"] == draft) for k in keys]
+        assert f"| {draft} | " + " | ".join(map(str, total)) + " |" in page
+    grand = {k: sum(r[k] for r in rows) for k in keys}
+    assert grand["proven_against"] == 0
+    assert f"{grand['proven']} proofs of the {grand['questions']} questions, 0 against one" in page
+    assert f"{grand['questions']} labeled questions" in readme
+    assert f"{grand['proven']} proven, none against a label" in readme
+    assert f"each of the {grand['refuted_against']} refutations against a label" in readme

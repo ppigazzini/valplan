@@ -118,6 +118,33 @@ class CorpusStudy(TypedDict, closed=True):
     refusals: list[Refusal]
 
 
+class ContainmentRow(TypedDict, closed=True):
+    """valgebra's answers on one category of a draft of the containment test suite.
+
+    Each pair labels one direction or both; a question is one labeled direction.
+    """
+
+    draft: Literal["2020-12", "7", "6", "4"]
+    category: str
+    questions: Count
+    refused: Count
+    timed_out: Count
+    proven: Count
+    refuted: Count
+    undecided: Count
+    proven_against: Count
+    refuted_against: Count
+
+
+class ContainmentStudy(TypedDict, closed=True):
+    """Inclusions between pairs of schemas, against a suite's labels, at a pinned commit."""
+
+    format: Literal[1]
+    suite: str
+    commit: str
+    rows: list[ContainmentRow]
+
+
 class StudyError(ValueError):
     """A study file that is malformed or contradicts itself."""
 
@@ -126,6 +153,7 @@ SUITE = Validator(SuiteStudy)
 CASE = Validator(CaseStudy)
 BENCH = Validator(BenchStudy)
 CORPUS = Validator(CorpusStudy)
+CONTAINMENT = Validator(ContainmentStudy)
 
 
 def _load[T](schema: Validator[T], text: str) -> T:
@@ -178,6 +206,21 @@ def load_corpus(text: str) -> CorpusStudy:
     if refused != sum(row["refused"] for row in study["subsets"]):
         msg = "the refusals by reason do not add up to the refused schemas"
         raise StudyError(msg)
+    return study
+
+
+def load_containment(text: str) -> ContainmentStudy:
+    """Parse and check a containment study, and the rules between fields of each row."""
+    study = _load(CONTAINMENT, text)
+    for row in study["rows"]:
+        answers = row["refused"] + row["timed_out"] + row["proven"]
+        answers += row["refuted"] + row["undecided"]
+        if answers != row["questions"]:
+            msg = f"containment row {row['draft']}/{row['category']} does not add up"
+            raise StudyError(msg)
+        if row["proven_against"] > row["proven"] or row["refuted_against"] > row["refuted"]:
+            msg = f"containment row {row['draft']}/{row['category']} contradicts itself"
+            raise StudyError(msg)
     return study
 
 

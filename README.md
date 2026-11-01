@@ -29,6 +29,7 @@ the values left uncovered.
 uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
 uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run python tools/bench.py --check docs/studies/bench.json
+uv run python tools/containment.py --check docs/studies/containment.json
 ```
 
 - **Compiler against the official JSON-Schema-Test-Suite** (commit `89e83a740146`):
@@ -44,6 +45,10 @@ uv run python tools/bench.py --check docs/studies/bench.json
   Store, Kubernetes and function-calling data): 9429 compile, none crashes; membership
   differs from the `jsonschema` package's on 12 of 402633 values, each a reading the ledger
   records.
+- **Inclusions** (the JSON Schema containment test suite, 10890 labeled questions over
+  drafts 2020-12, 07, 06 and 04): 5429 proven, none against a label; each of the
+  152 refutations against a label is a wrong label, which
+  [`docs/04-results.md`](docs/04-results.md) names.
 - **Helpdesk case study** (10 MCP tools, 4 tasks): 35 to 37 cells per task, none of them
   undecided. Two tasks get strong programs, one branching three ways on an invoice's
   status; the verifier proves every check of both (6 of 6, 14 of 14). The other two get

@@ -95,6 +95,36 @@ class TestEmbeddedResources:
             compile_schema(schema)
 
 
+class TestContainmentLabels:
+    # Two pairs of the containment test suite carry a label the specification refutes; the
+    # results page names them, and each value here is the witness.
+    def test_the_schema_labeled_universal_leaves_out_a_number(self):
+        def tree(n):
+            sub = f"#/anyOf/{n}/$defs/sub-item"
+            item = {"type": "array", "items": False, "prefixItems": [{"$ref": sub}] * 2}
+            defs = {"item": item, "sub-item": {"type": "object", "required": ["foo"]}}
+            return {"$defs": defs, "type": "array", "items": False}
+
+        top = [{"$ref": "#/anyOf/0/$defs/item"}] * 3
+        neither = [{"$ref": "#/anyOf/1/$defs/item"}] * 3
+        schema = {
+            "anyOf": [{**tree(0), "prefixItems": top}, {**tree(1), "not": {"prefixItems": neither}}]
+        }
+        compiled = compile_schema(schema)
+        assert not compiled.is_valid(1)
+        assert JSON.relation_to(compiled) == "not_subset"
+
+    def test_the_schema_labeled_empty_holds_an_object_named_like_a_reference(self):
+        def branch(n, key):
+            defs = {"a_string": {"type": "string"}}
+            listed = {"enum": [{"$ref": f"#/allOf/{n}/$defs/a_string"}]}
+            return {"$defs": defs, **({"not": listed} if key == "not" else listed)}
+
+        compiled = compile_schema({"allOf": [branch(0, "enum"), branch(1, "not")]})
+        assert compiled.is_valid({"$ref": "#/allOf/0/$defs/a_string"})
+        assert compiled.relation_to(nothing) == "not_subset"
+
+
 class TestUniverse:
     def test_a_type_list_keeps_the_guard_of_each_other_kind(self):
         # The guard is left out only where `type` confines the value to the keyword's kind.

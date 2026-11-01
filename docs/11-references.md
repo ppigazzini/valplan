@@ -19,6 +19,10 @@
   Validation of modern JSON Schema: formalization and complexity. POPL 2024.
 - L. Attouche, M.-A. Baazizi, D. Colazzo, G. Ghelli, C. Sartiani, S. Scherzinger. Witness
   generation for JSON Schema. PVLDB 15(13), 2022.
+- L. Attouche, M.-A. Baazizi, D. Colazzo, Y. Ding, L. Escher, M. Fruth, G. Ghelli,
+  C. Sartiani, S. Scherzinger. A test suite for JSON Schema containment. ER 2021 demos,
+  CEUR-WS 2958. Its [pairs](https://github.com/sdbs-uni-p/json-schema-containment-testsuite)
+  (MIT) are the questions of `tools/containment.py`.
 - A. Habib, A. Shinnar, M. Hirzel, M. Pradel. Finding data compatibility bugs with JSON
   subschema checking. ISSTA 2021. [arXiv:1911.12651](https://arxiv.org/abs/1911.12651)
 - S. Geng, H. Cooper, M. Moskal, S. Jenkins, J. Berman, N. Ranchin, R. West, E. Horvitz,

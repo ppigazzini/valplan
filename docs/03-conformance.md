@@ -30,6 +30,15 @@ gives the verdict the specification gives. A keyword it cannot translate raises
   uv run python tools/corpus.py --check docs/studies/jsonschemabench.json
   ```
 
+- **Inclusions**, as the JSON Schema containment test suite labels them: pairs of
+  schemas fetched at a pinned commit and never vendored, each labeled direction asked of
+  valgebra. No proof may contradict a label, and a refutation that does is a wrong label
+  the results page names:
+
+  ```bash
+  uv run python tools/containment.py --check docs/studies/containment.json
+  ```
+
 - **The `jsonschema` package**, pinned in the development group, as a second
   implementation: `tests/test_properties.py` compares membership on 400 random schemas
   and 25 random values each, over the keywords whose meaning the two share exactly.

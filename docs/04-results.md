@@ -146,6 +146,37 @@ draft.
   `integer`, and 1 is `"\n"` under a pattern ending in `$`, which Python's `re` matches
   before a final newline.
 
+## Inclusions against the containment test suite
+
+```bash
+uv run python tools/containment.py --check docs/studies/containment.json
+```
+
+The JSON Schema containment test suite (Attouche et al. 2021, MIT), fetched at commit
+`446fb41c527c` into `results/` and never vendored: pairs of schemas generated from the
+JSON-Schema-Test-Suite, each labeling whether the first is a subset of the second, the
+converse, or both. A labeled direction is a question, asked of valgebra with
+`relation_to`; the older drafts are read through `upgrade`, and of the optional files the
+four the suite study runs.
+
+| draft | questions | refused | proven | refuted | undecided | proven against the label | refuted against the label |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2020-12 | 3645 | 738 | 1677 | 714 | 516 | 0 | 2 |
+| 7 | 2788 | 96 | 1581 | 668 | 443 | 0 | 2 |
+| 6 | 2524 | 96 | 1399 | 594 | 435 | 0 | 2 |
+| 4 | 1933 | 66 | 772 | 585 | 510 | 0 | 146 |
+
+- No proof contradicts a label: 5429 proofs of the 10890 questions, 0 against one.
+- Each of the 152 refutations against a label is a wrong label. In every draft
+  two: in `universal/items.json` the generator left `type` and `items: false` outside the
+  `not` it wrote, so the schema it labels universal leaves out the value `1`; in
+  `unsatisfiable/ref.json` it rewrote a `$ref` inside an `enum` value, so the two `enum`s
+  differ and the schema it labels empty holds `{"$ref": "#/allOf/0/$defs/a_string"}`.
+  In draft-04, 144 more pairs put `const`, which draft-06 added, in a draft-04 schema: the
+  draft reads it as an annotation, so the first schema admits every value.
+- A question is refused where the compiler refuses a schema of its pair, as the inventory
+  of [`03-conformance.md`](03-conformance.md) lists; an undecided one is kept and counted.
+
 ## Not measured
 
 - Tool libraries published by real MCP servers.
