@@ -41,7 +41,7 @@ from valplan.program import (
     stops,
 )
 from valplan.sample import Sampler
-from valplan.schema import Compiler, branches, finite, interval
+from valplan.schema import Compiler, Unsupported, branches, finite, interval
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,11 +95,29 @@ class Planner:
                 v: r for v, b in zip(unions[schema], parts, strict=True) if (r := interval(b))
             }
         self.abstraction = Abstraction(predicates, witnesses, listed, ranges, unions)
+        self._inhabited()
         self.goal = self.abstraction.cells_of(task.goal)
         self._whole: dict[tuple[str, tuple[Validator[Any], ...]], bool] = {}
         self._failed: set[tuple[frozenset[Cells], int, bool]] = set()
         self.expanded = 0
         self.weak = False
+
+    def _inhabited(self) -> None:
+        """Refuse a task input or a tool result whose cells are all proven empty.
+
+        A strong preimage takes an action only where its execution is non-empty (Cimatti,
+        Pistore, Roveri and Traverso 2003): a variable no value can take lies inside every
+        argument and the goal over the cells, so a program through it is accepted
+        vacuously. `valplan.contracts` refuses what valgebra proves empty; the cells also
+        hold what enumeration and interval arithmetic prove, such as an integer range whose
+        minimum exceeds its maximum.
+        """
+        named = [(f"input {s.name!r}", s) for s in self.task.inputs]
+        named += [(f"tool {t.name!r}: result {r.name!r}", r) for t in self.tools for r in t.results]
+        for where, slot in named:
+            if not self.abstraction.cells_of(slot.schema):
+                msg = f"{where} admits no value: every cell of it is proven empty"
+                raise Unsupported(msg)
 
     def initial(self) -> tuple[Var, ...]:
         """Return the task inputs as variables."""

@@ -95,7 +95,10 @@ predicates, plus the whole input record. The proofs come from valgebra and from 
 exact rules in this package — pairwise relations proven by valgebra, enumeration of listed
 values, interval arithmetic — each tested on its own. A static type test on a value
 narrows by set difference over a partition, so the two branches together cover every value and overlap in
-none. An undecided cell is kept and covered.
+none. An undecided cell is kept and covered. A task input or a tool result whose cells
+are all proven empty is refused: a variable no value can take lies inside every set, and a
+strong plan takes an action only where its outcomes are non-empty (Cimatti, Pistore,
+Roveri and Traverso 2003).
 
 The verifier (`valplan/verify.py`) checks every program again with valgebra alone, without
 the cells, the search or the three rules. It shares the compiler and valgebra with the
