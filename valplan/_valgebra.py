@@ -15,6 +15,7 @@ from typing import Annotated, Any
 
 from annotated_types import Len, Predicate
 from valgebra import (
+    MAX_SCHEMA_DEPTH,
     Regex,
     ValidationError,
     Validator,
@@ -27,6 +28,7 @@ from valgebra import (
 )
 
 __all__ = [
+    "MAX_SCHEMA_DEPTH",
     "NOT_BOOL",
     "Regex",
     "ValidationError",

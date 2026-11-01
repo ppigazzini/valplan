@@ -14,6 +14,7 @@ from valplan.schema import (
     Unsupported,
     compile_schema,
     json_key,
+    upgrade,
 )
 
 
@@ -152,6 +153,35 @@ class TestMalformedSchemas:
     def test_the_refusal_names_the_keyword(self, schema, keyword):
         with pytest.raises(Unsupported, match=keyword.replace("$", r"\$")):
             compile_schema(schema)
+
+
+class TestDeepSchemas:
+    @pytest.mark.parametrize(
+        "wrap",
+        [
+            lambda s: {"allOf": [s]},
+            lambda s: {"anyOf": [s, {"type": "null"}]},
+            lambda s: {"not": s},
+            lambda s: {"items": s},
+            lambda s: {"properties": {"a": s}},
+        ],
+        ids=["allOf", "anyOf", "not", "items", "properties"],
+    )
+    def test_a_schema_nested_past_valgebras_depth_is_refused(self, wrap):
+        schema = {"type": "string"}
+        for _ in range(5000):
+            schema = wrap(schema)
+        with pytest.raises(Unsupported, match="nests past"):
+            compile_schema(schema)
+        with pytest.raises(Unsupported, match="nests past"):
+            upgrade({"$schema": _DRAFTS["7"], **schema})
+
+    def test_a_constant_nested_past_the_bound_is_refused(self):
+        value: object = 1
+        for _ in range(1000):
+            value = [value]
+        with pytest.raises(Unsupported, match="nests past"):
+            compile_schema({"const": value})
 
 
 def test_a_pointer_index_is_written_as_rfc_6901_writes_it():

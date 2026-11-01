@@ -46,6 +46,7 @@ from urllib.parse import unquote
 from annotated_types import Ge, Gt, Le, Lt, MaxLen, MinLen, MultipleOf
 
 from valplan._valgebra import (
+    MAX_SCHEMA_DEPTH,
     NOT_BOOL,
     Regex,
     Validator,
@@ -321,6 +322,8 @@ class Compiler:
             # siblings of a `$ref`, the keywords later drafts added.
             msg = f"a draft-0{draft} document compiles through `upgrade` (`compile_schema` does it)"
             raise Unsupported(msg)
+        if schema is self.root:
+            _check_nesting(schema)
         if schema is self.root and schema.get("$schema", DRAFT) != DRAFT:
             msg = f"$schema {schema['$schema']!r}: drafts 2020-12, 07, 06 and 04 are supported"
             raise Unsupported(msg)
@@ -336,6 +339,12 @@ class Compiler:
 
     def _compile_object(self, schema: dict[str, Any]) -> Validator[Any]:
         _check_shapes(schema)
+        if len(self._typed) >= MAX_SCHEMA_DEPTH:
+            # Python's recursion stops a few hundred levels down with no keyword to name.
+            # valgebra's own limit bounds the sets it builds; the same bound on the
+            # schema's nesting keeps this walk inside Python's.
+            msg = f"the schema nests past {MAX_SCHEMA_DEPTH} levels, valgebra's depth limit"
+            raise Unsupported(msg)
         named = schema.get("type")
         typed = frozenset(named if isinstance(named, list) else [named]) if named else None
         parts: list[object] = []
@@ -1233,7 +1242,7 @@ _HANDLERS: dict[str, Callable[[Compiler, dict[str, Any]], Validator[Any]]] = {
 }
 
 
-def finite(schema: object, root: object = None) -> list[Any] | None:
+def finite(schema: object, root: object = None, depth: int = 0) -> list[Any] | None:
     """Return every JSON value ``schema`` admits when it lists them, else None.
 
     A schema with ``enum`` or ``const``, a ``boolean`` or ``null`` type, or an ``allOf``
@@ -1246,10 +1255,13 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
 
     A listed array or object is not enumerated: each number inside it has its spellings
     too, and a list missing one of the combinations would let a cell holding it be called
-    empty. Such a schema returns None and its cells are left to valgebra.
+    empty. Such a schema returns None and its cells are left to valgebra, as does an
+    ``allOf`` nested past valgebra's depth limit, which no compiled schema holds.
     """
     if not isinstance(schema, dict):
         return [] if schema is False else None
+    if depth > MAX_SCHEMA_DEPTH:
+        return None
     if "enum" in schema:
         listed = list(schema["enum"])
     elif "const" in schema:
@@ -1259,7 +1271,7 @@ def finite(schema: object, root: object = None) -> list[Any] | None:
     elif schema.get("type") == "null":
         listed = [None]
     else:
-        subs = [finite(sub, root) for sub in schema.get("allOf", [])]
+        subs = [finite(sub, root, depth + 1) for sub in schema.get("allOf", [])]
         known = [s for s in subs if s is not None]
         if not known:
             return None
@@ -1431,6 +1443,11 @@ def upgrade(schema: object, draft: int = 7) -> object:
     property named ``items`` is a name, not a keyword. A keyword holding a value of the
     wrong shape is copied as it is, for the compiler's shape check to name.
     """
+    _check_nesting(schema)
+    return _upgrade(schema, draft)
+
+
+def _upgrade(schema: object, draft: int) -> object:
     if not isinstance(schema, dict):
         return schema
     if "$ref" in schema:
@@ -1446,11 +1463,11 @@ def upgrade(schema: object, draft: int = 7) -> object:
         elif key == "dependencies":
             out |= _upgrade_dependencies(value, draft)
         elif key in _ONE:
-            out[key] = upgrade(value, draft)
+            out[key] = _upgrade(value, draft)
         elif key in _MANY and isinstance(value, list):
-            out[key] = [upgrade(v, draft) for v in value]
+            out[key] = [_upgrade(v, draft) for v in value]
         elif key in _MAP and isinstance(value, dict):
-            out[key] = {k: upgrade(v, draft) for k, v in value.items()}
+            out[key] = {k: _upgrade(v, draft) for k, v in value.items()}
         else:
             out[key] = value
     return out
@@ -1461,7 +1478,7 @@ def _upgrade_ref(schema: dict[str, Any], draft: int) -> dict[str, Any]:
     out: dict[str, Any] = {"$ref": schema["$ref"]}
     for key in ("definitions", "$defs"):
         if isinstance(schema.get(key), dict):
-            out[key] = {k: upgrade(v, draft) for k, v in schema[key].items()}
+            out[key] = {k: _upgrade(v, draft) for k, v in schema[key].items()}
     return out
 
 
@@ -1488,10 +1505,10 @@ def _upgrade_items(schema: dict[str, Any], draft: int) -> dict[str, Any]:
     """Map an older ``items``/``additionalItems`` to 2020-12 ``prefixItems``/``items``."""
     items = schema.get("items", True)
     if not isinstance(items, list):
-        return {"items": upgrade(items, draft)} if "items" in schema else {}
-    out: dict[str, Any] = {"prefixItems": [upgrade(v, draft) for v in items]}
+        return {"items": _upgrade(items, draft)} if "items" in schema else {}
+    out: dict[str, Any] = {"prefixItems": [_upgrade(v, draft) for v in items]}
     if "additionalItems" in schema:
-        out["items"] = upgrade(schema["additionalItems"], draft)
+        out["items"] = _upgrade(schema["additionalItems"], draft)
     return out
 
 
@@ -1505,8 +1522,28 @@ def _upgrade_dependencies(value: object, draft: int) -> dict[str, Any]:
         if isinstance(dep, list):
             out.setdefault("dependentRequired", {})[name] = dep
         else:
-            out.setdefault("dependentSchemas", {})[name] = upgrade(dep, draft)
+            out.setdefault("dependentSchemas", {})[name] = _upgrade(dep, draft)
     return out
+
+
+#: How deep a document may nest arrays and objects: twice the schema depth the compiler
+#: takes, since a schema level puts at most two on a path (a keyword's list or map, then
+#: the subschema). It keeps every recursive walk of a document, and of a constant inside
+#: one, inside Python's recursion limit.
+MAX_NESTING = 2 * MAX_SCHEMA_DEPTH
+
+
+def _check_nesting(document: object) -> None:
+    """Refuse a document that nests arrays and objects past `MAX_NESTING`, without recursing."""
+    stack = [(document, 1)]
+    while stack:
+        node, depth = stack.pop()
+        if isinstance(node, (dict, list)):
+            if depth > MAX_NESTING:
+                msg = f"the document nests past {MAX_NESTING} arrays and objects"
+                raise Unsupported(msg)
+            children = node.values() if isinstance(node, dict) else node
+            stack.extend((child, depth + 1) for child in children)
 
 
 def compile_schema(schema: object) -> Validator[Any]:
