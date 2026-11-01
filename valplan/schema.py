@@ -335,6 +335,7 @@ class Compiler:
             raise Unsupported(msg) from exc
 
     def _compile_object(self, schema: dict[str, Any]) -> Validator[Any]:
+        _check_shapes(schema)
         named = schema.get("type")
         typed = frozenset(named if isinstance(named, list) else [named]) if named else None
         parts: list[object] = []
@@ -357,15 +358,9 @@ class Compiler:
 
     def _keywords(self, schema: dict[str, Any], parts: list[object]) -> None:
         seen: set[str] = set()
-        for keyword, value in schema.items():
+        for keyword in schema:
             if keyword in ANNOTATIONS or (keyword == "$id" and schema is self.root):
                 continue
-            shape = _SHAPES.get(keyword)
-            if shape is not None and not shape(value):
-                # The meta-schema refuses it, and any reading of it would be invented:
-                # `{"required": "ab"}` read as the keys `a` and `b`.
-                msg = f"keyword {keyword!r} holds {value!r:.60}, as no schema may"
-                raise Unsupported(msg)
             group = _GROUPS.get(keyword, keyword)
             if group in seen:
                 continue
@@ -487,6 +482,9 @@ class Compiler:
 
     def resolve(self, pointer: str) -> object:
         """Return the node a local JSON pointer names, or raise `Unsupported`."""
+        if not isinstance(pointer, str):
+            msg = f"keyword '$ref' holds {pointer!r:.60}, as no schema may"
+            raise Unsupported(msg)
         if not pointer.startswith("#"):
             msg = f"$ref {pointer!r} is not local to the document"
             raise Unsupported(msg)
@@ -640,7 +638,8 @@ def _contains(c: Compiler, s: dict[str, Any]) -> Validator[Any]:
         inner = c.compile(s["contains"])
         return c.guard("array", intersection(ARRAY, complement(each(complement(inner)))))
     c.opaque.add("minContains/maxContains")
-    low, high = s.get("minContains", 1), s.get("maxContains", math.inf)
+    low = _count(s, "minContains") if "minContains" in s else 1
+    high = _count(s, "maxContains") if "maxContains" in s else math.inf
     contained = c.closed(s["contains"])
 
     def counted(items: list[Any]) -> bool:
@@ -1173,6 +1172,22 @@ _SHAPES: Mapping[str, Callable[[object], bool]] = {
 #: An array index in a JSON pointer, as RFC 6901 writes one: no sign, no leading zero.
 _INDEX = re.compile(r"0|[1-9][0-9]*", re.ASCII)
 
+
+def _check_shapes(schema: dict[str, Any]) -> None:
+    """Refuse a schema object one of whose keywords holds what the meta-schema refuses.
+
+    Every keyword is checked before any is compiled: a group's handler reads its siblings,
+    and `{"additionalProperties": {}, "properties": true}` would reach `properties` first
+    through it. Any reading of a refused value would be invented: `{"required": "ab"}`
+    read as the keys `a` and `b`.
+    """
+    for keyword, value in schema.items():
+        shape = _SHAPES.get(keyword)
+        if shape is not None and not shape(value):
+            msg = f"keyword {keyword!r} holds {value!r:.60}, as no schema may"
+            raise Unsupported(msg)
+
+
 #: Keywords draft 2020-12 couples: each group compiles once, from all its members.
 _GROUPS: Mapping[str, str] = {
     "prefixItems": "items",
@@ -1413,7 +1428,8 @@ def upgrade(schema: object, draft: int = 7) -> object:
     does not know is an annotation there and is dropped (`_UNKNOWN`). Draft-04 also writes
     ``exclusiveMinimum`` and ``exclusiveMaximum`` as flags on ``minimum`` and ``maximum``,
     and ``$id`` as ``id``. Only the keywords that hold subschemas are descended into: a
-    property named ``items`` is a name, not a keyword.
+    property named ``items`` is a name, not a keyword. A keyword holding a value of the
+    wrong shape is copied as it is, for the compiler's shape check to name.
     """
     if not isinstance(schema, dict):
         return schema
@@ -1431,9 +1447,9 @@ def upgrade(schema: object, draft: int = 7) -> object:
             out |= _upgrade_dependencies(value, draft)
         elif key in _ONE:
             out[key] = upgrade(value, draft)
-        elif key in _MANY:
+        elif key in _MANY and isinstance(value, list):
             out[key] = [upgrade(v, draft) for v in value]
-        elif key in _MAP:
+        elif key in _MAP and isinstance(value, dict):
             out[key] = {k: upgrade(v, draft) for k, v in value.items()}
         else:
             out[key] = value
@@ -1453,11 +1469,16 @@ def _upgrade_draft4(schema: dict[str, Any]) -> dict[str, Any]:
     """Return a draft-04 schema object with its exclusive flags and ``id`` as 2020-12's."""
     out = dict(schema)
     for bound, exclusive in (("minimum", "exclusiveMinimum"), ("maximum", "exclusiveMaximum")):
-        flag = out.get(exclusive)
-        if isinstance(flag, bool):
-            del out[exclusive]
-            if flag and bound in out:
-                out[exclusive] = out.pop(bound)
+        if exclusive not in out:
+            continue
+        flag = out.pop(exclusive)
+        if not isinstance(flag, bool):
+            # Draft-04's meta-schema makes it a flag; read as draft 2020-12's number, it
+            # would assert a bound the schema never wrote.
+            msg = f"keyword {exclusive!r} holds {flag!r:.60}, as no draft-04 schema may"
+            raise Unsupported(msg)
+        if flag and bound in out:
+            out[exclusive] = out.pop(bound)
     if isinstance(out.get("id"), str):
         out["$id"] = out.pop("id")
     return out
@@ -1474,8 +1495,11 @@ def _upgrade_items(schema: dict[str, Any], draft: int) -> dict[str, Any]:
     return out
 
 
-def _upgrade_dependencies(value: dict[str, Any], draft: int) -> dict[str, Any]:
+def _upgrade_dependencies(value: object, draft: int) -> dict[str, Any]:
     """Split an older ``dependencies`` into ``dependentRequired`` and ``dependentSchemas``."""
+    if not isinstance(value, dict):
+        msg = f"keyword 'dependencies' holds {value!r:.60}, as no schema may"
+        raise Unsupported(msg)
     out: dict[str, dict[str, Any]] = {}
     for name, dep in value.items():
         if isinstance(dep, list):

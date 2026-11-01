@@ -188,8 +188,10 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         whole = compiler.compile(spec["inputSchema"])
         args = slots(spec["inputSchema"], required_only=False)
         out = spec.get("outputSchema")
-        fields = inhabited(results(out), "result") if out is not None else ()
+        # Compiled whole first, so a malformed keyword is refused by name before the
+        # result paths are read from it.
         output = Compiler(out).compile(out) if out is not None else JSON
+        fields = inhabited(results(out), "result") if out is not None else ()
     except Unsupported as exc:
         msg = f"tool {name!r}: {exc}"
         raise Unsupported(msg) from exc
@@ -250,7 +252,11 @@ RESULT_NAME = re.compile(r"c[0-9]+\.")
 def task(spec: Mapping[str, Any]) -> Task:
     """Read a task: ``{"name", "inputs": <object schema>, "goal": <schema>}``."""
     goal = _current(spec.get("goal", True))
-    inputs = inhabited(slots(_current(spec["inputs"]), required_only=True), "input")
+    schema = _current(spec["inputs"])
+    # Compiled whole first, so a malformed keyword is refused by name before the slots
+    # are read from it.
+    Compiler(schema).compile(schema)
+    inputs = inhabited(slots(schema, required_only=True), "input")
     for slot in inputs:
         if RESULT_NAME.match(slot.name):
             msg = f"input {slot.name!r} is named like a call's result"

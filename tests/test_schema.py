@@ -1,7 +1,20 @@
+import contextlib
+import random
+
 import pytest
 from valgebra import complement, intersection, nothing
 
-from valplan.schema import JSON, Compiler, Unsupported, compile_schema, json_key
+from valplan.contracts import task, tool
+from valplan.schema import (
+    ANNOTATIONS,
+    JSON,
+    REFUSED,
+    SUPPORTED,
+    Compiler,
+    Unsupported,
+    compile_schema,
+    json_key,
+)
 
 
 class TestSemantics:
@@ -88,6 +101,57 @@ class TestRefusals:
     def test_it_refuses_a_draft_it_does_not_read(self):
         with pytest.raises(Unsupported, match="2020-12, 07, 06 and 04"):
             compile_schema({"$schema": "https://json-schema.org/draft/2019-09/schema"})
+
+
+_DRAFTS = {
+    "2020-12": None,
+    "7": "http://json-schema.org/draft-07/schema#",
+    "6": "http://json-schema.org/draft-06/schema#",
+    "4": "http://json-schema.org/draft-04/schema#",
+}
+_KEYWORDS = sorted(
+    SUPPORTED | REFUSED | ANNOTATIONS | {"minContains", "maxContains", "dependencies", "id"}
+)
+_WRONG = [5, -1, 1.5, True, None, "x", "", [], [1], [{}], [[]], {}, {"a": 5}, {"a": []}, [None]]
+
+
+class TestMalformedSchemas:
+    @pytest.mark.parametrize("draft", list(_DRAFTS))
+    def test_a_schema_holding_wrong_shapes_is_refused_or_compiled_never_crashed(self, draft):
+        # Each reader takes the document from a server it does not control: a value of the
+        # wrong shape anywhere must give `Unsupported`, never another exception.
+        rng = random.Random(f"malformed:{draft}")
+        for _ in range(1500):
+            schema = {k: rng.choice(_WRONG) for k in rng.sample(_KEYWORDS, rng.randint(1, 3))}
+            if rng.random() < 0.3:
+                schema = {"type": "object", "properties": {"p": schema}}
+            if _DRAFTS[draft]:
+                schema = {"$schema": _DRAFTS[draft], **schema}
+            readers = (
+                lambda s=schema: compile_schema(s),
+                lambda s=schema: tool({"name": "t", "inputSchema": s, "outputSchema": s}),
+                lambda s=schema: task({"name": "t", "inputs": s, "goal": s}),
+            )
+            for read in readers:
+                with contextlib.suppress(Unsupported):
+                    read()
+
+    @pytest.mark.parametrize(
+        ("schema", "keyword"),
+        [
+            ({"type": {}}, "type"),
+            ({"additionalProperties": {}, "properties": True}, "properties"),
+            ({"contains": {}, "minContains": "x"}, "minContains"),
+            ({"contains": {}, "maxContains": -1}, "maxContains"),
+            ({"$ref": 5}, "$ref"),
+            ({"$schema": _DRAFTS["7"], "allOf": 5}, "allOf"),
+            ({"$schema": _DRAFTS["7"], "dependencies": 5}, "dependencies"),
+            ({"$schema": _DRAFTS["4"], "minimum": 1, "exclusiveMinimum": 5}, "exclusiveMinimum"),
+        ],
+    )
+    def test_the_refusal_names_the_keyword(self, schema, keyword):
+        with pytest.raises(Unsupported, match=keyword.replace("$", r"\$")):
+            compile_schema(schema)
 
 
 def test_a_pointer_index_is_written_as_rfc_6901_writes_it():
