@@ -280,6 +280,37 @@ class TestRunnerContracts:
         with pytest.raises(ContractError, match="input q is missing"):
             run(lib, task, program, {}, {"get": lambda _a: {"id": "a"}})
 
+    def test_an_input_outside_its_schema_is_named(self):
+        lib, task, program = self._library()
+        with pytest.raises(ContractError, match="input q=5 is outside its schema"):
+            run(lib, task, program, {"q": 5}, {"get": lambda _a: {"id": "a"}})
+
+    def test_an_argument_record_outside_the_input_schema_is_named_before_the_call(self):
+        lib, task, _ = self._library()
+        program = (Call("c1", "get", (("q", "w"),)), Return("c1.id"))
+        called = []
+        with pytest.raises(ContractError, match="outside its input schema"):
+            run(lib, task, program, {"q": "x", "w": 5}, {"get": called.append})
+        assert not called
+
+    def test_an_answer_outside_the_goal_is_named(self):
+        lib, _, program = self._library()
+        inputs = {"type": "object", "properties": {"q": {"type": "string"}}, "required": ["q"]}
+        task = read_task({"name": "t", "inputs": inputs, "goal": {"const": "other"}})
+        with pytest.raises(ContractError, match="answer 'a' is outside the goal"):
+            run(lib, task, program, {"q": "x"}, {"get": lambda _a: {"id": "a"}})
+
+    def test_a_program_that_ends_without_a_return_is_named(self):
+        lib, task, _ = self._library()
+        with pytest.raises(ContractError, match="ended without a return"):
+            run(
+                lib,
+                task,
+                (Call("c1", "get", (("q", "q"),)),),
+                {"q": "x"},
+                {"get": lambda _a: {"id": "a"}},
+            )
+
 
 class TestNames:
     def test_a_tool_name_with_dots_plans(self):

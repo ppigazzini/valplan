@@ -124,3 +124,31 @@ def test_the_verifier_reports_an_ill_typed_program_instead_of_raising(library, t
     checks = verify(library, tasks["ticket"], program)
     assert checks[0].claim.startswith("well-formed program")
     assert checks[0].relation == "not_subset"
+
+
+@pytest.mark.parametrize(
+    ("program", "claim"),
+    [
+        ((Return("nope"),), "nope is bound before return"),
+        (
+            (Call("c1", "find_customer", (("bogus", "email"),)), Return("c1.customer_id")),
+            "find_customer takes bogus",
+        ),
+        ((Test("nope", "find_customer.email", (Return("email"),), (Stop("email"),)),), "nope is"),
+        ((Test("email", "nobody.x", (Return("email"),), (Stop("email"),)),), "nobody.x names"),
+    ],
+)
+def test_a_link_the_program_cannot_make_is_refuted_by_name(library, tasks, program, claim):
+    checks = verify(library, tasks["ticket"], program)
+    failed = [c for c in checks if c.claim.startswith(claim)]
+    assert failed
+    assert all(c.relation == "not_subset" for c in failed)
+
+
+def test_a_test_against_the_goal_narrows_the_then_branch_to_it(library, tasks):
+    program = (Test("email", "goal", (Return("email"),), (Stop("email"),)),)
+    checks = verify(library, tasks["ticket"], program)
+    assert [(c.path, c.relation) for c in checks] == [
+        ("0.then.0", "subset"),
+        ("0.else.0", "uncovered"),
+    ]
