@@ -64,12 +64,14 @@ KINDS: tuple[tuple[str, Validator[Any]], ...] = (
 
 #: Values tried in every abstraction besides the ones drawn from the schemas: the cells
 #: outside every predicate, and at the edges of common bounds, are where no schema's own
-#: draw lands.
+#: draw lands. ``-0.0`` lies wherever ``0.0`` does under JSON Schema's equality and is a
+#: second Python value, so a rule that misses it fails the self-check.
 GENERIC: tuple[Any, ...] = (
     None,
     True,
     False,
     0,
+    -0.0,
     -1,
     1,
     7,

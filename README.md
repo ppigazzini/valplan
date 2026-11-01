@@ -42,7 +42,7 @@ uv run python tools/bench.py --check docs/studies/bench.json
   disagreement ([`docs/03-conformance.md`](docs/03-conformance.md)).
 - **Real-world schemas** (JSONSchemaBench, 9558 schemas from GitHub, the JSON Schema
   Store, Kubernetes and function-calling data): 9301 compile, none crashes; membership
-  differs from the `jsonschema` package's on 8 of 387634 values, each a reading the ledger
+  differs from the `jsonschema` package's on 12 of 396935 values, each a reading the ledger
   records.
 - **Helpdesk case study** (10 MCP tools, 4 tasks): 35 to 37 cells per task, none of them
   undecided. Two tasks get strong programs, one branching three ways on an invoice's

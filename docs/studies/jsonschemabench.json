@@ -10,8 +10,8 @@
    "refused": 29,
    "crashed": 0,
    "timed_out": 0,
-   "values": 81421,
-   "disagreed": 1
+   "values": 83335,
+   "disagreed": 2
   },
   {
    "subset": "Github_hard",
@@ -20,7 +20,7 @@
    "refused": 74,
    "crashed": 0,
    "timed_out": 0,
-   "values": 44396,
+   "values": 45562,
    "disagreed": 0
   },
   {
@@ -30,7 +30,7 @@
    "refused": 68,
    "crashed": 0,
    "timed_out": 0,
-   "values": 79247,
+   "values": 81155,
    "disagreed": 0
   },
   {
@@ -40,8 +40,8 @@
    "refused": 5,
    "crashed": 0,
    "timed_out": 0,
-   "values": 16433,
-   "disagreed": 7
+   "values": 16872,
+   "disagreed": 10
   },
   {
    "subset": "Github_ultra",
@@ -50,7 +50,7 @@
    "refused": 15,
    "crashed": 0,
    "timed_out": 0,
-   "values": 5003,
+   "values": 5152,
    "disagreed": 0
   },
   {
@@ -60,7 +60,7 @@
    "refused": 18,
    "crashed": 0,
    "timed_out": 0,
-   "values": 78104,
+   "values": 79793,
    "disagreed": 0
   },
   {
@@ -70,7 +70,7 @@
    "refused": 44,
    "crashed": 0,
    "timed_out": 0,
-   "values": 17135,
+   "values": 17583,
    "disagreed": 0
   },
   {
@@ -80,7 +80,7 @@
    "refused": 1,
    "crashed": 0,
    "timed_out": 0,
-   "values": 43400,
+   "values": 44463,
    "disagreed": 0
   },
   {
@@ -90,7 +90,7 @@
    "refused": 3,
    "crashed": 0,
    "timed_out": 0,
-   "values": 17345,
+   "values": 17745,
    "disagreed": 0
   },
   {
@@ -100,7 +100,7 @@
    "refused": 0,
    "crashed": 0,
    "timed_out": 0,
-   "values": 5150,
+   "values": 5275,
    "disagreed": 0
   }
  ],
