@@ -379,7 +379,13 @@ class Abstraction:
 
     def _classify(self, witnesses: Iterable[Any]) -> None:
         index = {(c.kind, c.inside): n for n, c in enumerate(self.cells)}
+        # Slots of one schema draw the same values: a JSON value's type and `repr` name it
+        # exactly (`-0.0` and `0.0` apart), so each is classified once, at its first draw.
+        seen: set[tuple[type, str]] = set()
         for w in witnesses:
+            if (key := (type(w), repr(w))) in seen:
+                continue
+            seen.add(key)
             kinds = [name for name, kind in KINDS if kind.is_valid(w)]
             if len(kinds) != 1:
                 continue
