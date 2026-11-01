@@ -32,7 +32,7 @@ uv run --no-sync python tools/suite.py --draft 4 --check docs/studies/json-schem
 uv run --no-sync python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run --no-sync python tools/corpus.py --check docs/studies/jsonschemabench.json   # fetches the corpus once
 uv run --no-sync python tools/containment.py --check docs/studies/containment.json   # fetches the suite once
-uv run --no-sync python tools/bench.py --check docs/studies/bench.json   # 2.5 minutes on 48 cores, 10 on 4
+uv run --no-sync python tools/bench.py --check docs/studies/bench.json   # 1.4 minutes on 48 cores, 2 on 4
 ```
 
 All of them must be clean before a commit. A change that moves a published
