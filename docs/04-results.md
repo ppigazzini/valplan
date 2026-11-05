@@ -92,8 +92,8 @@ every distractor's measure straddles 500.
   schemas: no contract is broken.
 - Some programs have fewer than 4 calls: a distractor happens to shorten the chain.
 - Building the abstraction dominates the run time, which `tools/bench.py` prints beside
-  the counts and does not record: on the machine the study was produced on, 12 s for 256
-  string tools and up to 10 minutes for 256 numeric tools, where the pairwise relations of
+  the counts and does not record: on the machine the study was produced on, 3 s for 256
+  string tools and 87 to 98 s for 256 numeric tools, where the pairwise relations of
   597 predicates are decided one by one. The libraries run in parallel, one per core.
 
 ## Undecided cells
