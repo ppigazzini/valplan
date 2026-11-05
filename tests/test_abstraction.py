@@ -168,21 +168,34 @@ class TestSamplerEdges:
         assert all(len(v) <= 4096 for v in drawn)
 
 
-def test_cells_past_valgebras_definition_limit_are_kept_not_raised():
-    # A cell outside 130 recursive schemas meets 130 definitions; valgebra builds 128.
-    def tree(i):
-        kids = {"type": "array", "items": {"$ref": "#/$defs/node"}}
-        node = {
-            "type": "object",
-            "properties": {"tag": {"const": f"t{i}"}, "kids": kids},
-            "required": ["tag"],
-        }
-        return {"$defs": {"node": node}, "$ref": "#/$defs/node"}
+def _tree(tag, pointer="#"):
+    """Return a recursive schema of nodes tagged ``tag``: one valgebra definition."""
+    kids = {"type": "array", "items": {"$ref": f"{pointer}/$defs/node"}}
+    node = {
+        "type": "object",
+        "properties": {"tag": {"const": tag}, "kids": kids},
+        "required": ["tag"],
+    }
+    return {"$defs": {"node": node}, "$ref": f"{pointer}/$defs/node"}
 
-    a = Abstraction([compile_schema(tree(i)) for i in range(130)])
-    outside = [c for c in a.cells if c.kind == "object" and not c.inside]
-    assert len(outside) == 1
-    assert outside[0].status == "inhabited"
+
+class TestDefinitionLimit:
+    def test_cells_past_valgebras_definition_limit_are_kept_not_raised(self):
+        # A cell outside 130 recursive schemas meets 130 definitions; valgebra builds 128.
+        a = Abstraction([compile_schema(_tree(f"t{i}")) for i in range(130)])
+        outside = [c for c in a.cells if c.kind == "object" and not c.inside]
+        assert len(outside) == 1
+        assert outside[0].status == "inhabited"
+
+    def test_a_pair_whose_meet_is_past_the_limit_keeps_its_cell_undecided(self):
+        # 70 definitions each compile; their meet holds 140, and valgebra builds 128.
+        def wrapped(tag):
+            trees = [_tree(f"{tag}{i}", f"#/allOf/0/anyOf/{i}") for i in range(70)]
+            return {"allOf": [{"anyOf": trees}]}
+
+        a = Abstraction([compile_schema(wrapped("a")), compile_schema(wrapped("b"))])
+        meet = [c for c in a.cells if c.kind == "object" and c.inside == {0, 1}]
+        assert [c.status for c in meet] == ["undecided"]
 
 
 class TestSelfCheck:

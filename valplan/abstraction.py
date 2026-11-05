@@ -118,6 +118,19 @@ class Cell:
     witness: Any = field(compare=False, default=None)
 
 
+def _meet_empty(*sets: Validator[Any]) -> bool:
+    """Return whether valgebra proves a meet empty.
+
+    valgebra builds no set past 128 recursive definitions -- a cell outside 129 recursive
+    schemas meets 129, and a pair of schemas of 65 meets 130 -- and a question not asked
+    proves nothing.
+    """
+    try:
+        return intersection(*sets).is_empty()
+    except ValueError:
+        return False
+
+
 class Abstraction:
     """The cells of a set of predicates, with a witness wherever one was found."""
 
@@ -182,7 +195,7 @@ class Abstraction:
         row = self._apart[i]
         if j not in row:
             row[j] = self._apart[j][i] = all(
-                intersection(a, b).is_empty() for a in self._parts(i) for b in self._parts(j)
+                _meet_empty(a, b) for a in self._parts(i) for b in self._parts(j)
             )
         return row[j]
 
@@ -202,20 +215,23 @@ class Abstraction:
                 row[j] = all(a.is_subtype_of(target) for a in self._parts(i))
         return row[j]
 
-    def _set(
-        self, kind: Validator[Any], pos: frozenset[int], neg: frozenset[int]
-    ) -> Validator[Any]:
-        """Return a cell's set, leaving out every complement a positive member implies.
+    def _kept(self, pos: frozenset[int], neg: frozenset[int]) -> list[int]:
+        """Return the predicates a cell lies outside that no positive member implies it does.
 
         A predicate disjoint from one the cell lies in is already excluded by it, so its
         complement adds a term to every later question and no information.
         """
-        kept = [q for q in sorted(neg) if not any(self._disjoint(q, p) for p in pos)]
-        return intersection(
+        return [q for q in sorted(neg) if not any(self._disjoint(q, p) for p in pos)]
+
+    def _terms(
+        self, kind: Validator[Any], pos: frozenset[int], neg: frozenset[int]
+    ) -> list[Validator[Any]]:
+        """Return the sets whose meet is the cell."""
+        return [
             kind,
             *(self.predicates[p] for p in sorted(pos)),
-            *(complement(self.predicates[q]) for q in kept),
-        )
+            *(complement(self.predicates[q]) for q in self._kept(pos, neg)),
+        ]
 
     def _empty(self, kind: Validator[Any], pos: frozenset[int], neg: frozenset[int]) -> bool:
         """Return whether the cell is proven empty.
@@ -246,21 +262,14 @@ class Abstraction:
         when every branch choice is; outside one it is outside every branch. A cell inside
         more unions than `MAX_BRANCHES` choices allow is asked about as a whole.
         """
-        kept = [q for q in sorted(neg) if not any(self._disjoint(q, p) for p in pos)]
-        outside = [complement(b) for q in kept for b in self._parts(q)]
+        outside = [complement(b) for q in self._kept(pos, neg) for b in self._parts(q)]
         inside = [self.predicates[p] for p in sorted(pos) if p not in self._branches]
         choices = [self._parts(p) for p in sorted(pos) if p in self._branches]
-        try:
-            if math.prod(len(c) for c in choices) > MAX_BRANCHES:
-                return self._set(kind, pos, neg).is_empty()
-            return all(
-                intersection(kind, *inside, *choice, *outside).is_empty()
-                for choice in itertools.product(*choices)
-            )
-        except ValueError:
-            # valgebra builds no set past 128 recursive definitions -- a cell outside 129
-            # recursive schemas meets 129 -- and a question not asked proves nothing.
-            return False
+        if math.prod(len(c) for c in choices) > MAX_BRANCHES:
+            return _meet_empty(*self._terms(kind, pos, neg))
+        return all(
+            _meet_empty(kind, *inside, *choice, *outside) for choice in itertools.product(*choices)
+        )
 
     def _range_form(self, q: int, name: str) -> list[Interval] | None:
         """Return the ranges whose union predicate ``q`` is within kind ``name``, or None.
@@ -373,7 +382,7 @@ class Abstraction:
     ) -> Validator[Any]:
         """Return a cell's set, or its kind where valgebra builds no set that large."""
         try:
-            return self._set(kind, pos, neg)
+            return intersection(*self._terms(kind, pos, neg))
         except ValueError:
             return kind
 
