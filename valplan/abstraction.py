@@ -98,8 +98,8 @@ GENERIC: tuple[Any, ...] = (
 )
 
 
-#: How many branch choices one emptiness question may distribute into before it is asked
-#: of the cell's whole set instead: each union in a cell multiplies them.
+#: How many branch choices one emptiness question may distribute into before the cell is
+#: asked about whole alone: each union in a cell multiplies them.
 MAX_BRANCHES = 32
 
 
@@ -256,17 +256,24 @@ class Abstraction:
         return self._proven_empty(kind, pos, neg)
 
     def _proven_empty(self, kind: Validator[Any], pos: frozenset[int], neg: frozenset[int]) -> bool:
-        """Return whether valgebra proves the cell empty, asked a union branch at a time.
+        """Return whether valgebra proves the cell empty, asked whole, then a branch at a time.
 
         Inside a union the cell is the union of its meets with each branch, so it is empty
-        when every branch choice is; outside one it is outside every branch. A cell inside
-        more unions than `MAX_BRANCHES` choices allow is asked about as a whole.
+        when every branch choice is; outside one it is outside every branch. The spellings
+        are one set, and valgebra proves each where the other stays open: `_parts` names a
+        meet only the branches prove, and an array outside ``{"not": c} | c``, with ``c`` a
+        ``const``, is proven only whole. A cell inside more unions than `MAX_BRANCHES`
+        choices allow is asked whole alone.
         """
+        if _meet_empty(*self._terms(kind, pos, neg)):
+            return True
+        if not (pos | neg) & self._branches.keys():
+            return False
         outside = [complement(b) for q in self._kept(pos, neg) for b in self._parts(q)]
         inside = [self.predicates[p] for p in sorted(pos) if p not in self._branches]
         choices = [self._parts(p) for p in sorted(pos) if p in self._branches]
         if math.prod(len(c) for c in choices) > MAX_BRANCHES:
-            return _meet_empty(*self._terms(kind, pos, neg))
+            return False
         return all(
             _meet_empty(kind, *inside, *choice, *outside) for choice in itertools.product(*choices)
         )

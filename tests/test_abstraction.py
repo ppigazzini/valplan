@@ -4,13 +4,13 @@ from typing import Annotated
 
 import pytest
 from annotated_types import Predicate
-from valgebra import Validator, intersection
+from valgebra import Validator, complement, intersection
 
 import valplan.abstraction
 from valplan.abstraction import Abstraction, SoundnessError
 from valplan.contracts import tool
 from valplan.sample import Sampler
-from valplan.schema import compile_schema, finite, interval
+from valplan.schema import Compiler, branches, compile_schema, finite, interval
 from valplan.synth import Planner, witnesses
 
 
@@ -130,6 +130,20 @@ def test_the_sampler_draws_only_values_the_schema_admits(raw_tools):
         assert all(compiled.is_valid(v) for v in drawn)
 
 
+def _with_branches(*schemas):
+    """Return the abstraction of ``schemas``, each union given its branches, as a planner's."""
+    unions = {}
+    for s in schemas:
+        if (parts := branches(s)) is not None:
+            compiler = Compiler(s)
+            unions[compiler.compile(s)] = [compiler.compile(b) for b in parts]
+    return Abstraction([compile_schema(s) for s in schemas], unions=unions)
+
+
+def _cells(abstraction):
+    return {(c.kind, c.inside) for c in abstraction.cells}
+
+
 class TestUnions:
     def test_a_union_meets_only_the_kinds_its_branches_meet(self):
         ga = {"type": "string", "pattern": "^ga_[a-z0-9]{6}$"}
@@ -139,6 +153,45 @@ class TestUnions:
         inside_union = [c for c in a.cells if 2 in c.inside]
         assert {c.kind for c in inside_union} == {"string"}
         assert all(c.inside & {0, 1} for c in inside_union)
+
+    def test_a_nullable_integer_keeps_no_cell_of_booleans_inside_it(self):
+        # valgebra leaves `boolean & (integer | null)` open whole and proves each branch's.
+        nullable = {"type": ["integer", "null"]}
+        whole = Abstraction([compile_schema(nullable)])
+        assert ("boolean", frozenset({0})) in _cells(whole)
+        assert ("boolean", frozenset({0})) not in _cells(_with_branches(nullable))
+
+    def test_a_record_apart_from_each_branch_of_a_union_shares_no_cell_with_it(self):
+        closed = {
+            "type": "object",
+            "properties": {"q": {"type": "string"}},
+            "required": ["q"],
+            "additionalProperties": False,
+        }
+        record = {"type": "object", "properties": {"p": {"type": "integer"}}, "required": ["p"]}
+        nullable = {"anyOf": [{"type": "null"}, record]}
+        whole = Abstraction([compile_schema(closed), compile_schema(nullable)])
+        assert ("object", frozenset({0, 1})) in _cells(whole)
+        assert ("object", frozenset({0, 1})) not in _cells(_with_branches(closed, nullable))
+
+    def test_a_cell_only_the_whole_union_proves_empty_is_dropped(self):
+        one = {"const": 1}
+        everything = {"anyOf": [{"not": one}, one]}
+        array = compile_schema({"type": "array"})
+        parts = [compile_schema(b) for b in everything["anyOf"]]
+        assert not intersection(array, *map(complement, parts)).is_empty()
+        assert intersection(array, complement(compile_schema(everything))).is_empty()
+        assert ("array", frozenset()) not in _cells(_with_branches(everything))
+
+    def test_two_unions_past_the_definition_limit_together_are_decided_by_their_branches(self):
+        # 70 definitions each: a branch pair holds 2, and the two whole unions 140.
+        def trees(tag):
+            return {"anyOf": [_tree(f"{tag}{i}", f"#/anyOf/{i}") for i in range(70)]}
+
+        cells = _cells(_with_branches(trees("a"), trees("b")))
+        assert ("object", frozenset({0})) in cells
+        assert ("object", frozenset({1})) in cells
+        assert ("object", frozenset({0, 1})) not in cells
 
 
 class TestSamplerEdges:
