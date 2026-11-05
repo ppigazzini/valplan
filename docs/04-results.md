@@ -41,7 +41,8 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
   complete list, since `tier` is an enum; `vat-for-customer` stops on countries outside
   the six `vat_rate` lists, shown by example, since a country is a pattern.
 - The hand-written chain in `examples/helpdesk/naive-escalate.json`, which escalates every
-  customer, is refuted at one binding: `c1.tier <= escalate.tier`, `not_subset`.
+  customer, is refuted at one binding, `c1.tier <= escalate.tier`, and at the argument
+  record that carries it, `arguments <= escalate input`; both are `not_subset`.
 - `tests/test_synth.py` runs the strong `settle-latest-invoice` program 25 times against
   mock tools that return random values valid for their output schemas: no contract is
   broken and every answer lies in the goal.
@@ -161,18 +162,18 @@ four the suite study runs.
 
 | draft | questions | refused | proven | refuted | undecided | proven against the label | refuted against the label |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 2020-12 | 3645 | 738 | 1677 | 714 | 516 | 0 | 2 |
-| 7 | 2788 | 96 | 1581 | 668 | 443 | 0 | 2 |
-| 6 | 2524 | 96 | 1399 | 594 | 435 | 0 | 2 |
-| 4 | 1933 | 66 | 772 | 585 | 510 | 0 | 146 |
+| 2020-12 | 3645 | 738 | 1760 | 736 | 411 | 0 | 2 |
+| 7 | 2788 | 96 | 1666 | 688 | 338 | 0 | 2 |
+| 6 | 2524 | 96 | 1482 | 614 | 332 | 0 | 2 |
+| 4 | 1933 | 66 | 838 | 739 | 290 | 0 | 228 |
 
-- No proof contradicts a label: 5429 proofs of the 10890 questions, 0 against one.
-- Each of the 152 refutations against a label is a wrong label. In every draft
+- No proof contradicts a label: 5746 proofs of the 10890 questions, 0 against one.
+- Each of the 234 refutations against a label is a wrong label. In every draft
   two: in `universal/items.json` the generator left `type` and `items: false` outside the
   `not` it wrote, so the schema it labels universal leaves out the value `1`; in
   `unsatisfiable/ref.json` it rewrote a `$ref` inside an `enum` value, so the two `enum`s
   differ and the schema it labels empty holds `{"$ref": "#/allOf/0/$defs/a_string"}`.
-  In draft-04, 144 more pairs put `const`, which draft-06 added, in a draft-04 schema: the
+  In draft-04, 226 more pairs put `const`, which draft-06 added, in a draft-04 schema: the
   draft reads it as an annotation, so the first schema admits every value.
 - A question is refused where the compiler refuses a schema of its pair, as the inventory
   of [`03-conformance.md`](03-conformance.md) lists; an undecided one is kept and counted.

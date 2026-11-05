@@ -144,3 +144,7 @@ def test_the_pages_quote_the_containment_totals():
     assert f"{grand['questions']} labeled questions" in readme
     assert f"{grand['proven']} proven, none against a label" in readme
     assert f"each of the {grand['refuted_against']} refutations against a label" in readme
+    assert f"Each of the {grand['refuted_against']} refutations against a label" in page
+    # Two wrong labels a draft; the rest of draft 4's are the pairs that put `const` in it.
+    const = sum(r["refuted_against"] for r in rows if r["draft"] == "4") - 2
+    assert f"In draft-04, {const} more pairs put `const`" in page

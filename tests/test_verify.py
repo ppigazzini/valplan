@@ -5,6 +5,7 @@ import pytest
 
 from valplan.contracts import task, tools
 from valplan.program import Call, Return, ShapeError, Stop, Test, from_json
+from valplan.synth import witnesses
 from valplan.verify import verify
 
 NAIVE = Path(__file__).parent.parent / "examples" / "helpdesk" / "naive-escalate.json"
@@ -12,8 +13,14 @@ NAIVE = Path(__file__).parent.parent / "examples" / "helpdesk" / "naive-escalate
 
 def test_the_naive_escalation_chain_is_refuted_at_the_tier_binding(library, tasks):
     program = from_json(json.loads(NAIVE.read_text(encoding="utf-8"))["program"])
-    refuted = [c for c in verify(library, tasks["escalate"], program) if c.relation == "not_subset"]
-    assert [(c.path, c.claim) for c in refuted] == [("2", "c1.tier <= escalate.tier")]
+    examples = witnesses(library, tasks["escalate"])
+    checks = verify(library, tasks["escalate"], program, examples)
+    refuted = [c for c in checks if c.relation == "not_subset"]
+    # The examples are scalars, so the record link is refuted with no value of its own.
+    assert [(c.path, c.claim, c.example) for c in refuted] == [
+        ("2", "c1.tier <= escalate.tier", "free"),
+        ("2", "arguments <= escalate input", None),
+    ]
 
 
 def test_an_unbound_variable_and_an_unknown_tool_are_refuted(library, tasks):

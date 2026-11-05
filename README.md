@@ -21,7 +21,7 @@ whose stops name the values left uncovered.
 | Read Python | the second door: a tool is a Python function, its annotated parameters the arguments and its return annotation the results, in valgebra's own schema language; every annotation proven to admit JSON values only | `valplan/native.py` |
 | Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty by valgebra, by enumeration of listed values or by interval arithmetic, inhabited cells proven by a member value | `valplan/abstraction.py`, `valplan/ranges.py` |
 | Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a static type test of a value; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
-| Verify | every inclusion a program depends on, asked of valgebra alone, without the cells or the search; a refuted link comes with a value outside it | `valplan/verify.py` |
+| Verify | every inclusion a program depends on, asked of valgebra alone, without the cells or the search; a refuted link comes with a value outside it where one of the examples given is one | `valplan/verify.py` |
 | Run | the program on concrete values, each argument and result checked against its contract | `valplan/run.py` |
 
 ## Results
@@ -47,8 +47,8 @@ uv run python tools/containment.py --check docs/studies/containment.json
   differs from the `jsonschema` package's on 12 of 402633 values, each a reading the ledger
   records.
 - **Inclusions** (the JSON Schema containment test suite, 10890 labeled questions over
-  drafts 2020-12, 07, 06 and 04): 5429 proven, none against a label; each of the
-  152 refutations against a label is a wrong label, which
+  drafts 2020-12, 07, 06 and 04): 5746 proven, none against a label; each of the
+  234 refutations against a label is a wrong label, which
   [`docs/04-results.md`](docs/04-results.md) names.
 - **Helpdesk case study** (10 MCP tools, 4 tasks): 35 to 37 cells per task, none of them
   undecided. Two tasks get strong programs, one branching three ways on an invoice's
@@ -63,7 +63,8 @@ uv run python tools/containment.py --check docs/studies/containment.json
   but the two on each *else* branch, which only the interval rule proves; 80 runs against
   tools returning random values inside their output schemas break no contract.
 - **A hand-written chain with the typical mistake** (escalating every customer) is refuted
-  at the one binding that is wrong, `c1.tier <= escalate.tier`, with the value `'free'`.
+  at the one binding that is wrong, `c1.tier <= escalate.tier`, with the value `'free'`,
+  and at the argument record that carries it.
 
 ```
 c1 = find_customer(email=email)

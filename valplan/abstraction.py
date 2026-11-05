@@ -172,9 +172,9 @@ class Abstraction:
 
         A union is decided a branch at a time. The identities are exact -- a meet with a
         union is the union of the meets, a complement of one the meet of the complements --
-        and valgebra 0.0.22 proves some of those meets empty only branch by branch: with
-        ``window`` a number with bounds, ``array & (null | window)`` stays open while
-        ``array & null`` and ``array & window`` are proven.
+        and valgebra 0.0.23 proves some of those meets empty only branch by branch:
+        ``boolean & (integer | null)`` stays open while ``boolean & integer`` and
+        ``boolean & null`` are proven.
         """
         return self._branches.get(i, [self.predicates[i]])
 
