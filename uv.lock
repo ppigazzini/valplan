@@ -714,10 +714,14 @@ wheels = [
 [[package]]
 name = "valgebra-planning"
 version = "0.0.1"
-source = { git = "https://github.com/ppigazzini/valgebra-planning?rev=c7f8108afd338e94e94b58080f23fcc64f6e4dd8#c7f8108afd338e94e94b58080f23fcc64f6e4dd8" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "valgebra" },
     { name = "valgebra-jsonschema" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/cd/8b23d92e3633903269e2f767002f2e79953e4efb18dc20b718bbe98b1457/valgebra_planning-0.0.1.tar.gz", hash = "sha256:533c0898f9f7d9c49b9bdcca1bf64bebee8fbc0f3bc8ab2a2ff9dbb47e9115e5", size = 123357, upload-time = "2026-11-17T18:44:46.81Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1c/fc/a1f17236d663c9998b837fdad034346e775e6782459113f7e46a99376f07/valgebra_planning-0.0.1-py3-none-any.whl", hash = "sha256:9509804c30f57b06436ba694913e5d1502429189582a093e518f48511ba2ebab", size = 68041, upload-time = "2026-11-17T18:44:45.574Z" },
 ]
 
 [[package]]
@@ -746,7 +750,7 @@ requires-dist = [
     { name = "annotated-types", specifier = ">=0.8.0" },
     { name = "valgebra", specifier = ">=0.0.28,<0.0.29" },
     { name = "valgebra-jsonschema", specifier = ">=0.0.1,<0.0.2" },
-    { name = "valgebra-planning", git = "https://github.com/ppigazzini/valgebra-planning?rev=c7f8108afd338e94e94b58080f23fcc64f6e4dd8" },
+    { name = "valgebra-planning", specifier = ">=0.0.1,<0.0.2" },
 ]
 
 [package.metadata.requires-dev]

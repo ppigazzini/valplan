@@ -22,10 +22,6 @@ dependencies = [
     "valgebra-planning>=0.0.1,<0.0.2",
 ]
 
-[tool.uv.sources]
-# The commit valgebra-planning 0.0.1 is cut from, until that release is on PyPI.
-valgebra-planning = { git = "https://github.com/ppigazzini/valgebra-planning", rev = "c7f8108afd338e94e94b58080f23fcc64f6e4dd8" }
-
 [dependency-groups]
 dev = [
     # The second implementation: `tests/test_properties.py` compares membership on random
