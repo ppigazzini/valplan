@@ -1,6 +1,8 @@
 import random
 
 import pytest
+from valgebra_jsonschema import Unsupported
+from valgebra_jsonschema.sample import Sampler
 
 from valplan.abstraction import SoundnessError
 from valplan.bench import library
@@ -8,8 +10,6 @@ from valplan.contracts import task as read_task
 from valplan.contracts import tools as read_tools
 from valplan.program import Call, Return, Stop, Test, render, stops
 from valplan.run import ContractError, run
-from valplan.sample import Sampler
-from valplan.schema import Unsupported
 from valplan.synth import Planner, gaps, witnesses
 from valplan.verify import verify
 
@@ -413,21 +413,30 @@ class TestDegenerateContracts:
             "outputSchema": {"type": "object", "properties": out, "required": list(out)},
         }
 
-    def test_a_result_that_admits_no_value_is_refused(self):
-        empty = {"type": "string", "minLength": 5, "maxLength": 2}
+    @pytest.mark.parametrize(
+        "empty",
+        [
+            {"type": "string", "minLength": 5, "maxLength": 2},
+            {"type": "integer", "minimum": 5, "maximum": 3},
+            {"type": "integer", "exclusiveMinimum": 1, "exclusiveMaximum": 2},
+            {"type": "integer", "multipleOf": 6, "minimum": 1, "maximum": 5},
+        ],
+    )
+    def test_a_result_that_admits_no_value_is_refused(self, empty):
         with pytest.raises(Unsupported, match="admits no value"):
             read_tools({"tools": [self._tool("broken", {"x": {"type": "string"}}, {"g": empty})]})
 
     @pytest.mark.parametrize(
         "empty",
         [
-            {"type": "integer", "minimum": 5, "maximum": 3},
-            {"type": "integer", "exclusiveMinimum": 1, "exclusiveMaximum": 2},
-            {"type": "integer", "multipleOf": 6, "minimum": 1, "maximum": 5},
+            {"type": "integer", "multipleOf": 8192, "minimum": 1, "maximum": 5},
+            {"type": "integer", "multipleOf": 5000, "minimum": 1, "maximum": 4999},
+            {"type": "number", "multipleOf": 8192, "exclusiveMinimum": 0, "exclusiveMaximum": 8192},
         ],
     )
     def test_a_result_only_the_cells_prove_empty_is_refused(self, empty):
-        # valgebra proves none of these empty, so the contract reads; interval arithmetic
+        # A step past the period valgebra's floats read is left to a relation it declines,
+        # so the contract reads; interval arithmetic
         # does, and a program returning the result would be accepted for any goal.
         lib = read_tools({"tools": [self._tool("broken", {"x": {"type": "string"}}, {"g": empty})]})
         inputs = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
@@ -436,7 +445,7 @@ class TestDegenerateContracts:
             Planner(lib, task, witnesses(lib, task))
 
     def test_an_input_only_the_cells_prove_empty_is_refused(self):
-        empty = {"type": "integer", "minimum": 5, "maximum": 3}
+        empty = {"type": "integer", "multipleOf": 8192, "minimum": 1, "maximum": 5}
         inputs = {"type": "object", "properties": {"n": empty}, "required": ["n"]}
         task = read_task({"name": "t", "inputs": inputs, "goal": {"const": "never"}})
         with pytest.raises(Unsupported, match="input 'n' admits no value"):

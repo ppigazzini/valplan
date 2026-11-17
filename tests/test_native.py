@@ -7,12 +7,12 @@ from typing import Annotated, Literal, NewType, NotRequired, TypedDict
 import pytest
 from annotated_types import Ge, Le, Predicate
 from valgebra import Regex, Validator
+from valgebra_jsonschema import Unsupported
 
 from valplan.abstraction import Abstraction
 from valplan.native import native_values, python_impl, python_task, python_tool
 from valplan.program import stops
 from valplan.run import run
-from valplan.schema import Unsupported
 from valplan.synth import Planner, witnesses
 from valplan.verify import verify
 

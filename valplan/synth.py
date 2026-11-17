@@ -24,6 +24,9 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from valgebra_jsonschema import Compiler, Unsupported, branches, finite, interval
+from valgebra_jsonschema.sample import Sampler
+
 from valplan._valgebra import Validator, complement, intersection
 from valplan.abstraction import Abstraction, Cells, SoundnessError
 from valplan.contracts import Slot, Task, Tool, distinct
@@ -40,8 +43,6 @@ from valplan.program import (
     sink,
     stops,
 )
-from valplan.sample import Sampler
-from valplan.schema import Compiler, Unsupported, branches, finite, interval
 
 
 @dataclass(frozen=True, slots=True)

@@ -28,9 +28,10 @@ from collections.abc import Callable, Mapping
 from types import NoneType, UnionType
 from typing import Any, Literal, get_args, get_origin, get_type_hints, is_typeddict
 
+from valgebra_jsonschema import JSON, Unsupported
+
 from valplan._valgebra import Validator
 from valplan.contracts import RESULT_NAME, Slot, Task, Tool, inhabited
-from valplan.schema import JSON, Unsupported
 
 #: The classes of the values `json.loads` returns: a subclass of one, an `IntEnum` or a
 #: `StrEnum`, has members that are JSON values to an inclusion check, and yet no value a

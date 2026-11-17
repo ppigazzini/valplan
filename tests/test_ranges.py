@@ -3,6 +3,7 @@ import random
 from fractions import Fraction
 
 import pytest
+from valgebra_jsonschema import Interval, compile_schema, interval
 
 from valplan.abstraction import Abstraction
 from valplan.ranges import (
@@ -14,7 +15,6 @@ from valplan.ranges import (
     member,
     special_member,
 )
-from valplan.schema import Interval, compile_schema, interval
 
 
 def _i(lo, hi, *, integer=True, lo_open=False, hi_open=False, step=None):
@@ -261,10 +261,10 @@ def test_a_union_of_ranges_is_decided_a_range_at_a_time():
 
 
 class TestSpecialNumbers:
-    def test_nan_lies_only_in_an_unbounded_range(self):
+    def test_nan_is_no_special_member_and_an_unbounded_range_holds_both_infinities(self):
         found = special_member([_i(None, None, integer=False)], [])
         assert found is not None
-        assert math.isnan(found)
+        assert math.isinf(found)
         assert (
             special_member([_i(None, None, integer=False)], [_i(None, None, integer=False)]) is None
         )
@@ -275,13 +275,11 @@ class TestSpecialNumbers:
         assert special_member([_i(0, 1, integer=False)], []) is None
         assert special_member([_i(None, None)], []) is None
 
-    def test_a_number_in_neither_half_line_is_nan_and_its_cell_is_inhabited(self):
+    def test_no_number_lies_in_neither_half_line_so_that_cell_is_dropped(self):
         schemas = [{"type": "number", "minimum": 0}, {"type": "number", "maximum": 0}]
         preds = [compile_schema(s) for s in schemas]
         profiles = [interval(s) for s in schemas]
         ranges = {p: r for p, r in zip(preds, profiles, strict=True) if r is not None}
         a = Abstraction(preds, ranges=ranges)
-        outside = [c for c in a.cells if c.kind == "fraction" and not c.inside]
-        assert len(outside) == 1
-        assert outside[0].status == "inhabited"
-        assert math.isnan(outside[0].witness)
+        # Only NaN lies in neither, and NaN is a value of no schema, so no kind holds it.
+        assert [c for c in a.cells if c.kind == "fraction" and not c.inside] == []

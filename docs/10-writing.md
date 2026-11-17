@@ -37,7 +37,7 @@ spelling they were published with.
 A claim needs evidence in the same sentence or the next one.
 
 - **Measured** — give the number and the command. 975 of 975 suite cases pass, from
-  `tools/suite.py --check docs/studies/json-schema-test-suite.json`.
+  `tools/case.py examples/helpdesk --check docs/studies/helpdesk.json`.
 - **Inferred** — say so first, not in a trailing caveat. "The mechanism is X" and "X is
   consistent with the data" are different claims.
 - **Untested** — say the gap and what would close it. A gap described as a gap is
@@ -138,7 +138,7 @@ A defect is described in the present tense as a property:
 ```
 `_atom` checks that every element is a symbol before it checks for a connective, so
 `(when (p ?x) (q ?x))` is refused as "expected an atom" instead of being named as a
-conditional effect. The connective check runs first; `tests/test_schema.py` pins the message.
+conditional effect. The connective check runs first; the companion's `tests/test_schema.py` pins the message.
 ```
 
 Not: "this was introduced by the previous fix", "found while investigating X", "had been

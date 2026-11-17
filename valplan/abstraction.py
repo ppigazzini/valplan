@@ -23,15 +23,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from valplan._valgebra import Validator, complement, intersection
-from valplan.ranges import (
-    PeriodTooLongError,
-    fractions_empty,
-    integers_empty,
-    member,
-    special_member,
-)
-from valplan.schema import (
+from valgebra_jsonschema import (
     ARRAY,
     BOOLEAN,
     INTEGER,
@@ -42,6 +34,15 @@ from valplan.schema import (
     STRING,
     Interval,
     json_key,
+)
+
+from valplan._valgebra import Validator, complement, intersection
+from valplan.ranges import (
+    PeriodTooLongError,
+    fractions_empty,
+    integers_empty,
+    member,
+    special_member,
 )
 
 type Status = Literal["inhabited", "undecided"]
@@ -330,7 +331,7 @@ class Abstraction:
                 if integer:
                     if integers_empty(inside, outs):
                         continue
-                # The fraction kind holds NaN and the infinities besides the non-integer reals.
+                # The fraction kind holds the infinities besides the non-integer reals.
                 elif fractions_empty(inside, outs) and special_member(inside, outs) is None:
                     continue
                 if not exact:

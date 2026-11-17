@@ -8,7 +8,7 @@ annotations (`valplan/native.py`); both give the same slots. `valplan/contracts.
 each tool as slots: one per argument, one per result field the output schema requires,
 nested required fields included by their path to three levels, or one for a whole result
 that is no object. Each slot's set is its property's subschema,
-compiled by `valplan/schema.py`. A constraint the whole input object carries is kept: a
+compiled by [`valgebra_jsonschema`](https://github.com/ppigazzini/valgebra-jsonschema). A constraint the whole input object carries is kept: a
 binding is accepted only if the assembled argument record is proven inside the tool's
 whole input schema.
 
@@ -42,9 +42,10 @@ and small:
   the integer or fraction kind is a range — `type`, bounds and an integral `multipleOf`,
   nothing else — the cell is a question about intervals, decided exactly over the integers
   or over the reals minus the integers (`valplan/ranges.py`), and a member is constructed
-  where it is non-empty. The fraction kind also holds `NaN` and the two infinities, which
-  `json.loads` returns: `NaN` lies only in a range without bounds, an infinity only past
-  the open side, and the rule decides the three exactly. A step makes a range a lattice: which integers a cell holds
+  where it is non-empty. The fraction kind also holds the two infinities, which `json.loads`
+  returns for `Infinity` and `-Infinity`: an infinity lies only past the open side, and the
+  rule decides both exactly. `NaN` is a value of no schema, as valgebra-jsonschema reads JSON,
+  which has none, so no kind holds it. A step makes a range a lattice: which integers a cell holds
   repeats with the least common multiple of its steps, so one period decides it, and a
   period of more than 100000 multiples is left to valgebra. Where other predicates bear on
   the cell too, its ranges alone still prove it empty when they leave no number: leaving
@@ -53,7 +54,7 @@ and small:
 A cell valgebra proves empty is dropped. A cell a concrete value falls in is *inhabited*;
 the values come from the listed constants, from a fixed set of generic values at the
 edges of common bounds, and from a sampler that draws candidates from each slot's schema
-(`valplan/sample.py`), and membership is the only judge. Every other
+(`valgebra_jsonschema.sample`), and membership is the only judge. Every other
 cell is *undecided* and kept: it may be empty, so the planner must still cover it.
 Keeping it can make the planner miss a program; it cannot make it accept a wrong one.
 
@@ -104,9 +105,8 @@ The verifier (`valplan/verify.py`) checks every program again with valgebra alon
 the cells, the search or the three rules. It shares the compiler and valgebra with the
 planner, so it checks the planning and not those two; the compiler is checked against the
 test suite and the `jsonschema` package, and valgebra's proofs against every drawn value
-(`tests/test_properties.py`). Where only the interval rule proves a link — valgebra does
-not decide the complement of an integer range whose float spelling is admitted — the
-verifier reports `undecided` for it.
+(`tests/test_properties.py`). Where only the interval rule proves a link, a step past the
+period valgebra's floats read, the verifier reports `undecided` for it.
 
 ## Limits
 
@@ -127,4 +127,4 @@ verifier reports `undecided` for it.
   and a library whose first 16 candidates all fail the record check can hide a program.
 - **Opaque keywords.** A slot that uses `patternProperties`, `propertyNames`,
   `uniqueItems`, `min/maxContains` or a fractional `multipleOf` has exact membership but
-  leaves relations through it undecided ([`02-compiler.md`](02-compiler.md)).
+  leaves relations through it undecided ([the compiler](https://github.com/ppigazzini/valgebra-jsonschema/blob/main/docs/02-compiler.md)).

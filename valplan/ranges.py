@@ -12,8 +12,9 @@ Python's finite floats are reals, so a range question answered "empty" over the 
 empty over them too. The converse can fail -- ``(0, 5e-324)`` holds reals and no float --
 and then the cell is kept, which costs completeness, never soundness. Python's integers are
 every integer, so the integer kind has no such gap. The fraction kind also holds what no
-real interval does: ``NaN`` and the two infinities, which ``json.loads`` returns for
-``NaN``, ``Infinity`` and ``-Infinity``. `special_member` decides those three exactly.
+real interval does: the two infinities, which ``json.loads`` returns for ``Infinity`` and
+``-Infinity``, and `special_member` decides both exactly. ``NaN`` is a value of no schema, as
+valgebra-jsonschema reads JSON, which has none, so no kind holds it.
 """
 
 import itertools
@@ -21,7 +22,7 @@ import math
 from collections.abc import Sequence
 from fractions import Fraction
 
-from valplan.schema import Interval
+from valgebra_jsonschema import Interval
 
 type Bound = Fraction | float
 type End = int | float
@@ -184,26 +185,23 @@ def fractions_empty(pos: Sequence[Interval], neg: Sequence[Interval]) -> bool:
     return True
 
 
-#: The numbers ``json.loads`` returns that no real interval holds.
-SPECIAL = (math.nan, math.inf, -math.inf)
+#: The numbers a JSON Schema number holds that no real interval does.
+SPECIAL = (math.inf, -math.inf)
 
 
 def _holds_special(x: float, r: Interval) -> bool:
-    """Return whether ``NaN`` or an infinity lies in ``r``, as membership compares it.
+    """Return whether an infinity lies in ``r``, as membership compares it.
 
-    Every comparison with ``NaN`` is false, so only a range without bounds holds it; an
-    infinity lies past every bound on its own side and none on the other. An integer or
-    stepped range holds neither, since none is a multiple of 1.
+    An infinity lies past every bound on its own side and none on the other. An integer or
+    stepped range holds neither, since neither is a multiple of 1.
     """
     if r.integer or r.step is not None:
         return False
-    if math.isnan(x):
-        return r.low is None and r.high is None
     return r.high is None if x > 0 else r.low is None
 
 
 def special_member(pos: Sequence[Interval], neg: Sequence[Interval]) -> float | None:
-    """Return ``NaN`` or an infinity in every ``pos`` range and no ``neg`` one, or None."""
+    """Return an infinity in every ``pos`` range and no ``neg`` one, or None."""
     for x in SPECIAL:
         if all(_holds_special(x, r) for r in pos) and not any(_holds_special(x, r) for r in neg):
             return x

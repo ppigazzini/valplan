@@ -284,7 +284,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 24
   },
   {
@@ -299,7 +299,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 55
   },
   {
@@ -314,7 +314,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 36
   },
   {
@@ -329,7 +329,7 @@
    "calls": 2,
    "tests": 1,
    "checks": 11,
-   "proven": 9,
+   "proven": 11,
    "expanded": 109
   },
   {
@@ -344,7 +344,7 @@
    "calls": 3,
    "tests": 1,
    "checks": 14,
-   "proven": 12,
+   "proven": 14,
    "expanded": 125
   },
   {
@@ -359,7 +359,7 @@
    "calls": 2,
    "tests": 1,
    "checks": 11,
-   "proven": 9,
+   "proven": 11,
    "expanded": 95
   },
   {
@@ -374,7 +374,7 @@
    "calls": 3,
    "tests": 1,
    "checks": 14,
-   "proven": 12,
+   "proven": 14,
    "expanded": 853
   },
   {
@@ -389,7 +389,7 @@
    "calls": 3,
    "tests": 1,
    "checks": 14,
-   "proven": 12,
+   "proven": 14,
    "expanded": 321
   },
   {
@@ -404,7 +404,7 @@
    "calls": 2,
    "tests": 1,
    "checks": 11,
-   "proven": 9,
+   "proven": 11,
    "expanded": 170
   },
   {
@@ -419,7 +419,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 3616
   },
   {
@@ -434,7 +434,7 @@
    "calls": 2,
    "tests": 1,
    "checks": 11,
-   "proven": 9,
+   "proven": 11,
    "expanded": 117
   },
   {
@@ -449,7 +449,7 @@
    "calls": 3,
    "tests": 1,
    "checks": 14,
-   "proven": 12,
+   "proven": 14,
    "expanded": 2040
   },
   {
@@ -464,7 +464,7 @@
    "calls": 3,
    "tests": 1,
    "checks": 14,
-   "proven": 12,
+   "proven": 14,
    "expanded": 537
   },
   {
@@ -479,7 +479,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 2616
   },
   {
@@ -494,7 +494,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 12497
   },
   {
@@ -509,7 +509,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 2337
   },
   {
@@ -524,7 +524,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 1159
   },
   {
@@ -539,7 +539,7 @@
    "calls": 4,
    "tests": 1,
    "checks": 17,
-   "proven": 15,
+   "proven": 17,
    "expanded": 34818
   }
  ]

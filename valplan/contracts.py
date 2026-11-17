@@ -22,8 +22,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from valplan._valgebra import Validator
-from valplan.schema import (
+from valgebra_jsonschema import (
     ANNOTATIONS,
     JSON,
     Compiler,
@@ -32,6 +31,8 @@ from valplan.schema import (
     older,
     upgrade,
 )
+
+from valplan._valgebra import Validator
 
 
 @dataclass(frozen=True, slots=True)

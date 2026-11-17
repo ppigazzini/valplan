@@ -3,21 +3,8 @@
 Every number below is printed by a committed command and recorded as counts in
 [`studies/`](studies/); each tool's `--check` reruns it.
 
-## The compiler
-
-```bash
-uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
-uv run python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
-uv run python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
-uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
-```
-
-Draft 2020-12, with the four optional files on regular expressions and large numbers: 1071
-of the 1071 cases run pass; 327 are skipped: the `unevaluatedItems` and
-`unevaluatedProperties` files (200 cases), dynamic, anchor and remote references, and a
-custom metaschema. Through `upgrade`: draft-07, 870 of the 870 cases run pass, 59
-skipped; draft-06, 790 of the 790 cases run pass, 51 skipped; draft-04, 587 of the 587
-cases run pass, 31 skipped. See [`02-compiler.md`](02-compiler.md#measured).
+The compiler's counts are the
+[companion's](https://github.com/ppigazzini/valgebra-jsonschema/blob/main/docs/04-results.md).
 
 ## The helpdesk library
 
@@ -74,22 +61,21 @@ every distractor's measure straddles 500.
 
 | tools | predicates | cells | undecided | found | proven | expanded (3 seeds) |
 |---:|---:|---:|---:|---|---|---|
-| 8 | 21 to 22 | 33 to 35 | 0 | 3 of 3 | all but 2 | 24, 36, 55 |
-| 16 | 38 | 65 to 67 | 0 | 3 of 3 | all but 2 | 95, 109, 125 |
-| 32 | 74 | 130 to 134 | 0 | 3 of 3 | all but 2 | 170, 321, 853 |
-| 64 | 148 to 149 | 262 to 268 | 0 | 3 of 3 | all but 2 | 117, 2040, 3616 |
-| 128 | 297 to 298 | 514 to 519 | 0 | 3 of 3 | all but 2 | 537, 2616, 12497 |
-| 256 | 597 | 960 to 984 | 0 | 3 of 3 | all but 2 | 1159, 2337, 34818 |
+| 8 | 21 to 22 | 33 to 35 | 0 | 3 of 3 | every check | 24, 36, 55 |
+| 16 | 38 | 65 to 67 | 0 | 3 of 3 | every check | 95, 109, 125 |
+| 32 | 74 | 130 to 134 | 0 | 3 of 3 | every check | 170, 321, 853 |
+| 64 | 148 to 149 | 262 to 268 | 0 | 3 of 3 | every check | 117, 2040, 3616 |
+| 128 | 297 to 298 | 514 to 519 | 0 | 3 of 3 | every check | 537, 2616, 12497 |
+| 256 | 597 | 960 to 984 | 0 | 3 of 3 | every check | 1159, 2337, 34818 |
 
 - Cells grow with the predicates, not with the minterms: the identifiers' patterns are
   pairwise disjoint and decided once per pair, and the numeric cells are decided by
   interval arithmetic.
-- The two unproven checks of every numeric program are on its *else* branch: the measure
-  narrowed to `[0, 1000]` minus `[0, 499]`, bound to an argument of `[500, 1000]`. The cells
-  prove the link; valgebra answers `undecided`, because it does not decide the complement
-  of an integer range whose float spelling is admitted. `tests/test_synth.py` runs four of
-  these programs 20 times each against tools returning random values inside their output
-  schemas: no contract is broken.
+- Every check of a numeric program is proven, its *else* branch's too: the measure narrowed
+  to `[0, 1000]` minus `[0, 499]`, bound to an argument of `[500, 1000]`, is a complement of an
+  integer range whose float spelling is admitted, which valgebra decides. `tests/test_synth.py`
+  runs four of these programs 20 times each against tools returning random values inside their
+  output schemas: no contract is broken.
 - Some programs have fewer than 4 calls: a distractor happens to shorten the chain.
 - Building the abstraction dominates the run time, which `tools/bench.py` prints beside
   the counts and does not record: on the machine the study was produced on, 3 s for 256
@@ -102,81 +88,14 @@ None, in the helpdesk library or the synthetic ones: every cell is proven empty 
 inhabited by a member. The last to be decided is the helpdesk's integers inside
 `get_subscription.seats` (at least 1) and `vat_rate.rate_percent` (0 to 30) and outside
 `latest_invoice.amount_cents` (1 to 500000), next to `apply_discount.percent` (5 to 30 in
-steps of 5). valgebra does not decide the complement of an integer range whose float
-spelling is admitted; interval arithmetic proves the cell empty, since 1 to 30 lies inside
-1 to 500000, and reads the step as a lattice (`valplan/ranges.py`).
+steps of 5). Interval arithmetic proves the cell empty, since 1 to 30 lies inside 1 to 500000,
+and reads the step as a lattice (`valplan/ranges.py`). valgebra decides such cells too, up to 112
+ranges, and the rule is what keeps them cheap: on 64 numeric tools the rule's 262 cells, 3616
+expanded and 1.9 s are 297 cells, 59 of them undecided, 16234 expanded and 5.0 s without it.
 
 An undecided cell would be kept and covered, so it would cost completeness, never
 soundness. `tests/test_ranges.py` holds the interval rule to enumeration on 3000 random
 cells of ranges and steps.
-
-## Real-world schemas
-
-```bash
-uv run python tools/corpus.py --check docs/studies/jsonschemabench.json
-```
-
-The compiler on JSONSchemaBench (Geng et al. 2025, MIT), fetched at commit `9a94995b9279`
-into `results/` and never vendored: 9558 schemas from GitHub, the JSON Schema Store,
-Kubernetes, Snowplow, the Washington Post and function-calling data, in drafts 2020-12,
-07, 06 and 04. Each compiled schema is checked on the values drawn from it and the
-generic values the abstraction tries, against the `jsonschema` package's validator for its
-draft.
-
-| subset | schemas | compiled | refused | crashed | timed out | values | disagreed |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Github_easy | 1943 | 1932 | 11 | 0 | 0 | 84129 | 2 |
-| Github_hard | 1240 | 1214 | 26 | 0 | 0 | 47759 | 0 |
-| Github_medium | 1976 | 1960 | 16 | 0 | 0 | 83396 | 0 |
-| Github_trivial | 444 | 442 | 2 | 0 | 0 | 17002 | 10 |
-| Github_ultra | 164 | 154 | 10 | 0 | 0 | 5392 | 0 |
-| Glaiveai2K | 1707 | 1689 | 18 | 0 | 0 | 79793 | 0 |
-| JsonSchemaStore | 492 | 450 | 42 | 0 | 0 | 17679 | 0 |
-| Kubernetes | 1064 | 1063 | 1 | 0 | 0 | 44463 | 0 |
-| Snowplow | 403 | 400 | 3 | 0 | 0 | 17745 | 0 |
-| WashingtonPost | 125 | 125 | 0 | 0 | 0 | 5275 | 0 |
-| all | 9558 | 9429 | 129 | 0 | 0 | 402633 | 12 |
-
-- 9429 of the 9558 schemas compile, none crashes, none times out. Of the 129 refused, 58
-  use `dependencies` or `additionalItems` in a schema declaring no older draft, 28 build
-  sets valgebra refuses, 18 hold a pattern outside valgebra's regex dialect, 17 of them a
-  lookaround and 1 a backreference, and 11 an embedded `$id` over a reference or another
-  dialect; the rest are listed by `tools/corpus.py`.
-- Membership differs from the package's on 12 of the 402633 values, each a reading the
-  ledger records: 11 are an integral float, `1e300` or `-0.0`, under a draft-04
-  `integer`, and 1 is `"\n"` under a pattern ending in `$`, which Python's `re` matches
-  before a final newline.
-
-## Inclusions against the containment test suite
-
-```bash
-uv run python tools/containment.py --check docs/studies/containment.json
-```
-
-The JSON Schema containment test suite (Attouche et al. 2021, MIT), fetched at commit
-`446fb41c527c` into `results/` and never vendored: pairs of schemas generated from the
-JSON-Schema-Test-Suite, each labeling whether the first is a subset of the second, the
-converse, or both. A labeled direction is a question, asked of valgebra with
-`relation_to`; the older drafts are read through `upgrade`, and of the optional files the
-four the suite study runs.
-
-| draft | questions | refused | proven | refuted | undecided | proven against the label | refuted against the label |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| 2020-12 | 3645 | 738 | 1760 | 736 | 411 | 0 | 2 |
-| 7 | 2788 | 96 | 1666 | 688 | 338 | 0 | 2 |
-| 6 | 2524 | 96 | 1482 | 614 | 332 | 0 | 2 |
-| 4 | 1933 | 66 | 838 | 739 | 290 | 0 | 228 |
-
-- No proof contradicts a label: 5746 proofs of the 10890 questions, 0 against one.
-- Each of the 234 refutations against a label is a wrong label. In every draft
-  two: in `universal/items.json` the generator left `type` and `items: false` outside the
-  `not` it wrote, so the schema it labels universal leaves out the value `1`; in
-  `unsatisfiable/ref.json` it rewrote a `$ref` inside an `enum` value, so the two `enum`s
-  differ and the schema it labels empty holds `{"$ref": "#/allOf/0/$defs/a_string"}`.
-  In draft-04, 226 more pairs put `const`, which draft-06 added, in a draft-04 schema: the
-  draft reads it as an annotation, so the first schema admits every value.
-- A question is refused where the compiler refuses a schema of its pair, as the inventory
-  of [`03-conformance.md`](03-conformance.md) lists; an undecided one is kept and counted.
 
 ## Not measured
 

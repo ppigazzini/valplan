@@ -6,10 +6,6 @@
   verify a program from elsewhere, run one.
 - [`01-method.md`](01-method.md) — the abstraction, the planner and why its programs are
   sound.
-- [`02-compiler.md`](02-compiler.md) — how each JSON Schema keyword becomes a set, what is
-  opaque, what is refused.
-- [`03-conformance.md`](03-conformance.md) — the compiler's contract, its oracles, the
-  keyword inventory and the ledger of differences.
 - [`04-results.md`](04-results.md) — what has been measured, and what has not.
 
 ## Developing the package

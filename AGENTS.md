@@ -25,13 +25,7 @@ uv run --no-sync ruff format --check        # formatting
 uv run --no-sync ty check                   # types
 uv run --no-sync pytest                     # the suite
 uv run --no-sync python tools/check_markdown.py
-uv run --no-sync python tools/suite.py --check docs/studies/json-schema-test-suite.json
-uv run --no-sync python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
-uv run --no-sync python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
-uv run --no-sync python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
 uv run --no-sync python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
-uv run --no-sync python tools/corpus.py --check docs/studies/jsonschemabench.json   # fetches the corpus once
-uv run --no-sync python tools/containment.py --check docs/studies/containment.json   # fetches the suite once
 uv run --no-sync python tools/bench.py --check docs/studies/bench.json   # 2 minutes on 48 cores, 3 on 4
 ```
 
@@ -47,7 +41,7 @@ count moved.
   proven" into "false" or "true". A cell or a relation valgebra cannot decide
   is kept and counted, never dropped.
 - A JSON Schema keyword the compiler does not translate raises `Unsupported`;
-  it is never skipped. `docs/03-conformance.md` holds the keyword inventory and the
+  it is never skipped. the companion's `docs/03-conformance.md` holds the keyword inventory and the
   ledger of differences; a new difference goes there before the code.
 - `valplan/_valgebra.py` is the only module that imports valgebra; derived forms
   are recipes written there once.

@@ -5,12 +5,12 @@ from typing import Annotated
 import pytest
 from annotated_types import Predicate
 from valgebra import Validator, complement, intersection
+from valgebra_jsonschema import Compiler, branches, compile_schema, finite, interval
+from valgebra_jsonschema.sample import Sampler
 
 import valplan.abstraction
 from valplan.abstraction import Abstraction, SoundnessError
 from valplan.contracts import tool
-from valplan.sample import Sampler
-from valplan.schema import Compiler, branches, compile_schema, finite, interval
 from valplan.synth import Planner, witnesses
 
 
@@ -155,10 +155,10 @@ class TestUnions:
         assert all(c.inside & {0, 1} for c in inside_union)
 
     def test_a_nullable_integer_keeps_no_cell_of_booleans_inside_it(self):
-        # valgebra leaves `boolean & (integer | null)` open whole and proves each branch's.
+        # valgebra decides `boolean & (integer | null)` whole, and each branch's too.
         nullable = {"type": ["integer", "null"]}
         whole = Abstraction([compile_schema(nullable)])
-        assert ("boolean", frozenset({0})) in _cells(whole)
+        assert ("boolean", frozenset({0})) not in _cells(whole)
         assert ("boolean", frozenset({0})) not in _cells(_with_branches(nullable))
 
     def test_a_record_apart_from_each_branch_of_a_union_shares_no_cell_with_it(self):
@@ -171,7 +171,9 @@ class TestUnions:
         record = {"type": "object", "properties": {"p": {"type": "integer"}}, "required": ["p"]}
         nullable = {"anyOf": [{"type": "null"}, record]}
         whole = Abstraction([compile_schema(closed), compile_schema(nullable)])
-        assert ("object", frozenset({0, 1})) in _cells(whole)
+        # valgebra decides the record's meet with the whole union as well, by its keys, so both
+        # readings drop the shared cell.
+        assert ("object", frozenset({0, 1})) not in _cells(whole)
         assert ("object", frozenset({0, 1})) not in _cells(_with_branches(closed, nullable))
 
     def test_a_cell_only_the_whole_union_proves_empty_is_dropped(self):

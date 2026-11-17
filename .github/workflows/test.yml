@@ -20,12 +20,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with: { version: "0.13.7", python-version: "3.15", enable-cache: true }
-      # The corpus and the containment suite are fetched at the commits the two tools pin;
-      # the key follows those files, so a run downloads them only when one changes.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: results
-          key: studies-${{ hashFiles('tools/corpus.py', 'tools/containment.py') }}
       - run: uv lock --check
       - run: uv sync --locked
       - run: uv run ruff check
@@ -34,11 +28,5 @@ jobs:
       - run: uv run python tools/check_markdown.py
       - run: uv run pytest
       # Every published count is one this code still produces.
-      - run: uv run python tools/suite.py --check docs/studies/json-schema-test-suite.json
-      - run: uv run python tools/suite.py --draft 7 --check docs/studies/json-schema-test-suite-draft7.json
-      - run: uv run python tools/suite.py --draft 6 --check docs/studies/json-schema-test-suite-draft6.json
-      - run: uv run python tools/suite.py --draft 4 --check docs/studies/json-schema-test-suite-draft4.json
       - run: uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
-      - run: uv run python tools/corpus.py --check docs/studies/jsonschemabench.json
-      - run: uv run python tools/containment.py --check docs/studies/containment.json
       - run: uv run python tools/bench.py --check docs/studies/bench.json

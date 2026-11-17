@@ -5,8 +5,6 @@ import itertools
 import json
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -31,33 +29,6 @@ def _case_tool():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
-
-def _suite(name):
-    files = _study(name)["files"]
-    return {k: sum(f[k] for f in files) for k in ("passed", "failed", "skipped", "opaque")}
-
-
-class TestCompiler:
-    def test_the_pages_quote_the_draft_2020_12_totals(self):
-        t = _suite("json-schema-test-suite.json")
-        run = t["passed"] + t["failed"]
-        assert f"{t['passed']} of the {run} cases it runs" in _page("README.md")
-        assert f"{t['passed']} of the {run} cases run pass" in _page("docs/04-results.md")
-        assert (
-            f"{run} cases run, {t['passed']} passed, {t['failed']} failed; {t['skipped']} skipped"
-        ) in _page("docs/02-compiler.md")
-        assert f"{t['opaque']} of the run cases" in _page("docs/02-compiler.md")
-
-    @pytest.mark.parametrize("draft", ["7", "6", "4"])
-    def test_the_pages_quote_the_older_drafts_totals(self, draft):
-        t = _suite(f"json-schema-test-suite-draft{draft}.json")
-        run = t["passed"] + t["failed"]
-        assert f"draft-0{draft}, {t['passed']} of {run}" in _page("README.md")
-        assert f"{t['passed']} of the {run} cases run pass" in _page("docs/04-results.md")
-        assert (
-            f"{run} cases run, {t['passed']} passed, {t['failed']} failed; {t['skipped']} skipped"
-        ) in _page("docs/02-compiler.md")
 
 
 class TestHelpdesk:
@@ -115,36 +86,3 @@ def test_the_program_verified_from_elsewhere_proves_every_check_but_its_stop():
     escalate = task(next(s for s in specs if s["name"] == "escalate"))
     checks = verify(lib, escalate, from_json(json.loads(block)))
     assert [c.relation for c in checks if not c.holds] == ["uncovered"]
-
-
-def test_the_pages_quote_the_corpus_totals():
-    rows = _study("jsonschemabench.json")["subsets"]
-    total = {k: sum(r[k] for r in rows) for k in ("schemas", "compiled", "values", "disagreed")}
-    crashed = sum(r["crashed"] + r["timed_out"] for r in rows)
-    assert crashed == 0
-    readme, page = _page("README.md"), _page("docs/04-results.md")
-    assert f"{total['schemas']} schemas" in readme
-    assert f"{total['compiled']} compile, none crashes" in readme
-    assert f"{total['disagreed']} of {total['values']} values" in readme
-    assert f"{total['compiled']} of the {total['schemas']} schemas compile, none crashes" in page
-    assert f"on {total['disagreed']} of the {total['values']} values" in page
-
-
-def test_the_pages_quote_the_containment_totals():
-    rows = _study("containment.json")["rows"]
-    keys = ("questions", "refused", "proven", "refuted", "undecided")
-    keys += ("proven_against", "refuted_against")
-    page, readme = _page("docs/04-results.md"), _page("README.md")
-    for draft in ("2020-12", "7", "6", "4"):
-        total = [sum(r[k] for r in rows if r["draft"] == draft) for k in keys]
-        assert f"| {draft} | " + " | ".join(map(str, total)) + " |" in page
-    grand = {k: sum(r[k] for r in rows) for k in keys}
-    assert grand["proven_against"] == 0
-    assert f"{grand['proven']} proofs of the {grand['questions']} questions, 0 against one" in page
-    assert f"{grand['questions']} labeled questions" in readme
-    assert f"{grand['proven']} proven, none against a label" in readme
-    assert f"each of the {grand['refuted_against']} refutations against a label" in readme
-    assert f"Each of the {grand['refuted_against']} refutations against a label" in page
-    # Two wrong labels a draft; the rest of draft 4's are the pairs that put `const` in it.
-    const = sum(r["refuted_against"] for r in rows if r["draft"] == "4") - 2
-    assert f"In draft-04, {const} more pairs put `const`" in page
