@@ -30,7 +30,6 @@ from valgebra_jsonschema.sample import Sampler
 from valplan._valgebra import Validator, complement, intersection
 from valplan.abstraction import Abstraction, Cells, SoundnessError
 from valplan.contracts import Slot, Task, Tool, distinct
-from valplan.native import is_native, native_values
 from valplan.program import (
     Call,
     Program,
@@ -72,22 +71,15 @@ class Planner:
         goal_values = _listed(task.goal_source, None)
         if goal_values is not None:
             listed[task.goal] = goal_values
-        # A range profile is a JSON Schema reading -- an integer there is a value, whatever
-        # its spelling -- so a Python annotation, where `int` excludes 1.0, gets none and
-        # its cells are left to valgebra, which decides plain `int` ranges.
-        ranges = {
-            s.schema: r
-            for s in named
-            if not is_native(s.source) and (r := interval(s.source)) is not None
-        }
-        goal_range = None if is_native(task.goal_source) else interval(task.goal_source)
+        ranges = {s.schema: r for s in named if (r := interval(s.source)) is not None}
+        goal_range = interval(task.goal_source)
         if goal_range is not None:
             ranges[task.goal] = goal_range
         sources = [(s.schema, s.source, s.root) for s in named]
         sources.append((task.goal, task.goal_source, None))
         unions: dict[Validator[Any], list[Validator[Any]]] = {}
         for schema, source, root in sources:
-            parts = None if is_native(source) else branches(source)
+            parts = branches(source)
             if parts is None:
                 continue
             compiler = Compiler(source if root is None else root)
@@ -494,11 +486,6 @@ def witnesses(tools: Sequence[Tool], task: Task, seed: int = 0, tries: int = 40)
     named = [(f"{t.name}.{s.name}", s) for t in tools for s in t.args + t.results]
     named += [(f"task.{s.name}", s) for s in task.inputs]
     for name, slot in named:
-        if is_native(slot.source):
-            # A Python annotation has no JSON Schema to draw from; its listed values, the
-            # generic values and the members range arithmetic builds are its witnesses.
-            out += native_values(slot.source) or []
-            continue
         rng = random.Random(f"{seed}:{name}")
         out += Sampler(slot.root, rng).draw(slot.source, tries)
     return out
@@ -515,7 +502,7 @@ def _guards(branch: Program, tool: str, arg: str, var: str) -> bool:
 
 
 def _listed(source: object, root: object) -> list[Any] | None:
-    return native_values(source) if is_native(source) else finite(source, root)
+    return finite(source, root)
 
 
 def slot_named(tools: Sequence[Tool], against: str) -> Slot:

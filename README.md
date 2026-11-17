@@ -18,7 +18,6 @@ whose stops name the values left uncovered.
 | step | how | where |
 |---|---|---|
 | Compile | JSON Schema draft 2020-12, and drafts 07, 06 and 04 through an upgrade, to valgebra sets over the JSON values `json.loads` returns, keyword by keyword; every valgebra name and recipe in one boundary module | [`valgebra_jsonschema`](https://github.com/ppigazzini/valgebra-jsonschema), `valplan/_valgebra.py` |
-| Read Python | the second door: a tool is a Python function, its annotated parameters the arguments and its return annotation the results, in valgebra's own schema language; every annotation proven to admit JSON values only | `valplan/native.py` |
 | Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty by valgebra, by enumeration of listed values or by interval arithmetic, inhabited cells proven by a member value | `valplan/abstraction.py`, `valplan/ranges.py` |
 | Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a static type test of a value; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
 | Verify | every inclusion a program depends on, asked of valgebra alone, without the cells or the search; a refuted link comes with a value outside it where one of the examples given is one | `valplan/verify.py` |

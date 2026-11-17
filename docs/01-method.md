@@ -3,8 +3,7 @@
 ## Contracts as typed slots
 
 An agent does not pass one tool's result to the next whole; it fills each argument from a
-value it holds. A tool is read from its MCP JSON Schema, or from a Python function's
-annotations (`valplan/native.py`); both give the same slots. `valplan/contracts.py` reads
+value it holds. A tool is read from its MCP JSON Schema alone. `valplan/contracts.py` reads
 each tool as slots: one per argument, one per result field the output schema requires,
 nested required fields included by their path to three levels, or one for a whole result
 that is no object. Each slot's set is its property's subschema,
