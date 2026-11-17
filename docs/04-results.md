@@ -16,20 +16,21 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 
 | task | cells (inhabited / undecided) | program | calls | tests | stops | proven |
 |---|---|---|---:|---:|---:|---|
-| ticket | 37 (37 / 0) | strong | 2 | 0 | 0 | 6 of 6 |
-| settle-latest-invoice | 35 (35 / 0) | strong | 3 | 2 | 0 | 14 of 14 |
-| escalate | 37 (37 / 0) | weak | 3 | 1 | 1 | 9 of 10 |
-| vat-for-customer | 35 (35 / 0) | weak | 2 | 1 | 1 | 5 of 6 |
+| ticket | 37 (37 / 0) | strong | 2 | 0 | 0 | 4 of 4 |
+| settle-latest-invoice | 35 (35 / 0) | strong | 3 | 2 | 0 | 10 of 10 |
+| escalate | 37 (37 / 0) | weak | 3 | 1 | 1 | 6 of 7 |
+| vat-for-customer | 35 (35 / 0) | weak | 2 | 1 | 1 | 3 of 4 |
 
 - The predicates number 26 to 27 per task, so the minterms number up to 2^27; the cells
   number 35 to 37, every one proven inhabited by a member.
-- Both strong programs verify in full under the independent verifier. Each weak program's
+- Both strong programs verify in full under valgebra-planning's verifier. Each weak program's
   one unproven check is its stop. `escalate` stops on `c1.tier in {'pro', 'free'}`, the
   complete list, since `tier` is an enum; `vat-for-customer` stops on countries outside
   the six `vat_rate` lists, shown by example, since a country is a pattern.
 - The hand-written chain in `examples/helpdesk/naive-escalate.json`, which escalates every
-  customer, is refuted at one binding, `c1.tier <= escalate.tier`, and at the argument
-  record that carries it, `arguments <= escalate input`; both are `not_subset`.
+  customer, is refuted at one binding, `c1.tier <= escalate.tier`, `not_subset` with the value
+  `'free'`. `escalate`'s input constrains each argument alone, so its argument record holds
+  once each argument does, and no link asks it apart.
 - `tests/test_synth.py` runs the strong `settle-latest-invoice` program 25 times against
   mock tools that return random values valid for their output schemas: no contract is
   broken and every answer lies in the goal.

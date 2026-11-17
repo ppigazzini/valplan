@@ -26,7 +26,8 @@ class Call:
 class Test:
     """Branch on whether ``var`` lies in the set ``against`` names.
 
-    ``against`` is ``"<tool>.<arg>"`` for an argument's schema, or ``"goal"``.
+    ``against`` is ``"<tool>.<arg>"`` for an argument's schema, or ``"goal"``, which the runner
+    reads and the verifier refuses: valgebra-planning's language tests no value against the goal.
     """
 
     #: Not a test case, whatever pytest's name-based collection assumes.

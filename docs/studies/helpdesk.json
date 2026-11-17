@@ -13,8 +13,8 @@
    "calls": 2,
    "tests": 0,
    "stops": 0,
-   "checks": 6,
-   "proven": 6,
+   "checks": 4,
+   "proven": 4,
    "refuted": 0
   },
   {
@@ -27,8 +27,8 @@
    "calls": 3,
    "tests": 2,
    "stops": 0,
-   "checks": 14,
-   "proven": 14,
+   "checks": 10,
+   "proven": 10,
    "refuted": 0
   },
   {
@@ -41,8 +41,8 @@
    "calls": 3,
    "tests": 1,
    "stops": 1,
-   "checks": 10,
-   "proven": 9,
+   "checks": 7,
+   "proven": 6,
    "refuted": 0
   },
   {
@@ -55,8 +55,8 @@
    "calls": 2,
    "tests": 1,
    "stops": 1,
-   "checks": 6,
-   "proven": 5,
+   "checks": 4,
+   "proven": 3,
    "refuted": 0
   }
  ]

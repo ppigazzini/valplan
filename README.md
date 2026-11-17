@@ -20,7 +20,7 @@ whose stops name the values left uncovered.
 | Compile | JSON Schema draft 2020-12, and drafts 07, 06 and 04 through an upgrade, to valgebra sets over the JSON values `json.loads` returns, keyword by keyword; every valgebra name and recipe in one boundary module | [`valgebra_jsonschema`](https://github.com/ppigazzini/valgebra-jsonschema), `valplan/_valgebra.py` |
 | Abstract | the cells of the Boolean algebra of every argument, result, input and goal schema; empty cells proven empty by valgebra, by enumeration of listed values or by interval arithmetic, inhabited cells proven by a member value | `valplan/abstraction.py`, `valplan/ranges.py` |
 | Plan | strong planning over the cells: calls whose every argument is a proven subtype, and guarded calls that branch on a static type test of a value; a weak program with named gaps where no strong one exists | `valplan/synth.py` |
-| Verify | every inclusion a program depends on, asked of valgebra alone, without the cells or the search; a refuted link comes with a value outside it where one of the examples given is one | `valplan/verify.py` |
+| Verify | every inclusion a program depends on, asked of valgebra alone by valgebra-planning's verifier, without the cells or the search; a refuted link comes with a value outside it where one of the examples given is one | `valplan/verify.py` |
 | Run | the program on concrete values, each argument and result checked against its contract | `valplan/run.py` |
 
 ## Results
@@ -35,7 +35,7 @@ uv run python tools/census.py --check docs/studies/census.json
   official test suite, real-world schemas and a suite of labeled inclusions.
 - **Helpdesk case study** (10 MCP tools, 4 tasks): 35 to 37 cells per task, none of them
   undecided. Two tasks get strong programs, one branching three ways on an invoice's
-  status; the verifier proves every check of both (6 of 6, 14 of 14). The other two get
+  status; the verifier proves every check of both (4 of 4, 10 of 10). The other two get
   weak programs that test before they call and whose stop names what is uncovered:
   `c1.tier in {'pro', 'free'}` for escalation, example countries for VAT.
 - **Synthetic libraries of 8 to 256 tools**, two families of 3 seeds each, a planted chain

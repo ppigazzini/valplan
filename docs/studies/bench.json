@@ -13,8 +13,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 47
   },
   {
@@ -28,8 +28,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 33
   },
   {
@@ -43,8 +43,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 24
   },
   {
@@ -58,8 +58,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 64
   },
   {
@@ -73,8 +73,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 59
   },
   {
@@ -88,8 +88,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 54
   },
   {
@@ -103,8 +103,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 117
   },
   {
@@ -118,8 +118,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 18,
-   "proven": 18,
+   "checks": 12,
+   "proven": 12,
    "expanded": 138
   },
   {
@@ -133,8 +133,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 343
   },
   {
@@ -148,8 +148,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 235
   },
   {
@@ -163,8 +163,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 389
   },
   {
@@ -178,8 +178,8 @@
    "found": true,
    "calls": 3,
    "tests": 1,
-   "checks": 12,
-   "proven": 12,
+   "checks": 8,
+   "proven": 8,
    "expanded": 51
   },
   {
@@ -193,8 +193,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 205
   },
   {
@@ -208,8 +208,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 548
   },
   {
@@ -223,8 +223,8 @@
    "found": true,
    "calls": 3,
    "tests": 1,
-   "checks": 12,
-   "proven": 12,
+   "checks": 8,
+   "proven": 8,
    "expanded": 488
   },
   {
@@ -238,8 +238,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 243
   },
   {
@@ -253,8 +253,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 929
   },
   {
@@ -268,8 +268,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 9,
+   "proven": 9,
    "expanded": 290
   },
   {
@@ -283,8 +283,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 24
   },
   {
@@ -298,8 +298,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 55
   },
   {
@@ -313,8 +313,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 36
   },
   {
@@ -328,8 +328,8 @@
    "found": true,
    "calls": 2,
    "tests": 1,
-   "checks": 11,
-   "proven": 11,
+   "checks": 8,
+   "proven": 8,
    "expanded": 109
   },
   {
@@ -343,8 +343,8 @@
    "found": true,
    "calls": 3,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 10,
+   "proven": 10,
    "expanded": 125
   },
   {
@@ -358,8 +358,8 @@
    "found": true,
    "calls": 2,
    "tests": 1,
-   "checks": 11,
-   "proven": 11,
+   "checks": 8,
+   "proven": 8,
    "expanded": 95
   },
   {
@@ -373,8 +373,8 @@
    "found": true,
    "calls": 3,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 10,
+   "proven": 10,
    "expanded": 853
   },
   {
@@ -388,8 +388,8 @@
    "found": true,
    "calls": 3,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 10,
+   "proven": 10,
    "expanded": 321
   },
   {
@@ -403,8 +403,8 @@
    "found": true,
    "calls": 2,
    "tests": 1,
-   "checks": 11,
-   "proven": 11,
+   "checks": 8,
+   "proven": 8,
    "expanded": 170
   },
   {
@@ -418,8 +418,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 3616
   },
   {
@@ -433,8 +433,8 @@
    "found": true,
    "calls": 2,
    "tests": 1,
-   "checks": 11,
-   "proven": 11,
+   "checks": 8,
+   "proven": 8,
    "expanded": 117
   },
   {
@@ -448,8 +448,8 @@
    "found": true,
    "calls": 3,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 10,
+   "proven": 10,
    "expanded": 2040
   },
   {
@@ -463,8 +463,8 @@
    "found": true,
    "calls": 3,
    "tests": 1,
-   "checks": 14,
-   "proven": 14,
+   "checks": 10,
+   "proven": 10,
    "expanded": 537
   },
   {
@@ -478,8 +478,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 2616
   },
   {
@@ -493,8 +493,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 12497
   },
   {
@@ -508,8 +508,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 2337
   },
   {
@@ -523,8 +523,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 1159
   },
   {
@@ -538,8 +538,8 @@
    "found": true,
    "calls": 4,
    "tests": 1,
-   "checks": 17,
-   "proven": 17,
+   "checks": 12,
+   "proven": 12,
    "expanded": 34818
   }
  ]

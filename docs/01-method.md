@@ -3,7 +3,8 @@
 ## Contracts as typed slots
 
 An agent does not pass one tool's result to the next whole; it fills each argument from a
-value it holds. A tool is read from its MCP JSON Schema alone. `valplan/contracts.py` reads
+value it holds. A tool is read from its MCP JSON Schema alone, by valgebra-planning's contract
+reader, whose slots and sets the planner and the verifier share. `valplan/contracts.py` reads
 each tool as slots: one per argument, one per result field the output schema requires,
 nested required fields included by their path to three levels, or one for a whole result
 that is no object. Each slot's set is its property's subschema,
@@ -100,11 +101,13 @@ are all proven empty is refused: a variable no value can take lies inside every 
 strong plan takes an action only where its outcomes are non-empty (Cimatti, Pistore,
 Roveri and Traverso 2003).
 
-The verifier (`valplan/verify.py`) checks every program again with valgebra alone, without
-the cells, the search or the three rules. It shares the compiler and valgebra with the
-planner, so it checks the planning and not those two; the compiler is checked against the
-test suite and the `jsonschema` package, and valgebra's proofs against every drawn value
-(`tests/test_properties.py`). Where only the interval rule proves a link, a step past the
+The verifier is valgebra-planning's (`valplan/verify.py` writes a program in its language,
+through `valplan/_planning.py`): it checks every program again with valgebra alone, without
+the cells, the search or the three rules. It shares the contract reader and valgebra with the
+planner, so it checks the planning and not those two; the reader is valgebra-planning's on
+valgebra-jsonschema, each held to its own suite, and valgebra's proofs are held against every
+drawn value (`tests/test_properties.py`). A tool whose input constrains each argument alone
+gets no link for its argument record, which holds once each argument does. Where only the interval rule proves a link, a step past the
 period valgebra's floats read, the verifier reports `undecided` for it.
 
 ## Limits

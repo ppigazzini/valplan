@@ -16,10 +16,10 @@ def test_the_naive_escalation_chain_is_refuted_at_the_tier_binding(library, task
     examples = witnesses(library, tasks["escalate"])
     checks = verify(library, tasks["escalate"], program, examples)
     refuted = [c for c in checks if c.relation == "not_subset"]
-    # The examples are scalars, so the record link is refuted with no value of its own.
+    # `escalate` is plain, so its argument record holds once each argument does: the binding
+    # is the one refuted link, at the top of the program.
     assert [(c.path, c.claim, c.example) for c in refuted] == [
-        ("2", "c1.tier <= escalate.tier", "free"),
-        ("2", "arguments <= escalate input", None),
+        ("", "c1.tier <= escalate.tier", "free"),
     ]
 
 
@@ -152,13 +152,12 @@ def test_a_link_the_program_cannot_make_is_refuted_by_name(library, tasks, progr
     assert all(c.relation == "not_subset" for c in failed)
 
 
-def test_a_test_against_the_goal_narrows_the_then_branch_to_it(library, tasks):
+def test_a_test_against_the_goal_is_refused_by_name(library, tasks):
+    # valgebra-planning's language tests a value against a tool's argument, never the goal.
     program = (Test("email", "goal", (Return("email"),), (Stop("email"),)),)
-    checks = verify(library, tasks["ticket"], program)
-    assert [(c.path, c.relation) for c in checks] == [
-        ("0.then.0", "subset"),
-        ("0.else.0", "uncovered"),
-    ]
+    (check,) = verify(library, tasks["ticket"], program)
+    assert (check.path, check.relation) == ("0", "not_subset")
+    assert "against the goal" in check.claim
 
 
 def test_a_constraint_across_arguments_is_checked_on_the_whole_record():
@@ -175,7 +174,7 @@ def test_a_constraint_across_arguments_is_checked_on_the_whole_record():
         for c in verify(lib, goal_task, (Call("c1", "t", (("a", "a"),)), Return("a")))
     }
     assert checks["a <= t.a"] == "subset"
-    assert checks["arguments <= t input"] == "not_subset"
+    assert checks["the arguments of t <= its input schema"] == "not_subset"
 
 
 def test_a_program_built_past_the_nesting_bound_is_reported_ill_formed(library, tasks):
