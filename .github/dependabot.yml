@@ -1,13 +1,19 @@
 # The actions are pinned to commit SHAs, `setup-uv` to a version and the Python packages by
 # `uv.lock`, so nothing here updates on its own. This is what opens the pull request that
-# says one has moved.
+# says one has moved. Every ecosystem waits seven days after a release before proposing it, so
+# a version pulled or compromised in its first week never reaches a pull request; zizmor's
+# `dependabot-cooldown` audit reads this.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
   - package-ecosystem: uv
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
