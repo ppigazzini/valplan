@@ -45,7 +45,8 @@ count moved.
   it is never skipped. the companion's `docs/03-conformance.md` holds the keyword inventory and the
   ledger of differences; a new difference goes there before the code.
 - `valplan/_valgebra.py` is the only module that imports valgebra; derived forms
-  are recipes written there once.
+  are recipes written there once. `valplan/_planning.py` is the only module of the
+  package that imports valgebra-planning.
 - Tests are named as sentences and grouped in `Test...` classes by the
   behavior they pin down.
 - `__DEV/` holds internal notes and is never committed. Read

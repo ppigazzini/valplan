@@ -236,7 +236,7 @@ def test_a_nullable_range_gets_a_strong_program_that_runs_on_both_halves():
         assert run(lib, task, program, {}, impls) == "r"
 
 
-def test_a_required_key_outside_properties_makes_the_tool_uncallable():
+def test_a_required_key_outside_properties_is_an_argument_of_any_value():
     out = {"type": "object", "properties": {"r": {"const": "r"}}, "required": ["r"]}
     needs_token = {
         "type": "object",
@@ -246,8 +246,12 @@ def test_a_required_key_outside_properties_makes_the_tool_uncallable():
     lib = read_tools({"tools": [{"name": "f", "inputSchema": needs_token, "outputSchema": out}]})
     inputs = {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]}
     task = read_task({"name": "t", "inputs": inputs, "goal": {"const": "r"}})
-    assert not lib[0].plain
-    assert Planner(lib, task, witnesses(lib, task)).plan() is None
+    # The input schema requires `token` and constrains it no further, so any value fills it.
+    assert lib[0].plain
+    assert [s.name for s in lib[0].args] == ["a", "token"]
+    program = Planner(lib, task, witnesses(lib, task)).plan()
+    assert program is not None
+    assert not [c for c in verify(lib, task, program) if not c.holds]
 
 
 def test_the_recheck_refuses_a_binding_outside_its_argument(library, tasks):

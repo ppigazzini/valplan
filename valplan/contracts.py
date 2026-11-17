@@ -8,6 +8,9 @@ value it already holds. So a contract is read as named slots: one per argument, 
 guaranteed result field -- nested fields too, named by their path, ``customer.id`` -- and
 one, ``$``, for a result that is no object.
 
+The slots are the ones valgebra-planning's contract reader gives (`valplan/_planning.py`), so
+the planner here and valgebra-planning's verifier read one contract alike.
+
 A result field is guaranteed only when the output schema requires it, and every object
 on its path too. An optional field may be absent, and binding it would be a call the
 contract does not license.
@@ -32,6 +35,7 @@ from valgebra_jsonschema import (
     upgrade,
 )
 
+from valplan._planning import Contract, read_contract
 from valplan._valgebra import Validator
 
 
@@ -69,6 +73,8 @@ class Tool:
     #: The whole output schema, which the runner checks every result against; the
     #: universe when the tool declares none.
     output: Validator[Any] = field(default=JSON, compare=False, repr=False)
+    #: The tool as valgebra-planning's contract reader reads it, which its verifier reads.
+    contract: Contract | None = field(default=None, compare=False, repr=False)
 
     def arg(self, name: str) -> Slot:
         """Return the argument slot called ``name``."""
@@ -77,10 +83,6 @@ class Tool:
                 return slot
         msg = f"{self.name} has no argument {name!r}"
         raise KeyError(msg)
-
-
-#: How many levels of required object properties a result's slots reach into.
-NESTING = 3
 
 
 def _object(schema: object, root: object) -> Mapping[str, Any] | None:
@@ -119,39 +121,6 @@ def slots(schema: Mapping[str, Any], *, required_only: bool) -> tuple[Slot, ...]
     )
 
 
-def results(schema: object) -> tuple[Slot, ...]:
-    """Return a tool's result slots: its guaranteed fields, nested ones, or its whole result.
-
-    An output schema that is no object schema is one slot, ``$``, the whole result. An
-    object one gives each required property a slot, and each required property of a
-    required object property one more, to `NESTING` levels, named by its path. Two paths
-    named alike -- a property called ``customer.id`` beside a nested ``id`` -- are refused.
-    """
-    compiler = Compiler(schema)
-    found = _object(schema, schema)
-    if found is None:
-        return (Slot("$", compiler.compile(schema), schema, root=schema, path=()),)
-    out: list[Slot] = []
-
-    def walk(node: Mapping[str, Any], path: tuple[str, ...]) -> None:
-        required = set(node.get("required", []))
-        for name, sub in node.get("properties", {}).items():
-            if name in required:
-                here = (*path, name)
-                slot = Slot(".".join(here), compiler.compile(sub), sub, root=schema, path=here)
-                out.append(slot)
-                inner = _object(sub, schema) if len(here) < NESTING else None
-                if inner is not None:
-                    walk(inner, here)
-
-    walk(found, ())
-    names = [s.name for s in out]
-    if len(set(names)) != len(names):
-        msg = f"two result paths read alike among {names}"
-        raise Unsupported(msg)
-    return tuple(out)
-
-
 def inhabited(found: tuple[Slot, ...], where: str) -> tuple[Slot, ...]:
     """Return ``found``, refusing a slot valgebra proves admits no value.
 
@@ -185,49 +154,46 @@ def tool(spec: Mapping[str, Any]) -> Tool:
         **({"outputSchema": _current(spec["outputSchema"])} if "outputSchema" in spec else {}),
     }
     try:
+        # Compiled whole first, so a malformed keyword is refused by name before the slots
+        # are read; the compilers also name the keywords read opaquely or as annotations.
         compiler = Compiler(spec["inputSchema"])
-        whole = compiler.compile(spec["inputSchema"])
-        args = slots(spec["inputSchema"], required_only=False)
+        compiler.compile(spec["inputSchema"])
         out = spec.get("outputSchema")
-        # Compiled whole first, so a malformed keyword is refused by name before the
-        # result paths are read from it.
         reader = Compiler(out)
-        output = reader.compile(out) if out is not None else JSON
-        fields = inhabited(results(out), "result") if out is not None else ()
+        if out is not None:
+            reader.compile(out)
+        contract = read_contract(spec)
     except Unsupported as exc:
         msg = f"tool {name!r}: {exc}"
         raise Unsupported(msg) from exc
+    args = tuple(
+        Slot(s.path[0], s.values, s.schema, s.required, root=s.root) for s in contract.arguments
+    )
+    # An object result is read by its fields, and a whole result only where it is no object:
+    # the record a whole object result is would be one more predicate to cut by, whose meets
+    # with the fields' complements cost the search and name no value a field does not.
+    whole = out is not None and _object(out, out) is None
+    fields = tuple(
+        Slot(".".join(s.path) or "$", s.values, s.schema, root=s.root, path=s.path)
+        for s in contract.results
+        if s.path or whole
+    )
+    names = [s.name for s in fields]
+    if len(set(names)) != len(names):
+        # A program names a field by its path, so two paths read alike name neither.
+        msg = f"tool {name!r}: two result paths read alike among {names}"
+        raise Unsupported(msg)
     return Tool(
         name,
         args,
-        fields,
-        whole,
+        inhabited(fields, "result"),
+        contract.accepts,
         spec.get("description", ""),
         frozenset(compiler.opaque | reader.opaque),
         frozenset(compiler.ignored | reader.ignored),
-        plain=plain(spec["inputSchema"]),
-        output=output,
-    )
-
-
-_PLAIN_KEYS = frozenset({"type", "properties", "required", "additionalProperties"})
-
-
-def plain(schema: Mapping[str, Any]) -> bool:
-    """Return whether an object schema has no constraint across its properties.
-
-    ``additionalProperties`` may be absent, ``true`` or ``false``: a program binds only
-    declared arguments, so the clause for undeclared keys never meets a bound one. A
-    required key outside ``properties`` is no argument slot, so no binding supplies it, and
-    the schema is not plain: the record check then refuses every binding, as it must.
-    """
-    extra = schema.get("additionalProperties", True)
-    declared = schema.get("properties", {})
-    return (
-        schema.get("type") == "object"
-        and set(schema) - _PLAIN_KEYS - ANNOTATIONS == set()
-        and extra in (True, False)
-        and set(schema.get("required", [])) <= set(declared)
+        plain=contract.plain,
+        output=JSON if contract.returns is None else contract.returns,
+        contract=contract,
     )
 
 
