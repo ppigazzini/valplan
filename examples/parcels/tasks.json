@@ -1,0 +1,92 @@
+{
+  "tasks": [
+    {
+      "name": "return a parcel",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "tracking": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}[0-9]{9}[A-Z]{2}$"
+          }
+        },
+        "required": [
+          "tracking"
+        ]
+      },
+      "goal": {
+        "type": "string",
+        "pattern": "^lbl_[0-9]+$"
+      }
+    },
+    {
+      "name": "settle a parcel",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "tracking": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}[0-9]{9}[A-Z]{2}$"
+          }
+        },
+        "required": [
+          "tracking"
+        ]
+      },
+      "goal": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^lbl_[0-9]+$"
+          },
+          {
+            "type": "string",
+            "pattern": "^clm_[0-9]+$"
+          },
+          {
+            "type": "string",
+            "pattern": "^tkt_[0-9]+$"
+          }
+        ]
+      }
+    },
+    {
+      "name": "customs for a parcel",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "tracking": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}[0-9]{9}[A-Z]{2}$"
+          }
+        },
+        "required": [
+          "tracking"
+        ]
+      },
+      "goal": {
+        "type": "string",
+        "pattern": "^frm_[0-9]+$"
+      }
+    },
+    {
+      "name": "notify a parcel's contact",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "tracking": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}[0-9]{9}[A-Z]{2}$"
+          }
+        },
+        "required": [
+          "tracking"
+        ]
+      },
+      "goal": {
+        "type": "string",
+        "pattern": "^ntc_[0-9]+$"
+      }
+    }
+  ]
+}

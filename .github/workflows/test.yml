@@ -31,3 +31,4 @@ jobs:
       - run: uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
       - run: uv run python tools/bench.py --check docs/studies/bench.json
       - run: uv run python tools/census.py --check docs/studies/census.json
+      - run: uv run python tools/planners.py --check docs/studies/planners.json

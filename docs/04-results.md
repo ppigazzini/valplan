@@ -105,6 +105,42 @@ not a pinned listing: its dependencies resolve when it starts and its SDK writes
 `tools/census.py --refresh --check docs/studies/census.json` reads the servers again and reports
 a listing that moved. A moved listing, or a new release of a server, is a new study.
 
+## Two planners
+
+```bash
+uv run --no-sync python tools/planners.py --check docs/studies/planners.json
+```
+
+valplan's planner and valgebra-planning's run on the same tasks, both to depth 6 and the first
+16 bindings of a call, over contracts valgebra-planning's reader reads, and valgebra-planning's
+verifier judges every program either finds. Every link of every program found is proven.
+
+| tasks | valplan | valgebra-planning | cells, valplan | cells, valgebra-planning | states expanded, valplan | states expanded, valgebra-planning |
+|---|---|---|---|---|---|---|
+| helpdesk, 4 | 2 strong, 2 weak | 2 strong, 2 weak | 35 to 37 | 19 to 37 | 9 to 3079 | 3 to 516 |
+| parcels, the 4 with no rule | 2 strong, 1 weak, 1 none | 2 strong, 2 weak | 26 | 11 to 18 | 7 to 1186 | 3 to 30 |
+| valplan's strings, 8 to 128 tools, 9 | 9 strong | 9 strong | 17 to 54 | 15 to 54 | 24 to 548 | 16 to 86 |
+| valplan's numbers, 8 to 128 tools, 9 | 9 strong | 9 strong | 33 to 519 | 24 to 507 | 24 to 12497 | 12 to 531 |
+| valgebra-planning's chain, 8 to 128 tools, 9 | 9 strong | 9 strong | 18 to 198 | 12 | 62 to 2638952 | 10 |
+
+- **Coverage agrees on 34 of 35 tasks.** On the parcels' "return a parcel" valgebra-planning
+  finds a weak program and valplan none: booking a return takes a state and a weight that each
+  only overlap the argument, and a guarded call here tests one argument, its others held
+  whole ([01-method.md](01-method.md#limits), search bounds).
+- **The cost is where the cut is.** valgebra-planning drops first every tool the goal cannot be
+  reached through, so on its own chain family its cut stays at 12 cells and its search at 10
+  states at every size, where valplan's cut grows with the distractors and its search reaches
+  2638952 states at 128 tools.
+- **Each family was written by one planner's author**, so a comparison holds on these sets
+  alone. A failure to find a strong program is the search's under the bounds and certifies
+  nothing; a found program is proven link by link.
+
+Over the census's 66 tools, for a task taking a string to a string, each planner's own cut:
+valgebra-planning's 106 predicates give 127 cells, 92 undecided, as the census reads them;
+valplan's 38 give 72 cells, 36 undecided. The two cut different predicates, valplan merging
+equal sets and valgebra-planning keeping each result a slot may read, so the counts are each
+cut's, not a measure of one rule.
+
 ## Undecided cells
 
 None, in the helpdesk library or the synthetic ones: every cell is proven empty or proven

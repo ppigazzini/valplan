@@ -29,6 +29,7 @@ whose stops name the values left uncovered.
 uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run python tools/bench.py --check docs/studies/bench.json
 uv run python tools/census.py --check docs/studies/census.json
+uv run python tools/planners.py --check docs/studies/planners.json
 ```
 
 - **The compiler** is [`valgebra-jsonschema`](https://github.com/ppigazzini/valgebra-jsonschema), which publishes its counts against the
@@ -49,6 +50,11 @@ uv run python tools/census.py --check docs/studies/census.json
   [`valgebra-planning`](https://github.com/ppigazzini/valgebra-planning)'s contract reader, 31
   carry an `outputSchema`; cut as its planner cuts them, they give 127 cells, 92 undecided, 91
   of those arrays of records met with complements valgebra does not part.
+- **Two planners on one verifier**: valplan's and valgebra-planning's find the same kind of
+  program on 34 of 35 tasks, helpdesk, the parcels' four with no rule and each planner's own
+  synthetic family, and every link of every program found is proven; valgebra-planning's
+  relevance pruning keeps its chain family at 12 cells where valplan's cut grows with the
+  distractors.
 - **A hand-written chain with the typical mistake** (escalating every customer) is refuted
   at the one binding that is wrong, `c1.tier <= escalate.tier`, with the value `'free'`,
   and at the argument record that carries it.

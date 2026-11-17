@@ -1,0 +1,381 @@
+{
+  "tools": [
+    {
+      "name": "find_parcel",
+      "description": "Look a parcel up by its tracking number.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tracking": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}[0-9]{9}[A-Z]{2}$"
+          }
+        },
+        "required": [
+          "tracking"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "parcel": {
+            "type": "object",
+            "properties": {
+              "parcel_id": {
+                "type": "string",
+                "pattern": "^pcl_[0-9]+$"
+              },
+              "state": {
+                "enum": [
+                  "in_transit",
+                  "delivered",
+                  "lost",
+                  "returned"
+                ]
+              },
+              "weight_g": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30000
+              },
+              "country": {
+                "enum": [
+                  "IT",
+                  "FR",
+                  "DE",
+                  "US"
+                ]
+              },
+              "contact": {
+                "type": "string",
+                "pattern": "^[^@ ]+@[^@ ]+$"
+              }
+            },
+            "required": [
+              "parcel_id",
+              "state",
+              "weight_g",
+              "country",
+              "contact"
+            ]
+          }
+        },
+        "required": [
+          "parcel"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "book_return",
+      "description": "Book a return label for a delivered parcel up to 20 kg.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parcel_id": {
+            "type": "string",
+            "pattern": "^pcl_[0-9]+$"
+          },
+          "state": {
+            "const": "delivered"
+          },
+          "weight_g": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20000
+          }
+        },
+        "required": [
+          "parcel_id",
+          "state",
+          "weight_g"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "label_id": {
+            "type": "string",
+            "pattern": "^lbl_[0-9]+$"
+          }
+        },
+        "required": [
+          "label_id"
+        ]
+      },
+      "annotations": {
+        "idempotentHint": false
+      }
+    },
+    {
+      "name": "book_freight_return",
+      "description": "Book a freight return for a delivered parcel over 20 kg.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parcel_id": {
+            "type": "string",
+            "pattern": "^pcl_[0-9]+$"
+          },
+          "state": {
+            "const": "delivered"
+          },
+          "weight_g": {
+            "type": "integer",
+            "minimum": 20001,
+            "maximum": 30000
+          }
+        },
+        "required": [
+          "parcel_id",
+          "state",
+          "weight_g"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "label_id": {
+            "type": "string",
+            "pattern": "^lbl_[0-9]+$"
+          }
+        },
+        "required": [
+          "label_id"
+        ]
+      },
+      "annotations": {
+        "idempotentHint": false
+      }
+    },
+    {
+      "name": "open_claim",
+      "description": "Open a loss claim.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parcel_id": {
+            "type": "string",
+            "pattern": "^pcl_[0-9]+$"
+          },
+          "state": {
+            "const": "lost"
+          }
+        },
+        "required": [
+          "parcel_id",
+          "state"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "pattern": "^clm_[0-9]+$"
+          }
+        },
+        "required": [
+          "claim_id"
+        ]
+      },
+      "annotations": {
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "redirect",
+      "description": "Redirect a parcel still in transit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parcel_id": {
+            "type": "string",
+            "pattern": "^pcl_[0-9]+$"
+          },
+          "state": {
+            "const": "in_transit"
+          }
+        },
+        "required": [
+          "parcel_id",
+          "state"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string",
+            "pattern": "^tkt_[0-9]+$"
+          }
+        },
+        "required": [
+          "ticket_id"
+        ]
+      },
+      "annotations": {
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "close_case",
+      "description": "Close the case of a parcel already returned.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parcel_id": {
+            "type": "string",
+            "pattern": "^pcl_[0-9]+$"
+          },
+          "state": {
+            "const": "returned"
+          }
+        },
+        "required": [
+          "parcel_id",
+          "state"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string",
+            "pattern": "^tkt_[0-9]+$"
+          }
+        },
+        "required": [
+          "ticket_id"
+        ]
+      },
+      "annotations": {
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "customs_form",
+      "description": "Issue a customs form for a destination outside the EU.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "enum": [
+              "US"
+            ]
+          }
+        },
+        "required": [
+          "country"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "form_id": {
+            "type": "string",
+            "pattern": "^frm_[0-9]+$"
+          }
+        },
+        "required": [
+          "form_id"
+        ]
+      },
+      "annotations": {
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "approve_freight",
+      "description": "Approve a freight return for a parcel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parcel_id": {
+            "type": "string",
+            "pattern": "^pcl_[0-9]+$"
+          }
+        },
+        "required": [
+          "parcel_id"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "pattern": "^apr_[0-9]+$"
+          }
+        },
+        "required": [
+          "approval_id"
+        ]
+      },
+      "annotations": {
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "verify_contact",
+      "description": "Return the verified company address on file for a contact.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@ ]+@[^@ ]+$"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[a-z0-9._-]+@parcels\\.example$"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "notify",
+      "description": "Send a notice to an address.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "pattern": "^[^@ ]+@[^@ ]+$"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "notice_id": {
+            "type": "string",
+            "pattern": "^ntc_[0-9]+$"
+          }
+        },
+        "required": [
+          "notice_id"
+        ]
+      }
+    }
+  ]
+}

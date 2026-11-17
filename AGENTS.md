@@ -28,6 +28,7 @@ uv run --no-sync python tools/check_markdown.py
 uv run --no-sync python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run --no-sync python tools/bench.py --check docs/studies/bench.json   # 2 minutes on 48 cores, 3 on 4
 uv run --no-sync python tools/census.py --check docs/studies/census.json
+uv run --no-sync python tools/planners.py --check docs/studies/planners.json   # a minute and a half
 ```
 
 All of them must be clean before a commit. A change that moves a published
