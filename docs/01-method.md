@@ -110,6 +110,19 @@ drawn value (`tests/test_properties.py`). A tool whose input constrains each arg
 gets no link for its argument record, which holds once each argument does. Where only the interval rule proves a link, a step past the
 period valgebra's floats read, the verifier reports `undecided` for it.
 
+## valgebra-planning
+
+[valgebra-planning](https://github.com/ppigazzini/valgebra-planning) is the package this method
+grew into, written anew under MIT OR Apache-2.0. valplan reads each tool through its contract
+reader and judges each program with its verifier; the search, the cells and their rules here
+are valplan's own, so a technique can be tried here without touching what the package
+promises.
+
+A technique measured here enters valgebra-planning only as a change of its own there, with its
+own tests, after a study here shows what it gains on libraries both planners read; valgebra-planning
+never imports valplan, and nothing here is copied into it. A technique that gains nothing stays
+here, or goes.
+
 ## Limits
 
 - **Types are the specification.** Two slots with the same schema cannot be told apart: a
