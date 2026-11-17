@@ -92,7 +92,8 @@ their limits.
 [doi:10.5281/zenodo.23686600](https://doi.org/10.5281/zenodo.23686600) cites every
 version; version 0.0.1 is
 [doi:10.5281/zenodo.23686601](https://doi.org/10.5281/zenodo.23686601).
-[`CITATION.cff`](CITATION.cff) holds the record.
+[`CITATION.cff`](CITATION.cff) holds the record, and [`CHANGELOG.md`](CHANGELOG.md) what each
+version changed.
 
 ## License
 

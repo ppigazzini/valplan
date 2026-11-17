@@ -1,6 +1,6 @@
 [project]
 name = "valplan"
-version = "0.0.1"
+version = "0.0.2"
 description = "Plans tool-using agents by predicate abstraction over valgebra: JSON Schema contracts compiled to decidable sets, contingent tool programs proven well-typed"
 readme = "README.md"
 license = "Apache-2.0"
