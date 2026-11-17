@@ -30,3 +30,4 @@ jobs:
       # Every published count is one this code still produces.
       - run: uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
       - run: uv run python tools/bench.py --check docs/studies/bench.json
+      - run: uv run python tools/census.py --check docs/studies/census.json

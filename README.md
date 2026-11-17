@@ -29,6 +29,7 @@ whose stops name the values left uncovered.
 ```bash
 uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run python tools/bench.py --check docs/studies/bench.json
+uv run python tools/census.py --check docs/studies/census.json
 ```
 
 - **The compiler** is [`valgebra-jsonschema`](https://github.com/ppigazzini/valgebra-jsonschema), which publishes its counts against the
@@ -45,6 +46,10 @@ uv run python tools/bench.py --check docs/studies/bench.json
   measure range, 597 predicates make up to 984 cells, and the verifier proves every check;
   80 runs against
   tools returning random values inside their output schemas break no contract.
+- **The seven MCP reference servers** (66 tools, their listings stored): read through
+  [`valgebra-planning`](https://github.com/ppigazzini/valgebra-planning)'s contract reader, 31
+  carry an `outputSchema`; cut as its planner cuts them, they give 127 cells, 92 undecided, 91
+  of those arrays of records met with complements valgebra does not part.
 - **A hand-written chain with the typical mistake** (escalating every customer) is refuted
   at the one binding that is wrong, `c1.tier <= escalate.tier`, with the value `'free'`,
   and at the argument record that carries it.

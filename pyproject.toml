@@ -17,13 +17,22 @@ dependencies = [
     "valgebra>=0.0.28,<0.0.29",
     # The JSON Schema reader every contract is read through, pre-alpha as valgebra is.
     "valgebra-jsonschema>=0.0.1,<0.0.2",
+    # The census reads the reference servers' tools through its contract reader and cuts them
+    # as its planner does, pre-alpha as valgebra is.
+    "valgebra-planning>=0.0.1,<0.0.2",
 ]
+
+[tool.uv.sources]
+# The commit valgebra-planning 0.0.1 is cut from, until that release is on PyPI.
+valgebra-planning = { git = "https://github.com/ppigazzini/valgebra-planning", rev = "c7f8108afd338e94e94b58080f23fcc64f6e4dd8" }
 
 [dependency-groups]
 dev = [
     # The second implementation: `tests/test_properties.py` compares membership on random
     # schemas, and `tools/suite.py --reference` runs it on the optional suite files.
     "jsonschema>=4.26.0",
+    # `tools/census.py --refresh` reads each reference server through the MCP client.
+    "mcp>=2.3.0,<3",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",
     "ruff>=0.17.3",

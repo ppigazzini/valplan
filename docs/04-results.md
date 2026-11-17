@@ -82,6 +82,28 @@ every distractor's measure straddles 500.
   string tools and 87 to 98 s for 256 numeric tools, where the pairwise relations of
   597 predicates are decided one by one. The libraries run in parallel, one per core.
 
+## Real servers
+
+```bash
+uv run --no-sync python tools/census.py --check docs/studies/census.json
+```
+
+The seven official MCP reference servers, each pinned to one release (`SERVERS` in
+`tools/census.py`), list 66 tools, stored as listed under `examples/census/` beside the license
+they carry. valgebra-planning's contract reader reads every one through valgebra-jsonschema,
+and 31 carry an `outputSchema`, which is 12 distinct schemas, all 16 of filesystem's being one
+text wrapper. Of the 126 arguments, 72 carry a bare type and nothing more. Cut into cells
+together, as valgebra-planning's planner cuts them (its `predicates` and `abstract`), the 106
+predicates give 127 cells, of which 92 are undecided, 91 of them array cells: arrays of records
+met with the complements of other arrays of records, 63 of them with arrays of strings too,
+which valgebra does not part. They are kept, so no wrong program is admitted, and they cost the
+search. The cut asks valgebra 3,082 relations.
+
+The count reads the stored listings, with no network, so it is in the gate. A pinned server is
+not a pinned listing: its dependencies resolve when it starts and its SDK writes the schemas, so
+`tools/census.py --refresh --check docs/studies/census.json` reads the servers again and reports
+a listing that moved. A moved listing, or a new release of a server, is a new study.
+
 ## Undecided cells
 
 None, in the helpdesk library or the synthetic ones: every cell is proven empty or proven
@@ -99,6 +121,5 @@ cells of ranges and steps.
 
 ## Not measured
 
-- Tool libraries published by real MCP servers.
 - Programs proposed by a language model. The verifier reads them as JSON; a comparison
   needs a fixed model, prompt and task set, run and recorded.

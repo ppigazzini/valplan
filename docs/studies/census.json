@@ -1,0 +1,85 @@
+{
+  "format": 1,
+  "rows": [
+    {
+      "server": "time",
+      "release": "mcp-server-time==2026.11.4",
+      "tools": 3,
+      "output schemas": 3,
+      "read": 3,
+      "arguments": 9,
+      "bare arguments": 5,
+      "result slots": 22
+    },
+    {
+      "server": "fetch",
+      "release": "mcp-server-fetch==2026.11.4",
+      "tools": 1,
+      "output schemas": 0,
+      "read": 1,
+      "arguments": 5,
+      "bare arguments": 1,
+      "result slots": 0
+    },
+    {
+      "server": "git",
+      "release": "mcp-server-git==2026.11.4",
+      "tools": 14,
+      "output schemas": 0,
+      "read": 14,
+      "arguments": 32,
+      "bare arguments": 26,
+      "result slots": 0
+    },
+    {
+      "server": "everything",
+      "release": "@modelcontextprotocol/server-everything@2.2.1",
+      "tools": 22,
+      "output schemas": 2,
+      "read": 22,
+      "arguments": 28,
+      "bare arguments": 15,
+      "result slots": 8
+    },
+    {
+      "server": "filesystem",
+      "release": "@modelcontextprotocol/server-filesystem@2.2.0",
+      "tools": 16,
+      "output schemas": 16,
+      "read": 16,
+      "arguments": 30,
+      "bare arguments": 20,
+      "result slots": 32
+    },
+    {
+      "server": "memory",
+      "release": "@modelcontextprotocol/server-memory@2.1.0",
+      "tools": 9,
+      "output schemas": 9,
+      "read": 9,
+      "arguments": 13,
+      "bare arguments": 0,
+      "result slots": 24
+    },
+    {
+      "server": "sequential-thinking",
+      "release": "@modelcontextprotocol/server-sequential-thinking@2.1.1",
+      "tools": 1,
+      "output schemas": 1,
+      "read": 1,
+      "arguments": 9,
+      "bare arguments": 5,
+      "result slots": 6
+    }
+  ],
+  "total": {
+    "tools": 66,
+    "output schemas": 31,
+    "distinct output schemas": 12,
+    "predicates": 106,
+    "cells": 127,
+    "undecided cells": 92,
+    "undecided array cells": 91,
+    "relations asked": 3082
+  }
+}
