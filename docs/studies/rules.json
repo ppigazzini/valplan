@@ -1,0 +1,131 @@
+{
+  "format": 1,
+  "rows": [
+    {
+      "task": "census",
+      "predicates": 106,
+      "cut": "valgebra-planning",
+      "cells": 99,
+      "undecided": 64
+    },
+    {
+      "task": "census",
+      "predicates": 106,
+      "cut": "valplan bare",
+      "cells": 79,
+      "undecided": 44
+    },
+    {
+      "task": "census",
+      "predicates": 106,
+      "cut": "valplan listed",
+      "cells": 79,
+      "undecided": 44
+    },
+    {
+      "task": "census",
+      "predicates": 106,
+      "cut": "valplan intervals",
+      "cells": 79,
+      "undecided": 44
+    },
+    {
+      "task": "census",
+      "predicates": 106,
+      "cut": "valplan union branches",
+      "cells": 79,
+      "undecided": 44
+    },
+    {
+      "task": "census",
+      "predicates": 106,
+      "cut": "valplan all",
+      "cells": 79,
+      "undecided": 44
+    },
+    {
+      "task": "numbers 32",
+      "predicates": 74,
+      "cut": "valgebra-planning",
+      "cells": 130,
+      "undecided": 0
+    },
+    {
+      "task": "numbers 32",
+      "predicates": 74,
+      "cut": "valplan bare",
+      "cells": 130,
+      "undecided": 10
+    },
+    {
+      "task": "numbers 32",
+      "predicates": 74,
+      "cut": "valplan listed",
+      "cells": 130,
+      "undecided": 10
+    },
+    {
+      "task": "numbers 32",
+      "predicates": 74,
+      "cut": "valplan intervals",
+      "cells": 130,
+      "undecided": 0
+    },
+    {
+      "task": "numbers 32",
+      "predicates": 74,
+      "cut": "valplan union branches",
+      "cells": 130,
+      "undecided": 10
+    },
+    {
+      "task": "numbers 32",
+      "predicates": 74,
+      "cut": "valplan all",
+      "cells": 130,
+      "undecided": 0
+    },
+    {
+      "task": "numbers 64",
+      "predicates": 147,
+      "cut": "valgebra-planning",
+      "cells": 260,
+      "undecided": 0
+    },
+    {
+      "task": "numbers 64",
+      "predicates": 147,
+      "cut": "valplan bare",
+      "cells": 270,
+      "undecided": 42
+    },
+    {
+      "task": "numbers 64",
+      "predicates": 147,
+      "cut": "valplan listed",
+      "cells": 270,
+      "undecided": 42
+    },
+    {
+      "task": "numbers 64",
+      "predicates": 147,
+      "cut": "valplan intervals",
+      "cells": 260,
+      "undecided": 0
+    },
+    {
+      "task": "numbers 64",
+      "predicates": 147,
+      "cut": "valplan union branches",
+      "cells": 270,
+      "undecided": 42
+    },
+    {
+      "task": "numbers 64",
+      "predicates": 147,
+      "cut": "valplan all",
+      "cells": 260,
+      "undecided": 0
+    }
+  ]
+}

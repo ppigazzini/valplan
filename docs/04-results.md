@@ -141,6 +141,35 @@ valplan's 38 give 72 cells, 36 undecided. The two cut different predicates, valp
 equal sets and valgebra-planning keeping each result a slot may read, so the counts are each
 cut's, not a measure of one rule.
 
+## Cell rules on one cut
+
+```bash
+uv run --no-sync python tools/rules.py --check docs/studies/rules.json
+```
+
+The predicates valgebra-planning's planner cuts for a task, sorted by their names, cut by
+valgebra-planning's `abstract` and by valplan's abstraction bare, with each of its three rules
+alone, and with all three. Every valplan cut gets one pool of members, drawn from each
+predicate's schema by a stream seeded by its names; `cells` counts what a cut cannot prove empty,
+`undecided` those with no member found.
+
+| task | predicates | valgebra-planning | valplan bare | listed values | intervals | union branches | all three |
+|---|---:|---|---|---|---|---|---|
+| census | 106 | 99 (64) | 79 (44) | 79 (44) | 79 (44) | 79 (44) | 79 (44) |
+| numbers, 32 tools | 74 | 130 (0) | 130 (10) | 130 (10) | 130 (0) | 130 (10) | 130 (0) |
+| numbers, 64 tools | 147 | 260 (0) | 270 (42) | 270 (42) | 260 (0) | 270 (42) | 260 (0) |
+
+- **The interval rule is the one that decides here**, and it decides for valplan's own cut:
+  bare, valplan keeps 10 and 42 numeric cells undecided, and at 128 tools runs past 150 s;
+  with the rule it reaches valgebra-planning's 130 and 260 cells, none undecided, which
+  valgebra-planning's cut reaches with no interval rule.
+- **Listed values and union branches decide nothing on these tasks**: each leaves the bare cut's
+  counts as they are.
+- **On the census valplan's bare cut proves 20 more cells empty**: 79 kept against 99, 35
+  inhabited in both. None of the three rules is the reason, so the reason is in the cut itself.
+  The 99 is valgebra-planning 0.0.1's, whose cut moves with the order its predicates are
+  listed in; its next release cuts them in the order of their names, 96 cells, 61 undecided.
+
 ## Undecided cells
 
 None, in the helpdesk library or the synthetic ones: every cell is proven empty or proven

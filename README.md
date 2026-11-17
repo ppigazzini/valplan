@@ -30,6 +30,7 @@ uv run python tools/case.py examples/helpdesk --check docs/studies/helpdesk.json
 uv run python tools/bench.py --check docs/studies/bench.json
 uv run python tools/census.py --check docs/studies/census.json
 uv run python tools/planners.py --check docs/studies/planners.json
+uv run python tools/rules.py --check docs/studies/rules.json
 ```
 
 - **The compiler** is [`valgebra-jsonschema`](https://github.com/ppigazzini/valgebra-jsonschema), which publishes its counts against the
