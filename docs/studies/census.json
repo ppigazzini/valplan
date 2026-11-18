@@ -76,10 +76,10 @@
     "tools": 66,
     "output schemas": 31,
     "distinct output schemas": 12,
-    "predicates": 106,
-    "cells": 127,
-    "undecided cells": 92,
-    "undecided array cells": 91,
-    "relations asked": 3082
+    "predicates": 37,
+    "cells": 64,
+    "undecided cells": 29,
+    "undecided array cells": 28,
+    "relations asked": 507
   }
 }

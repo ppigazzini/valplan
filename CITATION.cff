@@ -41,21 +41,21 @@ keywords:
 references:
   - type: software
     title: valgebra
-    version: 0.0.28
+    version: 0.0.29
     repository-code: "https://github.com/ppigazzini/valgebra"
     authors:
       - family-names: Pigazzini
         given-names: Pasquale
   - type: software
     title: valgebra-jsonschema
-    version: 0.0.1
+    version: 0.0.2
     repository-code: "https://github.com/ppigazzini/valgebra-jsonschema"
     authors:
       - family-names: Pigazzini
         given-names: Pasquale
   - type: software
     title: valgebra-planning
-    version: 0.0.1
+    version: 0.0.3
     repository-code: "https://github.com/ppigazzini/valgebra-planning"
     authors:
       - family-names: Pigazzini

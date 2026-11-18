@@ -49,8 +49,8 @@ uv run python tools/rules.py --check docs/studies/rules.json
   tools returning random values inside their output schemas break no contract.
 - **The seven MCP reference servers** (66 tools, their listings stored): read through
   [`valgebra-planning`](https://github.com/ppigazzini/valgebra-planning)'s contract reader, 31
-  carry an `outputSchema`; cut as its planner cuts them, they give 127 cells, 92 undecided, 91
-  of those arrays of records met with complements valgebra does not part.
+  carry an `outputSchema`; cut as its planner cuts them, they give 64 cells, 29 undecided, 28
+  of those array cells valgebra does not part.
 - **Two planners on one verifier**: valplan's and valgebra-planning's find the same kind of
   program on 34 of 35 tasks, helpdesk, the parcels' four with no rule and each planner's own
   synthetic family, and every link of every program found is proven; valgebra-planning's

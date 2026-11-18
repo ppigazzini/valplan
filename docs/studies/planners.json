@@ -915,9 +915,9 @@
   "census": [
     {
       "planner": "valgebra-planning",
-      "predicates": 106,
-      "cells": 127,
-      "undecided cells": 92
+      "predicates": 37,
+      "cells": 64,
+      "undecided cells": 29
     },
     {
       "planner": "valplan",

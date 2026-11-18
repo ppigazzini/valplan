@@ -94,11 +94,10 @@ The seven official MCP reference servers, each pinned to one release (`SERVERS` 
 they carry. valgebra-planning's contract reader reads every one through valgebra-jsonschema,
 and 31 carry an `outputSchema`, which is 12 distinct schemas, all 16 of filesystem's being one
 text wrapper. Of the 126 arguments, 72 carry a bare type and nothing more. Cut into cells
-together, as valgebra-planning's planner cuts them (its `predicates` and `abstract`), the 106
-predicates give 127 cells, of which 92 are undecided, 91 of them array cells: arrays of records
-met with the complements of other arrays of records, 63 of them with arrays of strings too,
-which valgebra does not part. They are kept, so no wrong program is admitted, and they cost the
-search. The cut asks valgebra 3,082 relations.
+together, as valgebra-planning's planner cuts them (its `predicates` and `abstract`), the 37
+predicates give 64 cells, of which 29 are undecided, 28 of them array cells valgebra does not
+part. They are kept, so no wrong program is admitted, and they cost the search. The cut asks
+valgebra 507 relations.
 
 The count reads the stored listings, with no network, so it is in the gate. A pinned server is
 not a pinned listing: its dependencies resolve when it starts and its SDK writes the schemas, so
@@ -136,10 +135,9 @@ verifier judges every program either finds. Every link of every program found is
   nothing; a found program is proven link by link.
 
 Over the census's 66 tools, for a task taking a string to a string, each planner's own cut:
-valgebra-planning's 106 predicates give 127 cells, 92 undecided, as the census reads them;
-valplan's 38 give 72 cells, 36 undecided. The two cut different predicates, valplan merging
-equal sets and valgebra-planning keeping each result a slot may read, so the counts are each
-cut's, not a measure of one rule.
+valgebra-planning's 37 predicates give 64 cells, 29 undecided, as the census reads them;
+valplan's 38 give 72 cells, 36 undecided. The two cut different predicates, so the counts are
+each cut's, not a measure of one rule.
 
 ## Cell rules on one cut
 
@@ -155,7 +153,7 @@ predicate's schema by a stream seeded by its names; `cells` counts what a cut ca
 
 | task | predicates | valgebra-planning | valplan bare | listed values | intervals | union branches | all three |
 |---|---:|---|---|---|---|---|---|
-| census | 106 | 99 (64) | 79 (44) | 79 (44) | 79 (44) | 79 (44) | 79 (44) |
+| census | 37 | 79 (44) | 79 (44) | 79 (44) | 79 (44) | 79 (44) | 79 (44) |
 | numbers, 32 tools | 74 | 130 (0) | 130 (10) | 130 (10) | 130 (0) | 130 (10) | 130 (0) |
 | numbers, 64 tools | 147 | 260 (0) | 270 (42) | 270 (42) | 260 (0) | 270 (42) | 260 (0) |
 
@@ -165,10 +163,8 @@ predicate's schema by a stream seeded by its names; `cells` counts what a cut ca
   valgebra-planning's cut reaches with no interval rule.
 - **Listed values and union branches decide nothing on these tasks**: each leaves the bare cut's
   counts as they are.
-- **On the census valplan's bare cut proves 20 more cells empty**: 79 kept against 99, 35
-  inhabited in both. None of the three rules is the reason, so the reason is in the cut itself.
-  The 99 is valgebra-planning 0.0.1's, whose cut moves with the order its predicates are
-  listed in; its next release cuts them in the order of their names, 96 cells, 61 undecided.
+- **On the census the two cuts agree**: valgebra-planning's keeps 79 cells, 44 undecided, as
+  valplan's bare cut does, 35 inhabited in both, and none of the three rules moves the count.
 
 ## Undecided cells
 

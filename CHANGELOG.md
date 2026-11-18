@@ -8,8 +8,8 @@ What changes between the versions Zenodo archives, for a reader holding a versio
 ### Changed
 
 - JSON Schema is read by [valgebra-jsonschema](https://github.com/ppigazzini/valgebra-jsonschema)
-  0.0.1, and each tool's slots by [valgebra-planning](https://github.com/ppigazzini/valgebra-planning)
-  0.0.1's contract reader, on valgebra 0.0.28; each is held below its next `0.0.x` minor.
+  0.0.2, and each tool's slots by [valgebra-planning](https://github.com/ppigazzini/valgebra-planning)
+  0.0.3's contract reader, on valgebra 0.0.29; each is held below its next `0.0.x` minor.
 - Every program is judged by valgebra-planning's verifier. A tool whose input constrains each
   argument alone gets no link for its argument record, so the helpdesk's strong programs prove
   4 of 4 and 10 of 10 links; no program and no verdict moves.
