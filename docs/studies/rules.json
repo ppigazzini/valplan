@@ -6,7 +6,7 @@
       "predicates": 37,
       "cut": "valgebra-planning",
       "cells": 79,
-      "undecided": 44
+      "undecided": 42
     },
     {
       "task": "census",

@@ -78,8 +78,8 @@
     "distinct output schemas": 12,
     "predicates": 37,
     "cells": 64,
-    "undecided cells": 29,
-    "undecided array cells": 28,
+    "undecided cells": 27,
+    "undecided array cells": 26,
     "relations asked": 507
   }
 }

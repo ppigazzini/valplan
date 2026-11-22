@@ -917,7 +917,7 @@
       "planner": "valgebra-planning",
       "predicates": 37,
       "cells": 64,
-      "undecided cells": 29
+      "undecided cells": 27
     },
     {
       "planner": "valplan",
