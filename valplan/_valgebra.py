@@ -7,7 +7,7 @@ extension module underneath it.
 
 valgebra ships the minimal Boolean algebra and leaves the derived forms to be composed;
 the ones this package needs are written once, below, as the recipes of valgebra's own
-documentation (`docs/04-algebra.md`, "Composition recipes"). A bound reaches valgebra as
+documentation (`docs/guides/algebra.md`, "Composition recipes"). A bound reaches valgebra as
 an ``annotated_types`` marker, the one constraint vocabulary it reads.
 """
 
