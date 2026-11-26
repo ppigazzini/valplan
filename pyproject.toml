@@ -14,12 +14,12 @@ dependencies = [
     # The decision procedure every abstraction, plan and verdict here rests on. Pre-alpha,
     # and a 0.0.x minor is a breaking release, so each range admits the release the studies
     # were read on and stops below the next minor: the range moves with each release.
-    "valgebra>=0.0.35,<0.0.36",
+    "valgebra>=0.0.36,<0.0.37",
     # The JSON Schema reader every contract is read through, pre-alpha as valgebra is.
-    "valgebra-jsonschema>=0.0.7,<0.0.8",
+    "valgebra-jsonschema>=0.0.8,<0.0.9",
     # The census reads the reference servers' tools through its contract reader and cuts them
     # as its planner does, pre-alpha as valgebra is.
-    "valgebra-planning>=0.0.9,<0.0.10",
+    "valgebra-planning>=0.0.10,<0.0.11",
 ]
 
 [dependency-groups]

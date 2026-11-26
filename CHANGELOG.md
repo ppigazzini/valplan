@@ -8,8 +8,13 @@ What changes between the versions Zenodo archives, for a reader holding a versio
 ### Changed
 
 - JSON Schema is read by [valgebra-jsonschema](https://github.com/ppigazzini/valgebra-jsonschema)
-  0.0.7, and each tool's slots by [valgebra-planning](https://github.com/ppigazzini/valgebra-planning)
-  0.0.9's contract reader, on valgebra 0.0.35; each is held below its next `0.0.x` minor.
+  0.0.8, and each tool's slots by [valgebra-planning](https://github.com/ppigazzini/valgebra-planning)
+  0.0.10's contract reader, on valgebra 0.0.36; each is held below its next `0.0.x` minor.
+- valgebra-planning 0.0.10 remembers a failed state by what a call that may act left stale only
+  where a fresh argument or a fresh flow rule reads it, so the planners study's
+  valgebra-planning column expands fewer states on 18 of its 35 tasks: 3 to 593 on the helpdesk
+  where 0.0.9 expanded 3 to 1148, 16 to 120 and 16 to 970 on valplan's strings and numbers
+  where it expanded 16 to 161 and 16 to 1796. No program, cell, stop or link moves.
 - Every program is judged by valgebra-planning's verifier. A tool whose input constrains each
   argument alone gets no link for its argument record, so the helpdesk's strong programs prove
   4 of 4 and 10 of 10 links; no program and no verdict moves.

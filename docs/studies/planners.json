@@ -51,7 +51,7 @@
       "undecided links": 0,
       "cells": 22,
       "undecided cells": 0,
-      "expanded": 30
+      "expanded": 26
     },
     {
       "library": "helpdesk",
@@ -77,7 +77,7 @@
       "undecided links": 0,
       "cells": 37,
       "undecided cells": 0,
-      "expanded": 1148
+      "expanded": 593
     },
     {
       "library": "helpdesk",
@@ -103,7 +103,7 @@
       "undecided links": 0,
       "cells": 19,
       "undecided cells": 0,
-      "expanded": 49
+      "expanded": 43
     },
     {
       "library": "parcels",
@@ -233,7 +233,7 @@
       "undecided links": 0,
       "cells": 17,
       "undecided cells": 0,
-      "expanded": 28
+      "expanded": 25
     },
     {
       "library": "valplan numbers 8/0",
@@ -337,7 +337,7 @@
       "undecided links": 0,
       "cells": 32,
       "undecided cells": 0,
-      "expanded": 33
+      "expanded": 25
     },
     {
       "library": "valgebra-planning chain 8/1",
@@ -415,7 +415,7 @@
       "undecided links": 0,
       "cells": 25,
       "undecided cells": 0,
-      "expanded": 27
+      "expanded": 21
     },
     {
       "library": "valgebra-planning chain 8/2",
@@ -467,7 +467,7 @@
       "undecided links": 0,
       "cells": 21,
       "undecided cells": 0,
-      "expanded": 36
+      "expanded": 29
     },
     {
       "library": "valplan numbers 32/0",
@@ -493,7 +493,7 @@
       "undecided links": 0,
       "cells": 122,
       "undecided cells": 0,
-      "expanded": 130
+      "expanded": 97
     },
     {
       "library": "valgebra-planning chain 32/0",
@@ -545,7 +545,7 @@
       "undecided links": 0,
       "cells": 17,
       "undecided cells": 0,
-      "expanded": 56
+      "expanded": 34
     },
     {
       "library": "valplan numbers 32/1",
@@ -571,7 +571,7 @@
       "undecided links": 0,
       "cells": 122,
       "undecided cells": 0,
-      "expanded": 77
+      "expanded": 57
     },
     {
       "library": "valgebra-planning chain 32/1",
@@ -623,7 +623,7 @@
       "undecided links": 0,
       "cells": 21,
       "undecided cells": 0,
-      "expanded": 79
+      "expanded": 55
     },
     {
       "library": "valplan numbers 32/2",
@@ -649,7 +649,7 @@
       "undecided links": 0,
       "cells": 131,
       "undecided cells": 0,
-      "expanded": 27
+      "expanded": 24
     },
     {
       "library": "valgebra-planning chain 32/2",
@@ -701,7 +701,7 @@
       "undecided links": 0,
       "cells": 54,
       "undecided cells": 0,
-      "expanded": 65
+      "expanded": 54
     },
     {
       "library": "valplan numbers 128/0",
@@ -727,7 +727,7 @@
       "undecided links": 0,
       "cells": 507,
       "undecided cells": 0,
-      "expanded": 89
+      "expanded": 68
     },
     {
       "library": "valgebra-planning chain 128/0",
@@ -779,7 +779,7 @@
       "undecided links": 0,
       "cells": 48,
       "undecided cells": 0,
-      "expanded": 161
+      "expanded": 120
     },
     {
       "library": "valplan numbers 128/1",
@@ -805,7 +805,7 @@
       "undecided links": 0,
       "cells": 474,
       "undecided cells": 0,
-      "expanded": 293
+      "expanded": 208
     },
     {
       "library": "valgebra-planning chain 128/1",
@@ -857,7 +857,7 @@
       "undecided links": 0,
       "cells": 51,
       "undecided cells": 0,
-      "expanded": 103
+      "expanded": 72
     },
     {
       "library": "valplan numbers 128/2",
@@ -883,7 +883,7 @@
       "undecided links": 0,
       "cells": 482,
       "undecided cells": 0,
-      "expanded": 1796
+      "expanded": 970
     },
     {
       "library": "valgebra-planning chain 128/2",
