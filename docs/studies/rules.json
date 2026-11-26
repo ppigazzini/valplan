@@ -5,43 +5,43 @@
       "task": "census",
       "predicates": 37,
       "cut": "valgebra-planning",
-      "cells": 79,
-      "undecided": 42
+      "cells": 63,
+      "undecided": 26
     },
     {
       "task": "census",
       "predicates": 37,
       "cut": "valplan bare",
-      "cells": 79,
-      "undecided": 44
+      "cells": 63,
+      "undecided": 28
     },
     {
       "task": "census",
       "predicates": 37,
       "cut": "valplan listed",
-      "cells": 79,
-      "undecided": 44
+      "cells": 63,
+      "undecided": 28
     },
     {
       "task": "census",
       "predicates": 37,
       "cut": "valplan intervals",
-      "cells": 79,
-      "undecided": 44
+      "cells": 63,
+      "undecided": 28
     },
     {
       "task": "census",
       "predicates": 37,
       "cut": "valplan union branches",
-      "cells": 79,
-      "undecided": 44
+      "cells": 63,
+      "undecided": 28
     },
     {
       "task": "census",
       "predicates": 37,
       "cut": "valplan all",
-      "cells": 79,
-      "undecided": 44
+      "cells": 63,
+      "undecided": 28
     },
     {
       "task": "numbers 32",
@@ -96,15 +96,15 @@
       "task": "numbers 64",
       "predicates": 147,
       "cut": "valplan bare",
-      "cells": 270,
-      "undecided": 42
+      "cells": 260,
+      "undecided": 32
     },
     {
       "task": "numbers 64",
       "predicates": 147,
       "cut": "valplan listed",
-      "cells": 270,
-      "undecided": 42
+      "cells": 260,
+      "undecided": 32
     },
     {
       "task": "numbers 64",
@@ -117,8 +117,8 @@
       "task": "numbers 64",
       "predicates": 147,
       "cut": "valplan union branches",
-      "cells": 270,
-      "undecided": 42
+      "cells": 260,
+      "undecided": 32
     },
     {
       "task": "numbers 64",

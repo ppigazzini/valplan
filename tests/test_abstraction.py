@@ -177,8 +177,10 @@ class TestUnions:
         assert ("object", frozenset({0, 1})) not in _cells(_with_branches(closed, nullable))
 
     def test_a_cell_only_the_whole_union_proves_empty_is_dropped(self):
-        one = {"const": 1}
-        everything = {"anyOf": [{"not": one}, one]}
+        # valgebra reads the meet with a complement at a time, so a constant's two branches
+        # prove it empty; a length bound's do not.
+        long = {"minItems": 2}
+        everything = {"anyOf": [{"not": long}, long]}
         array = compile_schema({"type": "array"})
         parts = [compile_schema(b) for b in everything["anyOf"]]
         assert not intersection(array, *map(complement, parts)).is_empty()

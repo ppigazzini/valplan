@@ -95,7 +95,7 @@ they carry. valgebra-planning's contract reader reads every one through valgebra
 and 31 carry an `outputSchema`, which is 12 distinct schemas, all 16 of filesystem's being one
 text wrapper. Of the 126 arguments, 72 carry a bare type and nothing more. Cut into cells
 together, as valgebra-planning's planner cuts them (its `predicates` and `abstract`), the 37
-predicates give 64 cells, of which 27 are undecided, 26 of them array cells valgebra does not
+predicates give 60 cells, of which 23 are undecided, 22 of them array cells valgebra does not
 part. They are kept, so no wrong program is admitted, and they cost the search. The cut asks
 valgebra 507 relations.
 
@@ -116,10 +116,10 @@ verifier judges every program either finds. Every link of every program found is
 
 | tasks | valplan | valgebra-planning | cells, valplan | cells, valgebra-planning | states expanded, valplan | states expanded, valgebra-planning |
 |---|---|---|---|---|---|---|
-| helpdesk, 4 | 2 strong, 2 weak | 2 strong, 2 weak | 35 to 37 | 19 to 37 | 9 to 3079 | 3 to 516 |
+| helpdesk, 4 | 2 strong, 2 weak | 2 strong, 2 weak | 35 to 37 | 19 to 37 | 9 to 3079 | 3 to 1148 |
 | parcels, the 4 with no rule | 2 strong, 1 weak, 1 none | 2 strong, 2 weak | 26 | 11 to 18 | 7 to 1186 | 3 to 30 |
-| valplan's strings, 8 to 128 tools, 9 | 9 strong | 9 strong | 17 to 54 | 15 to 54 | 24 to 548 | 16 to 86 |
-| valplan's numbers, 8 to 128 tools, 9 | 9 strong | 9 strong | 33 to 519 | 24 to 507 | 24 to 12497 | 12 to 531 |
+| valplan's strings, 8 to 128 tools, 9 | 9 strong | 9 strong | 17 to 54 | 15 to 54 | 24 to 548 | 16 to 161 |
+| valplan's numbers, 8 to 128 tools, 9 | 9 strong | 9 strong | 33 to 519 | 24 to 507 | 24 to 12497 | 16 to 1796 |
 | valgebra-planning's chain, 8 to 128 tools, 9 | 9 strong | 9 strong | 18 to 198 | 12 | 62 to 2638952 | 10 |
 
 - **Coverage agrees on 34 of 35 tasks.** On the parcels' "return a parcel" valgebra-planning
@@ -135,8 +135,8 @@ verifier judges every program either finds. Every link of every program found is
   nothing; a found program is proven link by link.
 
 Over the census's 66 tools, for a task taking a string to a string, each planner's own cut:
-valgebra-planning's 37 predicates give 64 cells, 27 undecided, as the census reads them;
-valplan's 38 give 72 cells, 36 undecided. The two cut different predicates, so the counts are
+valgebra-planning's 37 predicates give 60 cells, 23 undecided, as the census reads them;
+valplan's 38 give 64 cells, 28 undecided. The two cut different predicates, so the counts are
 each cut's, not a measure of one rule.
 
 ## Cell rules on one cut
@@ -153,19 +153,22 @@ predicate's schema by a stream seeded by its names; `cells` counts what a cut ca
 
 | task | predicates | valgebra-planning | valplan bare | listed values | intervals | union branches | all three |
 |---|---:|---|---|---|---|---|---|
-| census | 37 | 79 (42) | 79 (44) | 79 (44) | 79 (44) | 79 (44) | 79 (44) |
+| census | 37 | 63 (26) | 63 (28) | 63 (28) | 63 (28) | 63 (28) | 63 (28) |
 | numbers, 32 tools | 74 | 130 (0) | 130 (10) | 130 (10) | 130 (0) | 130 (10) | 130 (0) |
-| numbers, 64 tools | 147 | 260 (0) | 270 (42) | 270 (42) | 260 (0) | 270 (42) | 260 (0) |
+| numbers, 64 tools | 147 | 260 (0) | 260 (32) | 260 (32) | 260 (0) | 260 (32) | 260 (0) |
 
 - **The interval rule is the one that decides here**, and it decides for valplan's own cut:
-  bare, valplan keeps 10 and 42 numeric cells undecided, and at 128 tools runs past 150 s;
-  with the rule it reaches valgebra-planning's 130 and 260 cells, none undecided, which
-  valgebra-planning's cut reaches with no interval rule.
+  bare, valplan keeps valgebra-planning's 130 and 260 cells with 10 and 32 of them undecided,
+  and at 128 tools runs past 150 s; with the rule none is undecided, as in valgebra-planning's
+  cut, which reaches them with no interval rule. valgebra 0.0.34 proves eight of the bare
+  64-tool cut's cells empty, and valgebra-jsonschema 0.0.7, reading a schema's bounds as one
+  interval a kind, two more.
 - **Listed values and union branches decide nothing on these tasks**: each leaves the bare cut's
   counts as they are.
-- **On the census the two cuts part by two cells**: each keeps 79, valgebra-planning's 42
-  undecided and valplan's bare cut 44. valgebra 0.0.31 decides two of valgebra-planning's array
-  cells and none of valplan's, and none of the three rules moves valplan's count.
+- **On the census the two cuts part by two cells**: each keeps 63, valgebra-planning's 26
+  undecided and valplan's bare cut 28. valgebra 0.0.31 decides two of valgebra-planning's array
+  cells and none of valplan's, valgebra 0.0.34 proves sixteen cells of each cut empty, and none
+  of the three rules moves valplan's count.
 
 ## Undecided cells
 
