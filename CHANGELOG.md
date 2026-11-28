@@ -8,8 +8,15 @@ What changes between the versions Zenodo archives, for a reader holding a versio
 ### Changed
 
 - JSON Schema is read by [valgebra-jsonschema](https://github.com/ppigazzini/valgebra-jsonschema)
-  0.0.8, and each tool's slots by [valgebra-planning](https://github.com/ppigazzini/valgebra-planning)
-  0.0.10's contract reader, on valgebra 0.0.36; each is held below its next `0.0.x` minor.
+  0.0.9, and each tool's slots by [valgebra-planning](https://github.com/ppigazzini/valgebra-planning)
+  0.0.11's contract reader, on valgebra 0.0.37; each is held below its next `0.0.x` minor.
+- valgebra-planning 0.0.11 tests a key of a call's result into the goal and ranks first the weak
+  program whose stops all lie in error blocks, then by its cells. In the planners study's
+  valgebra-planning column the helpdesk's escalate takes another weak program, 3 stops and 4
+  links, each proven, where it took 2 stops and 13 links, after 1002 states where it expanded 593;
+  escalate and ticket cut one cell more, a key cell left undecided, and settle-latest-invoice one
+  more, decided, after 30 states where it expanded 26. The helpdesk reads 19 to 38 cells and 3 to
+  1002 states; no other task moves.
 - valgebra-planning 0.0.10 remembers a failed state by what a call that may act left stale only
   where a fresh argument or a fresh flow rule reads it, so the planners study's
   valgebra-planning column expands fewer states on 18 of its 35 tasks: 3 to 593 on the helpdesk

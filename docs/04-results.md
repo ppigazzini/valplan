@@ -116,7 +116,7 @@ verifier judges every program either finds. Every link of every program found is
 
 | tasks | valplan | valgebra-planning | cells, valplan | cells, valgebra-planning | states expanded, valplan | states expanded, valgebra-planning |
 |---|---|---|---|---|---|---|
-| helpdesk, 4 | 2 strong, 2 weak | 2 strong, 2 weak | 35 to 37 | 19 to 37 | 9 to 3079 | 3 to 593 |
+| helpdesk, 4 | 2 strong, 2 weak | 2 strong, 2 weak | 35 to 37 | 19 to 38 | 9 to 3079 | 3 to 1002 |
 | parcels, the 4 with no rule | 2 strong, 1 weak, 1 none | 2 strong, 2 weak | 26 | 11 to 18 | 7 to 1186 | 3 to 30 |
 | valplan's strings, 8 to 128 tools, 9 | 9 strong | 9 strong | 17 to 54 | 15 to 54 | 24 to 548 | 16 to 120 |
 | valplan's numbers, 8 to 128 tools, 9 | 9 strong | 9 strong | 33 to 519 | 24 to 507 | 24 to 12497 | 16 to 970 |

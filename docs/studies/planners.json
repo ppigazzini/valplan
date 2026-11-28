@@ -23,8 +23,8 @@
       "links": 4,
       "proven": 4,
       "undecided links": 0,
-      "cells": 37,
-      "undecided cells": 0,
+      "cells": 38,
+      "undecided cells": 1,
       "expanded": 3
     },
     {
@@ -49,9 +49,9 @@
       "links": 10,
       "proven": 10,
       "undecided links": 0,
-      "cells": 22,
+      "cells": 23,
       "undecided cells": 0,
-      "expanded": 26
+      "expanded": 30
     },
     {
       "library": "helpdesk",
@@ -71,13 +71,13 @@
       "task": "escalate",
       "planner": "valgebra-planning",
       "program": "weak",
-      "stops": 2,
-      "links": 13,
-      "proven": 13,
+      "stops": 3,
+      "links": 4,
+      "proven": 4,
       "undecided links": 0,
-      "cells": 37,
-      "undecided cells": 0,
-      "expanded": 593
+      "cells": 38,
+      "undecided cells": 1,
+      "expanded": 1002
     },
     {
       "library": "helpdesk",
